@@ -3,7 +3,7 @@ Title: A package for fitting SEMs to composites created from components
 Version: 0.0.0.9000
 Authors@R: 
     person("Victoria", "Savalei", , "v.savalei@ubc.ca", role = c("aut", "cre"),
-           comment = c(ORCID = "YOUR-ORCID-ID"))
+           comment = c(ORCID = "0000-0001-8530-3251"))
 Description: This package contains functions to implement the two-stage ML (TSML) method of Savalei Rhemtulla (2017), which useful for missing data. It will also contain functions to implement competing methods such as PIM (Pseudo-Indicator Model), GLS (also Savalei Rhemtulla), and CCA (confirmatory composite analysis).
 License: MIT + file LICENSE
 Encoding: UTF-8
