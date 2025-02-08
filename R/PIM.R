@@ -71,7 +71,7 @@ PIM.multi<-function (C) {
     allbut1<-c(allbut1,allbut1j)
   }
 
-  combs <- combn(allbut1, 2, simplify = FALSE) #combs of 2 at a time
+  combs <- utils::combn(allbut1, 2, simplify = FALSE) #combs of 2 at a time
   texts <- sapply(combs, function(x) paste(x, collapse = " ~~ "))
   PIM.multi1 <- paste(texts, collapse = "\n")
 
@@ -107,6 +107,10 @@ PIM.multi<-function (C) {
 #' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
 #' compmodel<-"C1 ~ C2 + C3"
 #' PIM(C,compmodel)
+#'
+#' @references
+#' Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019). Model-based manifest and latent composite scores in structural equation models. Collabra: Psychology, 5(1), Article 9. https://doi.org/10.1525/collabra.143
+#'
 PIM<-function (C,compmodel) {
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)

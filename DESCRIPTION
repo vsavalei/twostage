@@ -1,11 +1,16 @@
 Package: twostage
-Title: A package for fitting SEMs to composites created from components
+Title: Fit SEMs to composites with item-level missing data
 Version: 0.0.0.9000
 Authors@R: 
     person("Victoria", "Savalei", , "v.savalei@ubc.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8530-3251"))
-Description: This package contains functions to implement the two-stage ML (TSML) method of Savalei Rhemtulla (2017), which useful for missing data. It will also contain functions to implement competing methods such as PIM (Pseudo-Indicator Model), GLS (also Savalei Rhemtulla), and CCA (confirmatory composite analysis).
+Description: This package implements SEM methods for models with composites in the presence of item-level missing data. It currently includes the following methods: Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a); GLS method of Savalei and Rhemtulla (2017b); PIM (Pseudo-Indicator Model) of Rose, Wagner, Mayer, and Nagengast (2019).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
+Suggests: 
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+Depends: R(>= 4.0), lavaan(>= 0.6-12)
+Imports: utils
