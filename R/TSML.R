@@ -1,10 +1,3 @@
-# Last Updated: Jan 14, 2025
-# Supplemental R Functions for the implementation of TSML method of
-# Savalei & Rhemtulla (2016 JEBS).
-# All non-TSML related functions for the simulations in the paper are now in
-# a separate file (SavaleRhemtullaFunctions rest 2024.R)
-
-
 # Summary of TSML functions #################
 
 #helper functions:
@@ -19,12 +12,13 @@
   #TS standard errors and residual based test statistic
   #twostage: runs all of the TSML functions at once
 
+#' @noRd
 names.ohd<- function (cnames) {
   name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
   names_cov <- name_grid_cov[lower.tri(name_grid_cov, diag = TRUE)]
   names_mean <- paste0(cnames,"~",1)
-  names.ohd <- c(names_cov,names_mean)
-  return(names.ohd)
+  names <- c(names_cov,names_mean)
+  return(names)
 }
 
 
@@ -63,11 +57,11 @@ stage0<-function (data, model) {
   rownames(C)<-cnames
 
   prompt_type <- paste("Are your composites sums or averages of components?")
-  type <- menu(c("Sums","Averages"), title = prompt_type)
+  type <- utils::menu(c("Sums","Averages"), title = prompt_type)
 
   for (i in 1:length(colnames(data))){
     prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
-    ind_i <- menu(cnames, title = prompt_message)
+    ind_i <- utils::menu(cnames, title = prompt_message)
     C[ind_i,i]<-1
   }
 
@@ -99,8 +93,8 @@ stage1 <- function (data,runcommand=NULL) {
   S1.mod <- write.sat(p,varnames=colnames(data))
 
   S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ", runcommand, ")"))),silent=TRUE)
-
-  if(class(S1) != "try-error") {
+  #fixed the line below, need to test
+  if(!inherits(S1, "try-error")) {
     if(inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE){
       shb <- fitted.values(S1)$cov    			#sigma-hat-beta
       mhb <- fitted.values(S1)$mean         #mu-hat-beta
@@ -160,7 +154,7 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 
   S2 <- try(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
                 sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))),silent=TRUE)
-
+  #find a sane and consistent way to do the line below
   if(inherits(try(vcov(S2)),"try-error")==FALSE){
 
     ddh <- lavInspect(S2, "delta") #model derivatives
@@ -178,7 +172,7 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
     et <- c(residuals(S2)$mean,lav_matrix_vech(residuals(S2)$cov)) #so swap
     ahd <- solve(ohd.reordered)/N
     Tres <- (N-1)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
-    pval <- 1 - pchisq(Tres, df = inspect(S2, "fit")["df"])
+    pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
     result <- list(S2, TS_SE, Tres, pval)
     names(result) <- c("TS_Run_naive", "TS_SEs", "T_res", "T_res_pvalue")
