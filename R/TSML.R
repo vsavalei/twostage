@@ -1,7 +1,7 @@
 # Summary of TSML functions #################
 
 #helper functions:
-  #names.ohd: function to name rows/columns of the asy cov matrix from stage1
+  #namesohd: function to name rows/columns of the asy cov matrix from stage1
   #write.sat: creates the saturated model syntax in lavaan
 
 #TSML functions:
@@ -12,13 +12,13 @@
   #TS standard errors and residual based test statistic
   #twostage: runs all of the TSML functions at once
 
-#' @noRd
-names.ohd<- function (cnames) {
+
+namesohd<- function (cnames) {
   name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
   names_cov <- name_grid_cov[lower.tri(name_grid_cov, diag = TRUE)]
   names_mean <- paste0(cnames,"~",1)
-  names <- c(names_cov,names_mean)
-  return(names)
+  namesohd <- c(names_cov,names_mean)
+  return(namesohd)
 }
 
 
@@ -139,7 +139,7 @@ stage1a <- function (S1.output, C) {
     rownames(shd)<-colnames(shd)<- cnames
     #dh <- c(lav_matrix_vech(shd),mhd) 		  #delta-hat
     ohd <- Cb %*% ohb %*% t(Cb) #ohm-hat-delta
-    rownames(ohd)<-colnames(ohd) <- names.ohd(cnames)
+    rownames(ohd)<-colnames(ohd) <- namesohd(cnames)
     #order in ohd: vectorized non-red Sigma, then mu
   } #end of big non-null else
   S1a.output <- list(shd, mhd,ohd)
