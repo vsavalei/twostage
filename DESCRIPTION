@@ -4,7 +4,7 @@ Version: 0.0.0.9000
 Authors@R: 
     person("Victoria", "Savalei", , "v.savalei@ubc.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8530-3251"))
-Description: This package implements SEM methods for models with composites in the presence of item-level missing data. It currently includes the following methods: Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a); GLS method of Savalei and Rhemtulla (2017b); PIM (Pseudo-Indicator Model) of Rose, Wagner, Mayer, and Nagengast (2019).
+Description: This package implements SEM methods for models with composites, that run on component (item) data. The ideal application is to treat item-level missing data. It currently includes the following methods: Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a); GLS method of Savalei and Rhemtulla (2017b); PIM (Pseudo-Indicator Model) of Rose, Wagner, Mayer, and Nagengast (2019).
 License: MIT + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
@@ -14,3 +14,4 @@ Suggests:
 Config/testthat/edition: 3
 Depends: R(>= 4.0), lavaan(>= 0.6-12)
 Imports: utils, stats
+LazyData: true

@@ -1,0 +1,25 @@
+# Datasets Documentation
+
+#' misdata_mcar20
+#'
+#'A simulated dataset with MCAR missingness
+#'
+#' @format
+#' A matrix with 200 rows and 27 columns, named Y1-Y27.
+#'
+#' The following sets of variables have jointly missing data on 20% of their values,
+#' with rows randomly selected for each pattern:
+#' \{Y1, Y5, Y9\}, \{Y10, Y11\}, \{Y14, Y15, Y16, Y18\}, \{Y20, Y21\}, \{Y22, Y24\},
+#' \{Y25, Y26\}.
+#'
+#' The correct model for the data is a second-order factor model, with 9
+#' first-order factors (with three indicators each), and 3 second-order factors (with
+#' 3 indicators each). The exact population model that generated this dataset is described
+#' in Savalei and Rhemtulla (2017).
+#'
+#' @references
+#' Savalei, V., and Rhemtulla, M. (2017). Normal theory two-stage ML estimator when
+#' data are missing at the item level. Journal of Educational and Behavioral Statistics,
+#' 42(4), 567-589. https://doi.org/10.3102/1076998617695687
+#'
+"misdata_mcar20"
