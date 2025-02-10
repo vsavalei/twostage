@@ -1,29 +1,9 @@
 #PIM functions Jan 2025
 #Rose et al PIM (Pseudo-Indicator Model)#
 
-#functions:
-# PIM.multi(C) -- sets of syntax for covariances of components with each other and of composites with components
-# PIM(C,compmodel) -- runs both functions and creates the PIM syntax, adding the model for composites (compmodel)
 
-#' PIM.uni() function creates the first part of the PIM model syntax
-#'
-#' @param C A matrix of 0s and 1s, where rows are composites and columns are components
-#'          A 1 indicates that a component belongs to that composite
-#'
-#' @returns A string with the first part of the PIM model syntax
-#' @export
-#'
-#' @examples
-#' #C1 is the sum of Y1, Y2, and Y3
-#' #C2 is the sum of Y4, Y5, and Y6
-#' #C3 is Y7
-#' C<-matrix(0,nrow=3,ncol=7)
-#' C[1,1:3]<-1
-#' C[2,4:6]<-1
-#' C[3,7]<-1
-#' rownames(C)<-c("C1","C2","C3")
-#' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
-#' PIM.uni(C)
+# PIM.uni() creates the first part of the PIM model syntax
+
 PIM.uni<-function (C) {
   PIM.uni<-NULL
   cnames <-rownames(C)
@@ -40,24 +20,8 @@ PIM.uni<-function (C) {
 }
 
 
-#' PIM.multi() function creates the second part of the PIM model syntax
-#'
-#' @param C A matrix of 0s and 1s, where rows are composites and columns are components
-#'
-#' @returns A string with the second part of the PIM model syntax
-#' @export
-#'
-#' @examples
-#' #C1 is the sum of Y1, Y2, and Y3
-#' #C2 is the sum of Y4, Y5, and Y6
-#' #C3 is Y7
-#' C<-matrix(0,nrow=3,ncol=7)
-#' C[1,1:3]<-1
-#' C[2,4:6]<-1
-#' C[3,7]<-1
-#' rownames(C)<-c("C1","C2","C3")
-#' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
-#' PIM.multi(C)
+# PIM.multi() creates the second part of the PIM model syntax
+
 PIM.multi<-function (C) {
   allbut1<-NULL #a vector
   allbut1.string<-NULL #sum of all components listed in allbut1
@@ -86,8 +50,7 @@ PIM.multi<-function (C) {
 }
 
 
-#' PIM() function creates the full lavaan PIM model syntax using three parts:
-#' one created by PIM.uni(), one created by PIM.multi(), and the lavaan model for composites
+#' Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)
 #' the names of the composite variables should match row names of the C matrix
 #' @param C A matrix of 0s and 1s, where rows are composites and columns are components
 #' @param compmodel A string with the lavaan model for composites
@@ -106,16 +69,16 @@ PIM.multi<-function (C) {
 #' rownames(C)<-c("C1","C2","C3")
 #' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
 #' compmodel<-"C1 ~ C2 + C3"
-#' PIM(C,compmodel)
+#' PIM_syntax(C,compmodel)
 #'
 #' @references
 #' Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019). Model-based manifest and latent composite scores in structural equation models. Collabra: Psychology, 5(1), Article 9. https://doi.org/10.1525/collabra.143
 #'
-PIM<-function (C,compmodel) {
+PIM_syntax<-function (C,compmodel) {
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
-  PIMt <- paste(PIMu,PIMm, compmodel, sep = "\n")
-  return(PIMt)
+  out <- paste(PIMu,PIMm, compmodel, sep = "\n")
+  return(out)
 }
 
 

@@ -83,7 +83,7 @@ stage0<-function (data, model) {
 #Produces a list of 3 objects: mhb, shb, ohb, which are means, covariances,
 #and asy cov matrix for the items
 #runcommand can be used to pass additional arguments to lavaan
-
+#' @export
 stage1 <- function (data,runcommand=NULL) {
   p <- ncol(data)
   N <- nrow(data)
@@ -113,7 +113,7 @@ stage1 <- function (data,runcommand=NULL) {
 # shd -- #sigma-hat-delta (composite EM cov matrix, under saturated model) from Stage 1a, k x k
 # dh --  #delta-hat, a vector combining vech(shd) and mhd from Stage 1a (p. 5, line 7 of article), length k*(k+1)/2+k
 # ohd -- #asy cov matrix of dh, square with dimensions k*(k+1)/2+k (p. 5, last line in Stage 1a section)
-
+#' @export
 stage1a <- function (S1.output, C) {
   if (is.null(S1.output)) {S1a.output <- NULL} else {
     shb <- S1.output[[1]]
@@ -147,6 +147,7 @@ stage1a <- function (S1.output, C) {
 }
 
 #stage2: Fits the model to composites, computes TS standard errors and res-based T
+#' @export
 stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
