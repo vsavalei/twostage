@@ -289,7 +289,7 @@ stage1a <- function (S1.output, C) {
 #'  F1 ~~ F1'
 
 #' #manual computation for C (stage0) to avoid user input
-#' C<-cnames<-lavNames(mod1)
+#' cnames<-lavNames(mod1)
 #' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 #' colnames(C)<-colnames(misdata1)
 #' rownames(C)<-cnames
@@ -344,36 +344,110 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 
 }
 
+#' twostage
+#'
+#' Fits the model to composite based on the raw data on components using item-level two-stage
+#' maximum likelihood (TSML) of Savalei &amp Rhemtulla (2017). Adjusts naive
+#' standard errors to obtain robust TS standard errors (for normal data), computes
+#' the residual-based test statistic (for normal data).
+#'
+#  This function runs stage0, stage1, stage1a, stage2 in sequence.
 
-#runs all of the TSML function in sequence
-#' Title
+#' @param data Data file for the components (items)
+#' @param model The lavaan model for the composites
+#' @param C The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)
+#' @param runcommand Additional arguments to pass to lavaan for stage1
+#' @param runcommand2 Additional arguments to pass to lavaan for stage2
 #'
-#' @param data Your data file with components (items)
-#' @param model Your model for the composites
+#' @return For now, a list with four components:
 #'
-#' @returns A list with several objects
+#' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
+#' Parameter estimates from this run are TSML estimates.
 #'
-#' @import lavaan
+#' TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
+#' for the two-stage nature of the estimation, assuming normality)
+#'
+#' T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)
+#'
+#'This output will be re-arranged into something better eventually. Correct fit indices
+#'will also be added.
+#'
 #' @export
 #'
 #' @examples
-#' #To be added later
+#'
+#' #Example 1: An example using the first 18 variables in the simulated
+#' #dataset misdata_mcar20 with 20% missing data on about half the variables
+#' #C1 - C6 are parcels formed using three variables each (in order)
+#'
+#' misdata1<-misdata_mcar20[,1:18]
+#'
+#' # composite sub-model
+#' mod1 <- '
+#'  F1 =~ C1 + C2 + C3
+#'  F2 =~ C4 + C5 + C6
+#'  F2 ~ F1
+#'  F2 ~~ F2
+#'  F1 ~~ F1'
+
+#' #manual computation for C to avoid user input
+#' cnames<-lavNames(mod1)
+#' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
+#' colnames(C)<-colnames(misdata1)
+#' rownames(C)<-cnames
+#' C[1,1:3]<-1
+#' C[2,4:6]<-1
+#' C[3,7:9]<-1
+#' C[4,10:12]<-1
+#' C[5,13:15]<-1
+#' C[6,16:18]<-1
+#'
+#' out_ts <- twostage(data = misdata1, model = mod1,C = C, runcommand2 = "mimic='EQS'")
+#'
+#'
+#' #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
+#' #TPB Model for Composites (Full mediation)
+#' tpbmod<-'
+#' INTALL ~ ATTALL + PBCALL + NORMALL
+#' BEH ~ INTALL'
+#'
+#' #manual definition of C (instead of stage0 to avoid user input)
+#' cnames<-lavNames(tpbmod)
+#' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(tpbdata)))
+#' colnames(C)<-colnames(tpbdata)
+#' rownames(C)<-cnames
+#' C[1,c("INT1","INT2","INT3")]<-1
+#' C[2,c("BEH")]<-1
+#' C[3,grep("AT", names(tpbdata))]<-1
+#' C[4,c("PBC1","PBC2","PBC3")]<-1
+#' C[5,c("NORS1","NORS2","NORS3")]<-1
+#'
+#'
+#' out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
+#' runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
+#' fixed.x=FALSE,sample.cov.rescale=FALSE")
+#' #The naive and TS standard errors should be identical
+#'
 #'
 #' @references
 #'Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
 
-twostage <- function (data,model) {
+
+twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL) {
   N <- nrow(data)
-  #stage 0: relating components to composite (user input will be requested)
-  C <- stage0(data=data, model=model)
+  #stage 0, if needed: relating components to composite via user input
+  if (is.null(C)) {
+    # Define C using stage0 when C is NULL
+    C <- stage0(data = data, model = model)
+  }
   #stage 1: saturated model on components
-  s1 <- stage1(data = data)
+  s1 <- stage1(data = data,runcommand=runcommand)
   #stage1a: saturated solution transformation to composites
   s1a <-stage1a(S1.output=s1,C)
   #stage2: model fit to composites
-  s2 <- stage2(S1a.output=s1a, N = N,model = model)
+  s2 <- stage2(S1a.output=s1a, N = N,model = model,runcommand2=runcommand2)
 
-  #output for end user (turn into summary later)
+  #output for end user (To do: turn into summary)
   df<-fitmeasures(s2$TS_Run_naive)["df"]
   est<-cbind(parameterestimates(s2$TS_Run_naive,remove.nonfree=T)[,1:5])
   TS_table<-cbind(est,s2$TS_SEs)

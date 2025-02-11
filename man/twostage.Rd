@@ -2,23 +2,94 @@
 % Please edit documentation in R/TSML.R
 \name{twostage}
 \alias{twostage}
-\title{Title}
+\title{twostage}
 \usage{
-twostage(data, model)
+twostage(data, model, C = NULL, runcommand = NULL, runcommand2 = NULL)
 }
 \arguments{
-\item{data}{Your data file with components (items)}
+\item{data}{Data file for the components (items)}
 
-\item{model}{Your model for the composites}
+\item{model}{The lavaan model for the composites}
+
+\item{C}{The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)}
+
+\item{runcommand}{Additional arguments to pass to lavaan for stage1}
+
+\item{runcommand2}{Additional arguments to pass to lavaan for stage2}
 }
 \value{
-A list with several objects
+For now, a list with four components:
+
+TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
+Parameter estimates from this run are TSML estimates.
+
+TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
+for the two-stage nature of the estimation, assuming normality)
+
+T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)
+
+This output will be re-arranged into something better eventually. Correct fit indices
+will also be added.
 }
 \description{
-Title
+Fits the model to composite based on the raw data on components using item-level two-stage
+maximum likelihood (TSML) of Savalei &amp Rhemtulla (2017). Adjusts naive
+standard errors to obtain robust TS standard errors (for normal data), computes
+the residual-based test statistic (for normal data).
 }
 \examples{
-#To be added later
+
+#Example 1: An example using the first 18 variables in the simulated
+#dataset misdata_mcar20 with 20\% missing data on about half the variables
+#C1 - C6 are parcels formed using three variables each (in order)
+
+misdata1<-misdata_mcar20[,1:18]
+
+# composite sub-model
+mod1 <- '
+ F1 =~ C1 + C2 + C3
+ F2 =~ C4 + C5 + C6
+ F2 ~ F1
+ F2 ~~ F2
+ F1 ~~ F1'
+#manual computation for C to avoid user input
+cnames<-lavNames(mod1)
+C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
+colnames(C)<-colnames(misdata1)
+rownames(C)<-cnames
+C[1,1:3]<-1
+C[2,4:6]<-1
+C[3,7:9]<-1
+C[4,10:12]<-1
+C[5,13:15]<-1
+C[6,16:18]<-1
+
+out_ts <- twostage(data = misdata1, model = mod1,C = C, runcommand2 = "mimic='EQS'")
+
+
+#Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
+#TPB Model for Composites (Full mediation)
+tpbmod<-'
+INTALL ~ ATTALL + PBCALL + NORMALL
+BEH ~ INTALL'
+
+#manual definition of C (instead of stage0 to avoid user input)
+cnames<-lavNames(tpbmod)
+C <- matrix(0,nrow=length(cnames),ncol=length(colnames(tpbdata)))
+colnames(C)<-colnames(tpbdata)
+rownames(C)<-cnames
+C[1,c("INT1","INT2","INT3")]<-1
+C[2,c("BEH")]<-1
+C[3,grep("AT", names(tpbdata))]<-1
+C[4,c("PBC1","PBC2","PBC3")]<-1
+C[5,c("NORS1","NORS2","NORS3")]<-1
+
+
+out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
+runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
+fixed.x=FALSE,sample.cov.rescale=FALSE")
+#The naive and TS standard errors should be identical
+
 
 }
 \references{
