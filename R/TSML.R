@@ -1,8 +1,9 @@
 # Summary of TSML functions #################
 
-#helper functions:
+#helper functions (hidden):
   #namesohd: function to name rows/columns of the asy cov matrix from stage1
   #write.sat: creates the saturated model syntax in lavaan
+
 
 #TSML functions:
   #stage0: assigns items to composites based on user input
@@ -45,11 +46,47 @@ write.sat <- function(p, varnames) {
 
 
 
-
-#Stage0 (prep stage) of TSML:
-#assigns items to composites based on user input
-#input is the data and the model for composites
-#output is a matrix C for stage1a
+#' stage0
+#'
+#' This is the prep stage of TSML. This function uses p column names of data and k composite variable names from the lavaan
+#' model to create a k x p matrix C, with nonzero elements representing the assignment
+#' of components to composites. Which elements are nonzero is determined by presenting
+#' a menu of composite names to the user for each component. What the weights are is
+#' determined by presenting the user with the menu to create composites as sum scores
+#' or average scores.
+#'
+#' @param data A data file with components (items) to be assigned to composites.
+#' It should not contain other variables (or else feed in only selected columns as data).
+#' @param model A lavaan model for the composites. It is only used to extract composite names
+#' via lavNames().
+#'
+#' @return A matrix C with rownames set to composite names, and columnnames set to
+#' component (item) names. A non-zero value in each row corresponds to the assignment of that
+#' component to that composite, with the non-zero value as the weight. Current options for weights
+#' are 1 for unit-weighted and 1/pj for average-weighted, where pj is the number of components in that
+#' composite.
+#'
+#' @export
+#'
+#' @examples
+#'\dontrun{
+#' # TPB Model for Composites (Full mediation)
+#' tpbmod<-'
+#' INTALL ~ ATTALL + PBCALL + NORMALL
+#' BEH ~ INTALL'
+#'
+#' stage0(tpbdata, tpbmod)
+#' }
+#'
+#'# With appropriate selections, this should result in the message:
+#' #Your composites are made up of the following components:
+#' #INTALL :  INT1 INT2 INT3
+#' # BEH :  BEH
+#' #ATTALL :  AT1CPU AT2CPU AT3CPU AT4CPU AT5CPU AT6CPU AT7CPP AT8CPP AT9CPP AT10CPP AT11CPP
+#' #PBCALL :  PBC1 PBC2 PBC3
+#' #NORMALL :  NORS1 NORS2 NORS3
+#' #If this is not correct, start over!
+#'
 stage0<-function (data, model) {
   cnames<-lavNames(model)
   C <- matrix(0,nrow=length(cnames),ncol=length(colnames(data)))
@@ -79,11 +116,30 @@ stage0<-function (data, model) {
   return(C)
 }
 
-#Stage 1 of TSML: fits a saturated model to items with missing data
-#Produces a list of 3 objects: mhb, shb, ohb, which are means, covariances,
-#and asy cov matrix for the items
-#runcommand can be used to pass additional arguments to lavaan
+
+#' stage1
+#'
+#' Stage1 of TSML: fits a saturated model to the items with missing data
+#'
+#' @param data A datafile with components (items).
+#' It should not contain any other variables.
+#'
+#' @param runcommand Additional arguments to pass to lavaan
+#'
+#' @return  A list with 3 objects: mhb (estimated means),
+#' shb (estimated covariance matrix), ohb (estimated asymptotic covariance matrix
+#' of mhb and shb elements)
+#'
 #' @export
+#'
+#' @examples
+#'
+#'out_s1<-stage1(misdata_mcar20)
+#'
+#'#as tpbdata has no missing data, running stage1 with expected information
+#'#will result in TSML matching regular ML
+#'out_s1<-stage1(tpbdata, runcommand="information='expected'")
+#'
 stage1 <- function (data,runcommand=NULL) {
   p <- ncol(data)
   N <- nrow(data)
@@ -113,7 +169,51 @@ stage1 <- function (data,runcommand=NULL) {
 # shd -- #sigma-hat-delta (composite EM cov matrix, under saturated model) from Stage 1a, k x k
 # dh --  #delta-hat, a vector combining vech(shd) and mhd from Stage 1a (p. 5, line 7 of article), length k*(k+1)/2+k
 # ohd -- #asy cov matrix of dh, square with dimensions k*(k+1)/2+k (p. 5, last line in Stage 1a section)
+
+#' stage1a
+#'
+#' Stage1a of TSML: Converts the means, covariance matrix, and asymptotic covariance matrix
+#' of components to the corresponding quantities for the composites
+#'
+#' @param S1.output The output of stage1, a list with three objects (means, covariance matrix,
+#' and asymptotic covariance matrix of components)
+#' @param C The matrix of component-composite assignments that is the output of stage0
+#' (or user-supplied)
+#'
+#' @return  A list with 3 objects: mhd (estimated means),
+#' shd (estimated covariance matrix), ohd (estimated asymptotic covariance matrix
+#' of mhb and shb elements) for the composites
+#'
 #' @export
+#'
+#' @examples
+#'
+#' #an example using the first 18 variables in the simulated dataset misdata_mcar20
+#' #reduce model size
+#' misdata1<-misdata_mcar20[,1:18]
+#' # composite sub-model
+#' mod1 <- '
+#'  F1 =~ C1 + C2 + C3
+#'  F2 =~ C4 + C5 + C6
+#'  F2 ~ F1
+#'  F2 ~~ F2
+#'  F1 ~~ F1'
+
+#' #manual computation for C (stage0) to avoid user input
+#' C<-cnames<-lavNames(mod1)
+#' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
+#' colnames(C)<-colnames(misdata1)
+#' rownames(C)<-cnames
+#' C[1,1:3]<-1
+#' C[2,4:6]<-1
+#' C[3,7:9]<-1
+#' C[4,10:12]<-1
+#' C[5,13:15]<-1
+#' C[6,16:18]<-1
+#'
+#'out_s1<-stage1(misdata1)
+#'out_s1a<-stage1a(out_s1,C)
+
 stage1a <- function (S1.output, C) {
   if (is.null(S1.output)) {S1a.output <- NULL} else {
     shb <- S1.output[[1]]
@@ -147,7 +247,64 @@ stage1a <- function (S1.output, C) {
 }
 
 #stage2: Fits the model to composites, computes TS standard errors and res-based T
+
+#' stage2
+#'
+#' Performs stage2 of TSML. Fits the model to the estimated vector of means and the estimated
+#' covariance matrix for the composites using complete data routines, adjusts naive
+#' standard errors to obtain robust TS standard errors (for normal data), computes
+#' the residual-based test statistic (for normal data)
+#'
+#' @param S1a.output Output from stage1a, a list with three objects (shd, mhd, ohd)
+#' @param N Sample size
+#' @param model The lavaan model for the composites
+#' @param runcommand2 Additional arguments to pass to lavaan
+#'
+#' @return For now, a list with four components:
+#'
+#' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
+#' Parameter estimates from this run are TSML estimates.
+#'
+#' TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
+#' for the two-stage nature of the estimation, assuming normality)
+#'
+#' T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)#' T_res_pvalue: the p-value for the residual based test statistic
+#'
+#'This output will be re-arranged into something better eventually. Correct fit indices
+#'will also be added.
+#'
 #' @export
+#'
+#' @examples
+#'
+#' #an example using the first 18 variables in the simulated dataset misdata_mcar20
+#' #reduce model size
+#' misdata1<-misdata_mcar20[,1:18]
+#' # composite sub-model
+#' mod1 <- '
+#'  F1 =~ C1 + C2 + C3
+#'  F2 =~ C4 + C5 + C6
+#'  F2 ~ F1
+#'  F2 ~~ F2
+#'  F1 ~~ F1'
+
+#' #manual computation for C (stage0) to avoid user input
+#' C<-cnames<-lavNames(mod1)
+#' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
+#' colnames(C)<-colnames(misdata1)
+#' rownames(C)<-cnames
+#' C[1,1:3]<-1
+#' C[2,4:6]<-1
+#' C[3,7:9]<-1
+#' C[4,10:12]<-1
+#' C[5,13:15]<-1
+#' C[6,16:18]<-1
+#'
+#'out_s1 <- stage1(misdata1)
+#'out_s1a <- stage1a(out_s1,C)
+#'out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
+#'
+#'
 stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
