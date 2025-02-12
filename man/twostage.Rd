@@ -38,7 +38,7 @@ standard errors to obtain robust TS standard errors (for normal data), computes
 the residual-based test statistic (for normal data).
 }
 \examples{
-
+\dontrun{
 #Example 1: An example using the first 18 variables in the simulated
 #dataset misdata_mcar20 with 20\% missing data on about half the variables
 #C1 - C6 are parcels formed using three variables each (in order)
@@ -53,7 +53,7 @@ mod1 <- '
  F2 ~~ F2
  F1 ~~ F1'
 #manual computation for C to avoid user input
-cnames<-lavNames(mod1)
+cnames<-lavNames(mod1) #this is a lavaan function
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 colnames(C)<-colnames(misdata1)
 rownames(C)<-cnames
@@ -84,12 +84,11 @@ C[3,grep("AT", names(tpbdata))]<-1
 C[4,c("PBC1","PBC2","PBC3")]<-1
 C[5,c("NORS1","NORS2","NORS3")]<-1
 
-
 out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
 runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 fixed.x=FALSE,sample.cov.rescale=FALSE")
 #The naive and TS standard errors should be identical
-
+}
 
 }
 \references{

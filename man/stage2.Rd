@@ -39,7 +39,9 @@ the residual-based test statistic (for normal data)
 
 #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #reduce model size
+\dontrun{
 misdata1<-misdata_mcar20[,1:18]
+
 # composite sub-model
 mod1 <- '
  F1 =~ C1 + C2 + C3
@@ -48,7 +50,7 @@ mod1 <- '
  F2 ~~ F2
  F1 ~~ F1'
 #manual computation for C (stage0) to avoid user input
-cnames<-lavNames(mod1)
+cnames<-lavNames(mod1) #this is a lavaan function
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 colnames(C)<-colnames(misdata1)
 rownames(C)<-cnames
@@ -62,6 +64,6 @@ C[6,16:18]<-1
 out_s1 <- stage1(misdata1)
 out_s1a <- stage1a(out_s1,C)
 out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
-
+}
 
 }

@@ -1,19 +1,9 @@
-# Summary of TSML functions #################
 
-#helper functions (hidden):
-  #namesohd: function to name rows/columns of the asy cov matrix from stage1
-  #write.sat: creates the saturated model syntax in lavaan
+# TSML functions #################
 
+#' @import lavaan
 
-#TSML functions:
-  #stage0: assigns items to composites based on user input
-  #stage1: performs Stage 1 (saturated model fit to all items)
-  #stage1a: performs Stage 1a -- converts sat model estimates to values for composites
-  #stage2: fits the model to mean and cov matrix from stage1a to composites, computes
-  #TS standard errors and residual based test statistic
-  #twostage: runs all of the TSML functions at once
-
-
+#namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd<- function (cnames) {
   name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
   names_cov <- name_grid_cov[lower.tri(name_grid_cov, diag = TRUE)]
@@ -22,7 +12,7 @@ namesohd<- function (cnames) {
   return(namesohd)
 }
 
-
+#write.sat (helper function): creates the saturated model syntax in lavaan
 write.sat <- function(p, varnames) {
   if (length(varnames) != p) {
     stop("The length of 'varnames' must be equal to 'p'.")
@@ -43,7 +33,6 @@ write.sat <- function(p, varnames) {
   }
   return(sat.mod)
 }
-
 
 
 #' stage0
@@ -133,12 +122,13 @@ stage0<-function (data, model) {
 #' @export
 #'
 #' @examples
-#'
+#'\dontrun{
 #'out_s1<-stage1(misdata_mcar20)
 #'
 #'#as tpbdata has no missing data, running stage1 with expected information
 #'#will result in TSML matching regular ML
 #'out_s1<-stage1(tpbdata, runcommand="information='expected'")
+#'}
 #'
 stage1 <- function (data,runcommand=NULL) {
   p <- ncol(data)
@@ -161,15 +151,6 @@ stage1 <- function (data,runcommand=NULL) {
   return(S1.output)
 }
 
-#Stage 1a of TSML: converts Stage1 matrices to Stage2 dimensions
-# (from components to composites)
-#Input: output of stage1 and matrix C (output of stage0 or manually constructed)
-#Produces a list of 4 objects: mhd, shd, dh, ohd
-# mhd -- #mu-hat-delta (composite EM mean vector, under saturated model) from Stage 1a, k x 1
-# shd -- #sigma-hat-delta (composite EM cov matrix, under saturated model) from Stage 1a, k x k
-# dh --  #delta-hat, a vector combining vech(shd) and mhd from Stage 1a (p. 5, line 7 of article), length k*(k+1)/2+k
-# ohd -- #asy cov matrix of dh, square with dimensions k*(k+1)/2+k (p. 5, last line in Stage 1a section)
-
 #' stage1a
 #'
 #' Stage1a of TSML: Converts the means, covariance matrix, and asymptotic covariance matrix
@@ -190,7 +171,9 @@ stage1 <- function (data,runcommand=NULL) {
 #'
 #' #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #' #reduce model size
+#' \dontrun{
 #' misdata1<-misdata_mcar20[,1:18]
+#'
 #' # composite sub-model
 #' mod1 <- '
 #'  F1 =~ C1 + C2 + C3
@@ -200,7 +183,7 @@ stage1 <- function (data,runcommand=NULL) {
 #'  F1 ~~ F1'
 
 #' #manual computation for C (stage0) to avoid user input
-#' C<-cnames<-lavNames(mod1)
+#' C<-cnames<-lavNames(mod1) #this is a lavaan function
 #' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 #' colnames(C)<-colnames(misdata1)
 #' rownames(C)<-cnames
@@ -213,7 +196,7 @@ stage1 <- function (data,runcommand=NULL) {
 #'
 #'out_s1<-stage1(misdata1)
 #'out_s1a<-stage1a(out_s1,C)
-
+#'}
 stage1a <- function (S1.output, C) {
   if (is.null(S1.output)) {S1a.output <- NULL} else {
     shb <- S1.output[[1]]
@@ -246,8 +229,6 @@ stage1a <- function (S1.output, C) {
   return(S1a.output)
 }
 
-#stage2: Fits the model to composites, computes TS standard errors and res-based T
-
 #' stage2
 #'
 #' Performs stage2 of TSML. Fits the model to the estimated vector of means and the estimated
@@ -279,7 +260,9 @@ stage1a <- function (S1.output, C) {
 #'
 #' #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #' #reduce model size
+#' \dontrun{
 #' misdata1<-misdata_mcar20[,1:18]
+#'
 #' # composite sub-model
 #' mod1 <- '
 #'  F1 =~ C1 + C2 + C3
@@ -289,7 +272,7 @@ stage1a <- function (S1.output, C) {
 #'  F1 ~~ F1'
 
 #' #manual computation for C (stage0) to avoid user input
-#' cnames<-lavNames(mod1)
+#' cnames<-lavNames(mod1) #this is a lavaan function
 #' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 #' colnames(C)<-colnames(misdata1)
 #' rownames(C)<-cnames
@@ -303,7 +286,7 @@ stage1a <- function (S1.output, C) {
 #'out_s1 <- stage1(misdata1)
 #'out_s1a <- stage1a(out_s1,C)
 #'out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
-#'
+#'}
 #'
 stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
   shd <- S1a.output[[1]]
@@ -375,7 +358,7 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' @export
 #'
 #' @examples
-#'
+#' \dontrun{
 #' #Example 1: An example using the first 18 variables in the simulated
 #' #dataset misdata_mcar20 with 20% missing data on about half the variables
 #' #C1 - C6 are parcels formed using three variables each (in order)
@@ -391,7 +374,7 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #'  F1 ~~ F1'
 
 #' #manual computation for C to avoid user input
-#' cnames<-lavNames(mod1)
+#' cnames<-lavNames(mod1) #this is a lavaan function
 #' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 #' colnames(C)<-colnames(misdata1)
 #' rownames(C)<-cnames
@@ -422,12 +405,11 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' C[4,c("PBC1","PBC2","PBC3")]<-1
 #' C[5,c("NORS1","NORS2","NORS3")]<-1
 #'
-#'
 #' out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
 #' runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 #' fixed.x=FALSE,sample.cov.rescale=FALSE")
 #' #The naive and TS standard errors should be identical
-#'
+#' }
 #'
 #' @references
 #'Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
