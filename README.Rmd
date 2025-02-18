@@ -50,3 +50,61 @@ You can also embed plots, for example:
 ```
 
 In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN.
+
+## How to handle observed variables that are not composites
+
+There are two options: 
+
+1) Assign these variables to their own composites, so that single-indicator latent variables are created for them. The advantage of this option is that the generated PIM syntax will be correct right away. The disadvantage is that a different name (from the observed variable's name) has to be assigned to this "composite", making the interpretation of the model results a little awkward. 
+
+2) Include these variables in the model directly as observed variables. The advantage of this option is that the model is more interpretable. The disadvantage is that the generated PIM syntax will have to be modified manually to correlate observed and latent exogenous predictors. This is quite likely since true composites are treated as latent variables in PIM. 
+
+To do so, rename this variable in the composite model, and either regenerate C using stage0 function or rename the corresponding row of C. However, this may require manual modification of the resulting PIM syntax to correlate observed and latent exogeneous predictors (see Github issue #415.
+
+Both approaches are illustrated below. 
+
+```{r}
+##PIM syntax tpbmod example
+
+tpbmod<-'
+INTALL ~ ATTALL + PBCALL + NORMALL
+BEH ~ INTALL'
+
+
+#made up example with a single-indicator composite
+#C1 is the sum of Y1, Y2, and Y3
+#' #C2 is the sum of Y4, Y5, and Y6
+#' #C3 is Y7
+C<-matrix(0,nrow=3,ncol=7)
+C[1,1:3]<-1
+C[2,4:6]<-1
+C[3,7]<-1
+rownames(C)<-c("C1","C2","C3")
+colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
+compmodel<-"C1 ~ C2 + C3"
+model1 <- PIM_syntax(C,compmodel)
+cat(model1)
+data1 <- misdata_mcar20[,c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")]
+out <- lavaan::sem(model1,data=data1)
+df <- as.numeric(fitmeasures(out)["df"])
+df
+
+#made up example renaming C3 into Y7:
+rownames(C)<-c("C1","C2","Y7")
+compmodel<-"C1 ~ C2 + Y7"
+model2 <- PIM_syntax(C,compmodel)
+cat(model2)
+out2 <- lavaan::sem(model2,data=data1) #,orthogonal.x=FALSE) #,fixed.x=FALSE,missing="ML")
+df2 <- as.numeric(fitmeasures(out2)["df"])
+df2
+lavInspect(out2,"cov.all") #0 for Y7 and C2
+
+
+model2.mod<-paste(model2,"\n Y7 ~~C2") #Y7~~Y7 doesn't work
+out2.mod <- lavaan::sem(model2.mod,data=data1)
+out2.mod
+#hmm, so why does the default to correlate predictors go away
+#when one of the predictors is observed?
+```
+
+      

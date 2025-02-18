@@ -21,7 +21,8 @@ are 1 for unit-weighted and 1/pj for average-weighted, where pj is the number of
 composite.
 }
 \description{
-This is the prep stage of TSML. This function uses p column names of data and k composite variable names from the lavaan
+This is the prep stage of TSML (can also be used for PIM). This function uses
+p column names of data and k composite variable names from the lavaan
 model to create a k x p matrix C, with nonzero elements representing the assignment
 of components to composites. Which elements are nonzero is determined by presenting
 a menu of composite names to the user for each component. What the weights are is
@@ -29,14 +30,15 @@ determined by presenting the user with the menu to create composites as sum scor
 or average scores.
 }
 \examples{
-\dontrun{
+
+\dontrun{ #The menu cannot be used non-interactively
 # TPB Model for Composites (Full mediation)
 tpbmod<-'
 INTALL ~ ATTALL + PBCALL + NORMALL
 BEH ~ INTALL'
 
 stage0(tpbdata, tpbmod)
-}
+
 
 # With appropriate selections, this should result in the message:
 #Your composites are made up of the following components:
@@ -46,5 +48,6 @@ stage0(tpbdata, tpbmod)
 #PBCALL :  PBC1 PBC2 PBC3
 #NORMALL :  NORS1 NORS2 NORS3
 #If this is not correct, start over!
+}
 
 }

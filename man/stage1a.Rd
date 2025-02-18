@@ -26,7 +26,8 @@ of components to the corresponding quantities for the composites
 
 #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #reduce model size
-\dontrun{
+
+library(lavaan)
 misdata1<-misdata_mcar20[,1:18]
 
 # composite sub-model
@@ -50,5 +51,5 @@ C[6,16:18]<-1
 
 out_s1<-stage1(misdata1)
 out_s1a<-stage1a(out_s1,C)
-}
+
 }

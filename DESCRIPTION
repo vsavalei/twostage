@@ -1,17 +1,25 @@
 Package: twostage
-Title: Fit SEMs to composites with item-level missing data
+Title: Fit structural equation models to composites formed from items 
 Version: 0.0.0.9000
 Authors@R: 
     person("Victoria", "Savalei", , "v.savalei@ubc.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8530-3251"))
-Description: This package implements SEM methods for models with composites, that run on component (item) data. The ideal application is to treat item-level missing data. It currently includes the following methods: Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a); GLS method of Savalei and Rhemtulla (2017b); PIM (Pseudo-Indicator Model) of Rose, Wagner, Mayer, and Nagengast (2019).
-License: MIT + file LICENSE
+Description: This package contains functions that fit structural equation models 
+  (SEMs) to linear composites, formed from components (items). The main 
+  application is to treat item-level missing data. The package currently 
+  includes the following methods: 
+  1) Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a); 
+  2) PIM (Pseudo-Indicator Model) method of Rose, Wagner, Mayer, and Nagengast (2019).
+  In the future, it will also contain the CCA methods and the 2) GLS method of 
+  Savalei and Rhemtulla (2017b). Future developments also include providing accurate
+  fit indices for model fit assessments that assess the composite-level model only.
+License: GPL (>= 3) + file LICENSE
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)
 RoxygenNote: 7.3.2
 Suggests: 
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
-Depends: R(>= 4.0), lavaan(>= 0.6-12)
-Imports: utils, stats
+Depends: R(>= 4.0)
+Imports: utils, stats, lavaan
 LazyData: true

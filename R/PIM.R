@@ -1,35 +1,59 @@
-#PIM functions Jan 2025
-#Rose et al PIM (Pseudo-Indicator Model)#
+#Functions to create a lavaan model syntax for PIM (Pseudo-Indicator Model)
+
+#grabs names of fictitious variables (not in dataset) from the model
+composites<-function (C){
+  component_names <- colnames(C) #observed variables' names
+  model_names <-rownames(C) #composite model variable names
+  composites <-setdiff(model_names, component_names) #only var names that aren't in data
+
+  common_elements <- intersect(model_names, component_names)
+  if (length(common_elements) > 0) {
+    message2 <- paste("Note: The following variables are treated as observed variables:",
+                      paste(common_elements, collapse = ", "),
+                      "\nThe generated PIM syntax may need to be manually modified to allow",
+                      "\ntheir correlation with other exogeneous variables that are composites,",
+                      "\nwhich are set up as latent variables in PIM. See README.md for more detail.")
+    message(message2)
+  }
+  return(composites)
+ }
 
 
-# PIM.uni() creates the first part of the PIM model syntax
-
+# creates the first part of the PIM model syntax
 PIM.uni<-function (C) {
   PIM.uni<-NULL
-  cnames <-rownames(C)
+  cnames <- composites(C) #only var names that aren't in data
   for (j in 1:length(cnames)){
     cnamesj <- colnames(C)[C[j, ] == 1]
-    if(length(cnamesj)==1){next} #skip composites with one component
     compj <- rownames(C)[j]
-    allbut1 <- paste(sprintf("(-1)*%s", cnamesj[-1]), collapse = " + ")
-    PIMj <- sprintf("%s =~ 1*%s\n  %s ~ %s\n   %s ~~ 0*%s \n %s ~ 1  \n %s ~ 0*1",
+    if(length(cnamesj)==1){
+      message1<-paste0("Note: The composite named ",compj, " has only one component: ",
+                      cnamesj,". \nKeep this in mind when interpreting the results!",
+                      " See README.md for alternatives.")
+      message(message1)
+      #special syntax for composites with one component
+      PIMj <- sprintf("%s =~ 1*%s\n  %s ~~ 0*%s \n %s ~ 1  \n %s ~ 0*1",
+                      compj, cnamesj[1], cnamesj[1], cnamesj[1], compj, cnamesj[1] )
+
+      } else {
+        allbut1 <- paste(sprintf("(-1)*%s", cnamesj[-1]), collapse = " + ")
+        PIMj <- sprintf("%s =~ 1*%s\n  %s ~ %s\n   %s ~~ 0*%s \n %s ~ 1  \n %s ~ 0*1",
                     compj, cnamesj[1], cnamesj[1], allbut1, cnamesj[1], cnamesj[1], compj, cnamesj[1] )
+      }
     PIM.uni<-paste(PIM.uni,PIMj,sep='\n')
   }
   return(PIM.uni)
 }
 
 
-# PIM.multi() creates the second part of the PIM model syntax
-
+#creates the second part of the PIM model syntax
 PIM.multi<-function (C) {
   allbut1<-NULL #a vector
   allbut1.string<-NULL #sum of all components listed in allbut1
   cnames <-rownames(C)
   for (j in 1:length(cnames)){ #creates a vector of all components (but 1st in each)
     cnamesj <- colnames(C)[C[j, ] == 1]
-
-    if(length(cnamesj)==1){next} #skip composites with one component
+    #if(length(cnamesj)==1){next} #used to skip composites with one component
     allbut1j.strong <- paste(sprintf("%s", cnamesj[-1]), collapse = " + ")
     allbut1j <- cnamesj[-1]
     allbut1<-c(allbut1,allbut1j)
@@ -48,7 +72,6 @@ PIM.multi<-function (C) {
   return(PIM.multi)
 
 }
-
 
 #' Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)
 #' the names of the composite variables should match row names of the C matrix

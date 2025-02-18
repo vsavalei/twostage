@@ -39,7 +39,7 @@ the residual-based test statistic (for normal data)
 
 #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #reduce model size
-\dontrun{
+library(lavaan)
 misdata1<-misdata_mcar20[,1:18]
 
 # composite sub-model
@@ -64,6 +64,6 @@ C[6,16:18]<-1
 out_s1 <- stage1(misdata1)
 out_s1a <- stage1a(out_s1,C)
 out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
-}
+
 
 }

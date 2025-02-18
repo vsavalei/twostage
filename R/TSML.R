@@ -37,7 +37,8 @@ write.sat <- function(p, varnames) {
 
 #' stage0
 #'
-#' This is the prep stage of TSML. This function uses p column names of data and k composite variable names from the lavaan
+#' This is the prep stage of TSML (can also be used for PIM). This function uses
+#' p column names of data and k composite variable names from the lavaan
 #' model to create a k x p matrix C, with nonzero elements representing the assignment
 #' of components to composites. Which elements are nonzero is determined by presenting
 #' a menu of composite names to the user for each component. What the weights are is
@@ -58,14 +59,15 @@ write.sat <- function(p, varnames) {
 #' @export
 #'
 #' @examples
-#'\dontrun{
+#'
+#'\dontrun{ #The menu cannot be used non-interactively
 #' # TPB Model for Composites (Full mediation)
 #' tpbmod<-'
 #' INTALL ~ ATTALL + PBCALL + NORMALL
 #' BEH ~ INTALL'
 #'
 #' stage0(tpbdata, tpbmod)
-#' }
+#'
 #'
 #'# With appropriate selections, this should result in the message:
 #' #Your composites are made up of the following components:
@@ -75,13 +77,13 @@ write.sat <- function(p, varnames) {
 #' #PBCALL :  PBC1 PBC2 PBC3
 #' #NORMALL :  NORS1 NORS2 NORS3
 #' #If this is not correct, start over!
+#'}
 #'
 stage0<-function (data, model) {
   cnames<-lavNames(model)
   C <- matrix(0,nrow=length(cnames),ncol=length(colnames(data)))
-  colnames(C)<-colnames(data)
-  rownames(C)<-cnames
-
+  colnames(C)<-colnames(data) #component names
+  rownames(C)<-cnames #composite names
   prompt_type <- paste("Are your composites sums or averages of components?")
   type <- utils::menu(c("Sums","Averages"), title = prompt_type)
 
@@ -122,13 +124,13 @@ stage0<-function (data, model) {
 #' @export
 #'
 #' @examples
-#'\dontrun{
+#'
 #'out_s1<-stage1(misdata_mcar20)
 #'
 #'#as tpbdata has no missing data, running stage1 with expected information
 #'#will result in TSML matching regular ML
 #'out_s1<-stage1(tpbdata, runcommand="information='expected'")
-#'}
+#'
 #'
 stage1 <- function (data,runcommand=NULL) {
   p <- ncol(data)
@@ -171,7 +173,8 @@ stage1 <- function (data,runcommand=NULL) {
 #'
 #' #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #' #reduce model size
-#' \dontrun{
+#'
+#'library(lavaan)
 #' misdata1<-misdata_mcar20[,1:18]
 #'
 #' # composite sub-model
@@ -196,7 +199,7 @@ stage1 <- function (data,runcommand=NULL) {
 #'
 #'out_s1<-stage1(misdata1)
 #'out_s1a<-stage1a(out_s1,C)
-#'}
+#'
 stage1a <- function (S1.output, C) {
   if (is.null(S1.output)) {S1a.output <- NULL} else {
     shb <- S1.output[[1]]
@@ -260,7 +263,7 @@ stage1a <- function (S1.output, C) {
 #'
 #' #an example using the first 18 variables in the simulated dataset misdata_mcar20
 #' #reduce model size
-#' \dontrun{
+#' library(lavaan)
 #' misdata1<-misdata_mcar20[,1:18]
 #'
 #' # composite sub-model
@@ -286,7 +289,7 @@ stage1a <- function (S1.output, C) {
 #'out_s1 <- stage1(misdata1)
 #'out_s1a <- stage1a(out_s1,C)
 #'out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
-#'}
+#'
 #'
 stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
   shd <- S1a.output[[1]]
@@ -358,11 +361,12 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' @export
 #'
 #' @examples
-#' \dontrun{
+#'
 #' #Example 1: An example using the first 18 variables in the simulated
 #' #dataset misdata_mcar20 with 20% missing data on about half the variables
 #' #C1 - C6 are parcels formed using three variables each (in order)
 #'
+#' library(lavaan)
 #' misdata1<-misdata_mcar20[,1:18]
 #'
 #' # composite sub-model
@@ -409,11 +413,10 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 #' fixed.x=FALSE,sample.cov.rescale=FALSE")
 #' #The naive and TS standard errors should be identical
-#' }
+#'
 #'
 #' @references
 #'Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
-
 
 twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL) {
   N <- nrow(data)
