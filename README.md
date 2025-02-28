@@ -52,6 +52,9 @@ Soon:
     composites vs components (though it is needed for computations in
     TSML and GLS, but not in PM). E.g., maybe it should be a list.
 
+6)  Add tests for all functions (currently, only one test is included,
+    to pass the rmd check)
+
 Longer range?:
 
 1)  Provide accurate fit indices for model fit assessments that assess
@@ -133,8 +136,8 @@ There are two options:
 To do so, rename this variable in the composite model, and either
 regenerate C using stage0 function or rename the corresponding row of C.
 However, this may require manual modification of the resulting PIM
-syntax to correlate observed and latent exogeneous predictors (see
-Github issue \#415.
+syntax to correlate observed and latent exogenous predictors (see Github
+issue \#415.
 
 Both approaches are illustrated below.
 

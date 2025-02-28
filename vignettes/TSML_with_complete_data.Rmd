@@ -1,0 +1,30 @@
+---
+title: "TSML with complete data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{TSML_with_complete_data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+
+```{r render, echo=FALSE}
+#note to self: 
+#devtools::build_rmd("vignettes/TSML_with_complete_data.Rmd") 
+#will render the vignette, against a (temporarily installed) dev version of pkg
+```
+
+
+```{r setup}
+library(twostage)
+```
+
+While it is probably the case that the user will never consider TSML if they have complete data and are interested in the model for the composites -- because they can just compute the composites in the datafile by summing or averaging relevant items -- it is instructive to see how we can get the same output from TSML. 
+

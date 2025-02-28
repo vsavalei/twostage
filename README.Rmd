@@ -46,6 +46,8 @@ Soon:
 
 5) Reconsider if constructing C is the best way to store info on composites vs components (though it is needed for computations in TSML and GLS, but not in PM). E.g., maybe it should be a list. 
 
+6) Add tests for all functions (currently, only one test is included, to pass the rmd check) 
+
 Longer range?:
 
 1) Provide accurate fit indices for model fit assessments that assess the composite-level model only. For the PIM, this may have to be nested fit indices, e.g., $\text{RMSEA}_\text{D}$. How to do fit assessment for these models is probably at least one paper. The fit assessment is a limited of the default PIM implementation, as is noted in the original article. 
@@ -94,7 +96,7 @@ There are two options:
 
 2) Include these variables in the model directly as observed variables. The advantage of this option is that the model is more interpretable. The disadvantage is that the generated PIM syntax will have to be modified manually to correlate observed and latent exogenous predictors. This is quite likely since true composites are treated as latent variables in PIM. 
 
-To do so, rename this variable in the composite model, and either regenerate C using stage0 function or rename the corresponding row of C. However, this may require manual modification of the resulting PIM syntax to correlate observed and latent exogeneous predictors (see Github issue #415.
+To do so, rename this variable in the composite model, and either regenerate C using stage0 function or rename the corresponding row of C. However, this may require manual modification of the resulting PIM syntax to correlate observed and latent exogenous predictors (see Github issue #415.
 
 Both approaches are illustrated below. 
 
