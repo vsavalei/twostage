@@ -244,7 +244,7 @@ stage1a <- function (S1.output, C) {
 #' @param model The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
 #'
-#' @return For now, a list with four components:
+#' @returns For now, a list with four components:
 #'
 #' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
 #' Parameter estimates from this run are TSML estimates.

@@ -2,8 +2,7 @@
 % Please edit documentation in R/PIM.R
 \name{PIM_syntax}
 \alias{PIM_syntax}
-\title{Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)
-the names of the composite variables should match row names of the C matrix}
+\title{Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)}
 \usage{
 PIM_syntax(C, compmodel)
 }
@@ -16,8 +15,12 @@ PIM_syntax(C, compmodel)
 A string with the full PIM model syntax
 }
 \description{
-Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)
-the names of the composite variables should match row names of the C matrix
+Creates lavaan syntax for a Pseudo-Indicator Model (PIM) of Rose et al. (2016).
+}
+\details{
+The names of the composite variables in \code{compmodel} should match the row
+names of the \code{C} matrix. This function does not check for this, as it just
+creates a text object and does not evaluate if \code{lavaan} can run it.
 }
 \examples{
 #C1 is the sum of Y1, Y2, and Y3

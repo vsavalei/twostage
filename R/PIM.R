@@ -73,13 +73,22 @@ PIM.multi<-function (C) {
 
 }
 
-#' Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)
-#' the names of the composite variables should match row names of the C matrix
-#' @param C A matrix of 0s and 1s, where rows are composites and columns are components
+#' Creates lavaan syntax for a Pseudo-Indicator Model
+#'
+#' Creates lavaan syntax for a Pseudo-Indicator Model (PIM) of Rose et al.
+#' (2019).
+#'
+#' @param C A matrix of 0s and 1s, where rows are composites and columns are
+#'   components
 #' @param compmodel A string with the lavaan model for composites
 #'
 #' @returns A string with the full PIM model syntax
 #' @export
+#'
+#' @details The names of the composite variables in `compmodel` should match the
+#'  row names of the `C` matrix. This function does not check for this, as it
+#'  just creates a text object and does not evaluate if `lavaan` can run it.
+#'
 #'
 #' @examples
 #' #C1 is the sum of Y1, Y2, and Y3
@@ -94,8 +103,10 @@ PIM.multi<-function (C) {
 #' compmodel<-"C1 ~ C2 + C3"
 #' PIM_syntax(C,compmodel)
 #'
-#' @references
-#' Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019). Model-based manifest and latent composite scores in structural equation models. Collabra: Psychology, 5(1), Article 9. https://doi.org/10.1525/collabra.143
+#' @references Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019).
+#' Model-based manifest and latent composite scores in structural equation
+#' models. Collabra: Psychology, 5(1), Article 9.
+#' https://doi.org/10.1525/collabra.143
 #'
 PIM_syntax<-function (C,compmodel) {
   PIMu <- PIM.uni(C)
