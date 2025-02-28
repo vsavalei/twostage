@@ -84,7 +84,7 @@ library(twostage)
 ## basic example code
 ```
 
-
+[To add later, for now see examples]
 
 ## Move to a vignette: How to handle observed variables that are not composites
 
