@@ -2,12 +2,13 @@
 % Please edit documentation in R/PIM.R
 \name{PIM_syntax}
 \alias{PIM_syntax}
-\title{Creates the lavaan syntax for a PIM (Pseudo-Indicator Model)}
+\title{Creates lavaan syntax for a Pseudo-Indicator Model}
 \usage{
 PIM_syntax(C, compmodel)
 }
 \arguments{
-\item{C}{A matrix of 0s and 1s, where rows are composites and columns are components}
+\item{C}{A matrix of 0s and 1s, where rows are composites and columns are
+components}
 
 \item{compmodel}{A string with the lavaan model for composites}
 }
@@ -15,12 +16,13 @@ PIM_syntax(C, compmodel)
 A string with the full PIM model syntax
 }
 \description{
-Creates lavaan syntax for a Pseudo-Indicator Model (PIM) of Rose et al. (2016).
+Creates lavaan syntax for a Pseudo-Indicator Model (PIM) of Rose et al.
+(2019).
 }
 \details{
-The names of the composite variables in \code{compmodel} should match the row
-names of the \code{C} matrix. This function does not check for this, as it just
-creates a text object and does not evaluate if \code{lavaan} can run it.
+The names of the composite variables in \code{compmodel} should match the
+row names of the \code{C} matrix. This function does not check for this, as it
+just creates a text object and does not evaluate if \code{lavaan} can run it.
 }
 \examples{
 #C1 is the sum of Y1, Y2, and Y3
@@ -37,5 +39,8 @@ PIM_syntax(C,compmodel)
 
 }
 \references{
-Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019). Model-based manifest and latent composite scores in structural equation models. Collabra: Psychology, 5(1), Article 9. https://doi.org/10.1525/collabra.143
+Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019).
+Model-based manifest and latent composite scores in structural equation
+models. Collabra: Psychology, 5(1), Article 9.
+https://doi.org/10.1525/collabra.143
 }
