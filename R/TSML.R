@@ -186,7 +186,7 @@ stage1 <- function (data,runcommand=NULL) {
 #'  F1 ~~ F1'
 
 #' #manual computation for C (stage0) to avoid user input
-#' C<-cnames<-lavNames(mod1) #this is a lavaan function
+#' cnames<-lavNames(mod1) #this is a lavaan function
 #' C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 #' colnames(C)<-colnames(misdata1)
 #' rownames(C)<-cnames
@@ -389,7 +389,7 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' C[5,13:15]<-1
 #' C[6,16:18]<-1
 #'
-#' out_ts <- twostage(data = misdata1, model = mod1,C = C, runcommand2 = "mimic='EQS'")
+#' out_ts <- twostage(data = misdata1, model = mod1,C = C)
 #'
 #'
 #' #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML

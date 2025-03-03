@@ -38,7 +38,7 @@ mod1 <- '
  F2 ~~ F2
  F1 ~~ F1'
 #manual computation for C (stage0) to avoid user input
-C<-cnames<-lavNames(mod1) #this is a lavaan function
+cnames<-lavNames(mod1) #this is a lavaan function
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
 colnames(C)<-colnames(misdata1)
 rownames(C)<-cnames

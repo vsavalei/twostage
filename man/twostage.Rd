@@ -65,7 +65,7 @@ C[4,10:12]<-1
 C[5,13:15]<-1
 C[6,16:18]<-1
 
-out_ts <- twostage(data = misdata1, model = mod1,C = C, runcommand2 = "mimic='EQS'")
+out_ts <- twostage(data = misdata1, model = mod1,C = C)
 
 
 #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML

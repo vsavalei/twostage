@@ -1,36 +1,192 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-
-# note to self
-
-Render `README.Rmd` regularly to keep `README.md` up-to-date, via
-`devtools::build_readme()`
+<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via
+`devtools::build_readme()` -->
 
 # twostage
 
 <!-- badges: start -->
+
+[![R-CMD-check](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of twostage (which may be renamed into item2stage to be more
-accurate) is to provide a convenient way to fit composite-level models
-to item-level data. For now, this package focuses on methods that do
-this in a saturated way; that is, the hypothesis that relationships
-between a formative construct and other variables in the model (whether
-formative or reflective constructs, or observed variables) flows only
-through the formative composite is not tested. Furthermore, there is
-currently now way to adapt these methods to include such tests. That
-means that these methods are primarily for handling missing data at the
-item level, when the model is at the composite level; they serve no
-other purpose and will return identical results to a model that is just
-fit to the composites instead of the raw items when the data are
-complete.
+The goal of twostage is to provide a convenient way to fit
+composite-level structural equation models (SEMs) to item-level data,
+using several different methods. The most common applications are: 1)
+SEMs with parcels and 2) path analysis models with scale scores. The
+main purpose of the methods included is to handle missing data at the
+item level. When data are complete, all methods will return identical
+(or highly similar, depending on information matrix settings) results
+compared to the approach where composites are computed directly, and a
+model is fit to them. The composites are always sums or averages of the
+items, rather than having estimated weights.
 
-The package currently includes the following methods: 1) Two-stage ML
-(TSML) method of Savalei and Rhemtulla (2017a) 2) PIM (Pseudo-Indicator
-Model) method of Rose, Wagner, Mayer, and Nagengast (2019) 3) (yet to be
-implemented) the GLS method of Savalei and Rhemtulla (2017b).
+The package includes the following methods:
 
-## To-do list
+1)  Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a)
+2)  PIM (Pseudo-Indicator Model) method of Rose, Wagner, Mayer, and
+    Nagengast (2019)
+3)  (yet to be implemented) the GLS method of Savalei and Rhemtulla
+    (2017b)
+
+In the future, the package may also include the method called
+confirmatory composite analysis (CCA; Henseler, YEAR), which includes
+items and composites (as formative constructs) in the model in a
+non-saturated way: i.e., the results will be different than fitting a
+model directly to composites even with complete data. This method forms
+composites using weights that optimize its relationships with other
+constructs, and it allows to test the hypothesis that relationships
+between the formative construct and other variables in the model
+(whether formative or reflective constructs, or observed variables)
+flows only through the formative construct, and not the individual
+items. This method is currently being implemented in the development
+version of `lavaan`, but not in a way that would allow missing data on
+the indicators of exogenous formative variables, so its inclusion in
+this package may be needed.
+
+## Installation
+
+You can install the development version of twostage from
+[GitHub](https://github.com/) with:
+
+``` r
+install.packages("pak")
+pak::pak("vsavalei/twostage")
+```
+
+## Example
+
+This is a basic example using a built-in simulated dataset
+`misdata_mcar20`, which contains 27 items, $Y_1$ to $Y_27$ (where about
+half have 20% missing data). The model is for composites $C_1$ to $C_9$,
+which are parcels formed by adding three items each, in order; for
+example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These composites are
+actually never implicitly computed under any of these approaches. The
+composite model is a 3-factor model, with three indicators each, defined
+via `lavaan` syntax as follows:
+
+``` r
+library(twostage) 
+#> This package is written by a newbie. You've been warned.
+```
+
+``` r
+#composite model
+mod <- '
+F1 =~ C1 + C2 + C3
+F2 =~ C4 + C5 + C6
+F3 =~ C7 + C8 + C9
+'
+```
+
+To fit this model, we require the specification of a $27 \times 9$
+matrix $C$, whose columns are labeled with component names: $Y_1$ to
+$Y_27$, and whose columns are labeled with composite names: $C_1$ to
+$C_9$. The \[i,j\]th element of $C$ contains a nonzero value (usually 1,
+for sums) if component $j$ belongs to composite $i$ and zero otherwise.
+To easily create this matrix using an interactive interface, use:
+
+    C <- stage0(data=misdata_mcar20,model=mod)
+
+This function will first ask you whether your composites are sums or
+averages, and then it will ask you to assign each component to one of
+the composites that appear in the model. \[ADD: If you select None, that
+variable will appear as itself in the model. See the vignette on
+treating observed covariates that are not composites\]
+
+You will get the following message to confirm your assignment:
+
+    Your composites are made up of the following components: 
+    C1 :  Y1 Y2 Y3 
+    C2 :  Y4 Y5 Y6 
+    C3 :  Y7 Y8 Y9 
+    C4 :  Y10 Y11 Y12 
+    C5 :  Y13 Y14 Y15 
+    C6 :  Y16 Y17 Y18 
+    C7 :  Y19 Y20 Y21 
+    C8 :  Y22 Y23 Y24 
+    C9 :  Y25 Y26 Y27 
+    If this is not correct, start over! 
+
+Once the assignment of components to composites is clear via this
+matrix, the model can be fit via item-level two-stage (also known as
+TSML), like so:
+
+``` r
+out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+#> [1] "Two-stage parameter estimates, naive standard errors, and two-stage standard errors:"
+#>    lhs op rhs         est        se s2$TS_SEs
+#> 2   F1 =~  C2  1.02193658 0.3579328 0.3790369
+#> 3   F1 =~  C3  1.38926575 0.4766224 0.5078380
+#> 5   F2 =~  C5  1.19819027 0.3712583 0.4204921
+#> 6   F2 =~  C6  1.29248625 0.3870511 0.4327614
+#> 8   F3 =~  C8  0.50252629 0.2247838 0.2413742
+#> 9   F3 =~  C9  1.21419672 0.3532458 0.4010741
+#> 10  C1 ~~  C1  3.01850878 0.3907862 0.4168094
+#> 11  C2 ~~  C2  3.68118084 0.4557431 0.4951376
+#> 12  C3 ~~  C3  2.78671087 0.5204495 0.5704592
+#> 13  C4 ~~  C4  3.57287005 0.4145500 0.4718739
+#> 14  C5 ~~  C5  3.45781977 0.4373025 0.5011573
+#> 15  C6 ~~  C6  2.91885671 0.4145512 0.4623456
+#> 16  C7 ~~  C7  2.74306637 0.3628939 0.4131604
+#> 17  C8 ~~  C8  3.16669743 0.3332076 0.3679581
+#> 18  C9 ~~  C9  3.13697082 0.4649928 0.5285742
+#> 19  F1 ~~  F1  0.67578595 0.3270536 0.3441623
+#> 20  F2 ~~  F2  0.64868483 0.3078294 0.3455100
+#> 21  F3 ~~  F3  0.76015959 0.3223813 0.3671408
+#> 22  F1 ~~  F2  0.34270935 0.1495455 0.1614227
+#> 23  F1 ~~  F3  0.33202639 0.1508528 0.1661643
+#> 24  F2 ~~  F3  0.58960029 0.2008429 0.2222176
+#> 25  C1 ~1      0.25996869 0.1359098 0.1410413
+#> 26  C2 ~1     -0.11576178 0.1481037 0.1520786
+#> 27  C3 ~1      0.11284636 0.1430213 0.1482134
+#> 28  C4 ~1      0.08381759 0.1452851 0.1549407
+#> 29  C5 ~1      0.05747750 0.1481403 0.1584999
+#> 30  C6 ~1     -0.02888770 0.1414655 0.1516308
+#> 31  C7 ~1     -0.11409123 0.1323485 0.1431886
+#> 32  C8 ~1      0.11175214 0.1295890 0.1400749
+#> 33  C9 ~1      0.03200253 0.1459050 0.1537131
+#> [1] "The residual based chi-square is 24.827 against 24 degrees of freedom, with a p-value of 0.415"
+```
+
+\[Describe output once `summary(out_ts)` is available\]
+
+To fit the PIM model, we first create the PIM syntax, as follows:
+
+``` r
+modpim <- PIM_syntax(compmodel = mod, C = C)
+```
+
+The resulting syntax is long and can be viewed via `cat(modpim)`. It
+contains the definition of each composite $C$ as a single-indicator
+latent variable, and then a special structure on the items to ensure
+each $C$ is just a unit-weighted composite, and that the relationship
+between the items and other variables in the model is saturated.
+
+We then fit the PIM model using FIML in `lavaan`, as follows:
+
+``` r
+fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
+fitpim
+#> lavaan 0.6-20.2265 ended normally after 261 iterations
+#> 
+#>   Estimator                                         ML
+#>   Optimization method                           NLMINB
+#>   Number of model parameters                       381
+#> 
+#>   Number of observations                           200
+#>   Number of missing patterns                        36
+#> 
+#> Model Test User Model:
+#>                                                       
+#>   Test statistic                                24.311
+#>   Degrees of freedom                                24
+#>   P-value (Chi-square)                           0.444
+```
+
+Are the factors correlated??
+
+## To-do list (where to put this?)
 
 Soon:
 
@@ -54,6 +210,15 @@ Soon:
 
 6)  Add tests for all functions (currently, only one test is included,
     to pass the rmd check)
+
+7)  Rename into something reflecting items to composites? item2stage?
+    items2comps?
+
+8)  Need to include None as an option to stage0 function? and a lot of
+    useful warning messages
+
+9)  Need an average model for PIM (currently sums only). Maybe create
+    arbitrary fixed weights for all (longer range?)
 
 Longer range?:
 
@@ -88,178 +253,9 @@ and stores the result.
 
 Longer longer longer term goal:
 
-1)  add the two-stage saturated method to lavaan (make it easy for Yves
-    to accept this) and extend current CCA implementation of lavaan so
-    that constraints can be relaxed, yielding PIM
+1)  add the two-stage saturated method to lavaan (make it easy for Yves)
+    and extend current CCA implementation of lavaan so that constraints
+    can be relaxed, yielding PIM
 
-## Installation
-
-You can install the development version of twostage from
-[GitHub](https://github.com/) with:
-
-``` r
-install.packages("pak")
-pak::pak("vsavalei/twostage")
-```
-
-## Example
-
-This is a basic example:
-
-``` r
-library(twostage)
-#> This package is written by a newbie. You've been warned. Please send comments!
-## basic example code
-```
-
-\[To add later, for now see examples\]
-
-## Move to a vignette: How to handle observed variables that are not composites
-
-There are two options:
-
-1)  Assign these variables to their own composites, so that
-    single-indicator latent variables are created for them. The
-    advantage of this option is that the generated PIM syntax will be
-    correct right away. The disadvantage is that a different name (from
-    the observed variable’s name) has to be assigned to this
-    “composite”, making the interpretation of the model results a little
-    awkward.
-
-2)  Include these variables in the model directly as observed variables.
-    The advantage of this option is that the model is more
-    interpretable. The disadvantage is that the generated PIM syntax
-    will have to be modified manually to correlate observed and latent
-    exogenous predictors. This is quite likely since true composites are
-    treated as latent variables in PIM.
-
-To do so, rename this variable in the composite model, and either
-regenerate C using stage0 function or rename the corresponding row of C.
-However, this may require manual modification of the resulting PIM
-syntax to correlate observed and latent exogenous predictors (see Github
-issue \#415.
-
-Both approaches are illustrated below.
-
-``` r
-##PIM syntax tpbmod example
-
-tpbmod<-'
-INTALL ~ ATTALL + PBCALL + NORMALL
-BEH ~ INTALL'
-
-#made up example with a single-indicator composite
-#C1 is the sum of Y1, Y2, and Y3
-#' #C2 is the sum of Y4, Y5, and Y6
-#' #C3 is Y7
-C<-matrix(0,nrow=3,ncol=7)
-C[1,1:3]<-1
-C[2,4:6]<-1
-C[3,7]<-1
-rownames(C)<-c("C1","C2","C3")
-colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
-compmodel<-"C1 ~ C2 + C3"
-model1 <- PIM_syntax(C,compmodel)
-#> Note: The composite named C3 has only one component: Y7. 
-#> Keep this in mind when interpreting the results! See README.md for alternatives.
-cat(model1)
-#> 
-#> C1 =~ 1*Y1
-#>   Y1 ~ (-1)*Y2 + (-1)*Y3
-#>    Y1 ~~ 0*Y1 
-#>  C1 ~ 1  
-#>  Y1 ~ 0*1
-#> C2 =~ 1*Y4
-#>   Y4 ~ (-1)*Y5 + (-1)*Y6
-#>    Y4 ~~ 0*Y4 
-#>  C2 ~ 1  
-#>  Y4 ~ 0*1
-#> C3 =~ 1*Y7
-#>   Y7 ~~ 0*Y7 
-#>  C3 ~ 1  
-#>  Y7 ~ 0*1
-#> Y2 ~~ Y3
-#> Y2 ~~ Y5
-#> Y2 ~~ Y6
-#> Y3 ~~ Y5
-#> Y3 ~~ Y6
-#> Y5 ~~ Y6 
-#> C1 ~~ Y2+Y3+Y5+Y6 
-#>  C2 ~~ Y2+Y3+Y5+Y6 
-#>  C3 ~~ Y2+Y3+Y5+Y6
-#> C1 ~ C2 + C3
-data1 <- misdata_mcar20[,c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")]
-out <- lavaan::sem(model1,data=data1)
-df <- as.numeric(lavaan::fitmeasures(out)["df"])
-df
-#> [1] 0
-
-#made up example renaming C3 into Y7:
-rownames(C)<-c("C1","C2","Y7")
-compmodel<-"C1 ~ C2 + Y7"
-model2 <- PIM_syntax(C,compmodel)
-#> Note: The following variables are treated as observed variables: Y7 
-#> The generated PIM syntax may need to be manually modified to allow 
-#> their correlation with other exogeneous variables that are composites, 
-#> which are set up as latent variables in PIM. See README.md for more detail.
-cat(model2)
-#> 
-#> C1 =~ 1*Y1
-#>   Y1 ~ (-1)*Y2 + (-1)*Y3
-#>    Y1 ~~ 0*Y1 
-#>  C1 ~ 1  
-#>  Y1 ~ 0*1
-#> C2 =~ 1*Y4
-#>   Y4 ~ (-1)*Y5 + (-1)*Y6
-#>    Y4 ~~ 0*Y4 
-#>  C2 ~ 1  
-#>  Y4 ~ 0*1
-#> Y2 ~~ Y3
-#> Y2 ~~ Y5
-#> Y2 ~~ Y6
-#> Y3 ~~ Y5
-#> Y3 ~~ Y6
-#> Y5 ~~ Y6 
-#> C1 ~~ Y2+Y3+Y5+Y6 
-#>  C2 ~~ Y2+Y3+Y5+Y6 
-#>  Y7 ~~ Y2+Y3+Y5+Y6
-#> C1 ~ C2 + Y7
-out2 <- lavaan::sem(model2,data=data1) #,orthogonal.x=FALSE) #,fixed.x=FALSE,missing="ML")
-df2 <- as.numeric(lavaan::fitmeasures(out2)["df"])
-df2
-#> [1] 1
-lavaan::lavInspect(out2,"cov.all") #0 for Y7 and C2
-#>        Y1     Y4     Y2     Y3     Y5     Y6     Y7     C1     C2
-#> Y1  1.041                                                        
-#> Y4  0.086  1.174                                                 
-#> Y2  0.140  0.042  0.988                                          
-#> Y3  0.025  0.067  0.174  1.186                                   
-#> Y5  0.178  0.064  0.075  0.005  0.955                            
-#> Y6  0.110  0.039  0.195  0.055  0.368  1.114                     
-#> Y7 -0.100 -0.154  0.077  0.160  0.085  0.070  0.862              
-#> C1  1.206  0.196  1.302  1.385  0.257  0.360  0.137  3.894       
-#> C2  0.374  1.276  0.311  0.127  1.387  1.521  0.000  0.813  4.184
-
-
-model2.mod<-paste(model2,"\n Y7 ~~C2") #Y7~~Y7 doesn't work
-out2.mod <- lavaan::sem(model2.mod,data=data1)
-out2.mod
-#> lavaan 0.6-20.2265 ended normally after 63 iterations
-#> 
-#>   Estimator                                         ML
-#>   Optimization method                           NLMINB
-#>   Number of model parameters                        35
-#> 
-#>                                                   Used       Total
-#>   Number of observations                           160         200
-#> 
-#> Model Test User Model:
-#>                                                       
-#>   Test statistic                                 0.000
-#>   Degrees of freedom                                 0
-#hmm, so why does the default to correlate predictors go away
-#when one of the predictors is observed? this is now reported on 
-#github, at Yves' request so that he doesn't forget: #414
-#as is, we have to explain to the user that this is happening and PIM
-#syntax will be incomplete 
-```
+2)  Research question: comparison to SAM (Yves added support for
+    second-level CFA)
