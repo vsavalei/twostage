@@ -17,38 +17,22 @@ knitr::opts_chunk$set(
 )
 ```
 
-<<<<<<< HEAD
 # Package `twostage`
 
 ## Introduction
-=======
-# twostage
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 
 <!-- badges: start -->
 [![R-CMD-check](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 
-<<<<<<< HEAD
 The goal of the `twostage` package is to provide a convenient way to fit composite-level 
 structural equation models (SEMs) to item-level data, using several different methods.
 The most common applications are: 1) SEMs with parcels and 2) path analysis with scale 
-=======
-The goal of twostage is to provide a convenient way to fit composite-level 
-structural equation models (SEMs) to item-level data, using several different methods.
-The most common applications are: 1) SEMs with parcels and 2) path analysis models with scale 
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 scores. The main purpose of the methods included is to handle missing data at the item level.
 When data are complete, all methods will return identical 
 (or highly similar, depending on information matrix settings) results 
-compared to the approach where composites are computed directly, and a model is fit 
-<<<<<<< HEAD
-to them. The composites are always sums or averages of the items; the weights are all equal and are fixed rather than estimated. 
-=======
-to them. The composites are always sums or averages of the items, rather than having
-estimated weights.
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
+compared to the approach where composites are computed directly, and a model is fit to them. The composites are always sums or averages of the items; the weights are all equal and are fixed rather than estimated. 
 
 The package includes the following methods: 
 
@@ -56,28 +40,12 @@ The package includes the following methods:
 2) PIM (Pseudo-Indicator Model) method of Rose, Wagner, Mayer, and Nagengast (2019) 
 3) (yet to be implemented) the GLS method of Savalei and Rhemtulla (2017b)
 
-<<<<<<< HEAD
 In the future, the package may also include  
 confirmatory composite analysis (CCA; Henseler, YEAR), which is similar to PIM in that it models composites as latent variables, but it does 
 so in a non-saturated way: i.e., the results 
 will be different than fitting a model directly to composites even with complete data. 
 This method forms composites by finding optimal weights that optimize its relationships with other
 constructs. CCA is currently implemented in the development version of `lavaan`, but not in a way that would allow missing data on the indicators of exogenous formative variables, so its inclusion in this package would allow for a comparison of performance with missing data. 
-=======
-In the future, the package may also include the method called 
-confirmatory composite analysis (CCA; Henseler, YEAR), which includes items and composites 
-(as formative constructs) in the model in a non-saturated way: i.e., the results 
-will be different than fitting a model directly to composites even with complete data. 
-This method forms composites using weights that optimize its relationships with other
-constructs, and it allows to test the hypothesis that relationships
-between the formative construct and other variables in the model (whether
-formative or reflective constructs, or observed variables) flows only
-through the formative construct, and not the individual items. This 
-method is currently being implemented in the development version of `lavaan`, but 
-not in a way that would allow missing data on the indicators of exogenous formative
-variables, so its inclusion in this package may be needed. 
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
-
 
 
 ## Installation
@@ -101,25 +69,12 @@ library(twostage)
 ## Example
 
 This is a basic example using a built-in simulated dataset `misdata_mcar20`, 
-<<<<<<< HEAD
 which contains 27 items, $Y_1$ to $Y_{27}$, where about half have 20\% missing data. The model is for composites $C_1$ to $C_9$, which are parcels formed by adding 
 three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. 
 However, these composites are never implicitly computed under any of the three methods.  
 The composite model is a 3-factor model, with three indicators each, defined 
 via `lavaan` syntax as follows: 
 
-=======
-which contains 27 items, $Y_1$ to $Y_27$ (where about half have 20\% missing data). 
-The model is for composites $C_1$ to $C_9$, which are parcels formed by adding 
-three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. 
-These composites are actually never implicitly computed under any of these approaches. 
-The composite model is a 3-factor model, with three indicators each, defined 
-via `lavaan` syntax as follows: 
-
-``` {r}
-library(twostage) 
-```
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 ```{r}
 #composite model
 mod <- '
@@ -129,17 +84,10 @@ F3 =~ C7 + C8 + C9
 '
 ```
 To fit this model, we require the specification of a $27 \times 9$ matrix $C$, 
-<<<<<<< HEAD
 whose columns are labeled with component names: $Y_1$ to $Y_{27}$, and whose 
 rows are labeled with composite names: $C_1$ to $C_9$. The [i,j]th element of 
 $C$ is nonzero (for sums, it is 1) if component $j$ belongs to 
 composite $i$, and zero otherwise. To easily create this matrix using an interactive
-=======
-whose columns are labeled with component names: $Y_1$ to $Y_27$, and whose 
-columns are labeled with composite names: $C_1$ to $C_9$. The [i,j]th element of 
-$C$ contains a nonzero value (usually 1, for sums) if component $j$ belongs to 
-composite $i$ and zero otherwise. To easily create this matrix using an interactive
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 interface, use: 
 
 ```
@@ -147,12 +95,7 @@ C <- stage0(data=misdata_mcar20,model=mod)
 ```
 This function will first ask you whether your composites are sums or averages, and
 then it will ask you to assign each component to one of the composites that appear
-<<<<<<< HEAD
 in the model. [ADD/ADD FEATURE: If you select None, that variable will appear as itself in the model. See the vignette on treating observed covariates that are not composites]
-=======
-in the model. [ADD: If you select None, that variable will appear as itself in the model. 
-See the vignette on treating observed covariates that are not composites]
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 
 You will get the following message to confirm your assignment:
 
@@ -168,7 +111,6 @@ C7 :  Y19 Y20 Y21
 C8 :  Y22 Y23 Y24 
 C9 :  Y25 Y26 Y27 
 If this is not correct, start over! 
-<<<<<<< HEAD
 ```
 
 
@@ -194,35 +136,7 @@ Once this matrix is created with the help of the `stage0` function or manually,
 the composite-level model can be fit via item-level two-stage (also known as TSML), like so:
 
 ```{r, echo=FALSE}
-=======
-```
-
-
-```{r, include = FALSE}
-cnames<-lavaan::lavNames(mod) 
-C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata_mcar20)))
-colnames(C)<-colnames(misdata_mcar20)
-
-#lavaan is there with library(twostage) (user) and load_all() (dev)
-rownames(C)<-cnames
-C[1,1:3]<-1
-C[2,4:6]<-1
-C[3,7:9]<-1
-C[4,10:12]<-1
-C[5,13:15]<-1
-C[6,16:18]<-1
-C[7,19:21]<-1
-C[8,22:24]<-1
-C[9,25:27]<-1
-```
-
-Once the assignment of components to composites is clear via this matrix, 
-the model can be fit via item-level two-stage (also known as TSML), like so:
-
-```{r}
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
-
 ```
 [Describe output once `summary(out_ts)` is available]
 
@@ -235,32 +149,15 @@ modpim <- PIM_syntax(compmodel = mod, C = C)
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It contains 
-<<<<<<< HEAD
 the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator latent variable, 
 and then a special structure on the items. 
 
 We then fit the PIM model using FIML in `lavaan`, as follows:
 
 ```{r, echo=FALSE}
-=======
-the definition of each composite $C$ as a single-indicator latent variable, 
-and then a special structure on the items to ensure each $C$ is just
-a unit-weighted composite, and that the relationship between the items and other 
-variables in the model is saturated. 
-
-We then fit the PIM model using FIML in `lavaan`, as follows:
-
-```{r}
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
 fitpim
 ```
-
-<<<<<<< HEAD
-=======
-Are the factors correlated??
-
->>>>>>> 782d012664d0700b7c01bd981ee16aef66ad351f
 
 ## To-do list (where to put this?)
 
