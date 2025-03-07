@@ -135,7 +135,7 @@ C[9,25:27]<-1
 Once this matrix is created with the help of the `stage0` function or manually, 
 the composite-level model can be fit via item-level two-stage (also known as TSML), like so:
 
-```{r, echo=FALSE}
+```{r, include=FALSE}
 out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
 ```
 [Describe output once `summary(out_ts)` is available]
@@ -154,7 +154,7 @@ and then a special structure on the items.
 
 We then fit the PIM model using FIML in `lavaan`, as follows:
 
-```{r, echo=FALSE}
+```{r, include=FALSE}
 fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
 fitpim
 ```
