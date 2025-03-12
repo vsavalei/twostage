@@ -12,36 +12,38 @@
 [![R-CMD-check](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
-The goal of the `twostage` package is to provide a convenient way to fit
-composite-level structural equation models (SEMs) to item-level data,
-using several different methods. The most common applications are: 1)
-SEMs with parcels and 2) path analysis with scale scores. The main
-purpose of the methods included is to handle missing data at the item
-level. When data are complete, all methods will return identical (or
-highly similar, depending on information matrix settings) results
-compared to the approach where composites are computed directly, and a
-model is fit to them. The composites are always sums or averages of the
-items; the weights are all equal and are fixed rather than estimated.
+The goal of the `twostage` package is to provide helpful automation to
+fit composite-level structural equation models (SEMs) to item-level data
+using the SEM R package `lavaan`. The most common applications are: 1)
+SEMs with parcels and 2) path analysis with scale scores.
 
-The package includes the following methods:
+The package includes automation for the following approaches:
 
-1)  Two-stage ML (TSML) method of Savalei and Rhemtulla (2017a)
-2)  PIM (Pseudo-Indicator Model) method of Rose, Wagner, Mayer, and
+1)  The two-stage ML (TSML) method of Savalei and Rhemtulla (2017a)
+2)  The Pseudo-Indicator Model (PIM) of Rose, Wagner, Mayer, and
     Nagengast (2019)
 3)  (yet to be implemented) the GLS method of Savalei and Rhemtulla
     (2017b)
 
-In the future, the package may also include  
-confirmatory composite analysis (CCA; Henseler, YEAR), which is similar
-to PIM in that it models composites as latent variables, but it does so
-in a non-saturated way: i.e., the results will be different than fitting
-a model directly to composites even with complete data. This method
-forms composites by finding optimal weights that optimize its
-relationships with other constructs. CCA is currently implemented in the
-development version of `lavaan`, but not in a way that would allow
-missing data on the indicators of exogenous formative variables, so its
-inclusion in this package would allow for a comparison of performance
-with missing data.
+The main purpose of these three approaches is to handle missing data at
+the item level. When data are complete, these methods/models will return
+identical (or highly similar, depending on information matrix settings)
+results compared to the approach where composites are computed directly,
+and a model is fit to them. The composites are always sums or averages
+of the items; the weights are all equal and are fixed rather than
+estimated.
+
+In the future, the package may also include confirmatory composite
+analysis (CCA; Henseler, YEAR), which is similar to PIM in that it
+models composites as latent variables, but it 1) finds optimally
+weighted composites (for prediction, and 2) does not allow indicators to
+influence other variables directly (but only through the composite).
+This approach will *not* return identical results to composite models
+with complete data, and is thus qualitatively different. CCA is
+currently being implemented in the development version of `lavaan`, but
+not in a way that would allow missing data on the indicators of
+exogenous composites. Including it in `twostage` would enable a study of
+its performance with missing data.
 
 ## Installation
 
@@ -60,15 +62,16 @@ library(twostage)
 #> This package is written by a newbie. You've been warned.
 ```
 
+<!-- too large? hard to illustrate PIM -->
+
 ## Example
 
-This is a basic example using a built-in simulated dataset
-`misdata_mcar20`, which contains 27 items, $Y_1$ to $Y_{27}$, where
-about half have 20% missing data. The model is for composites $C_1$ to
-$C_9$, which are parcels formed by adding three items each, in order;
-for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. However, these
-composites are never implicitly computed under any of the three
-methods.  
+This example uses a built-in simulated dataset `misdata_mcar20`, which
+contains 27 items, $Y_1$ to $Y_{27}$, where about half have 20% missing
+data. The model is for composites $C_1$ to $C_9$, which are parcels of
+three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so
+on. These composites are never explicitly computed under any of the
+three methods.  
 The composite model is a 3-factor model, with three indicators each,
 defined via `lavaan` syntax as follows:
 
