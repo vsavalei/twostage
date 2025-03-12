@@ -11,8 +11,7 @@ composites<-function (C){
     message2 <- paste("Note: The following variables are treated as observed variables:",
                       paste(common_elements, collapse = ", "),
                       "\nThe generated PIM syntax may need to be manually modified to allow",
-                      "\ntheir correlation with other exogeneous variables that are composites,",
-                      "\nwhich are set up as latent variables in PIM. See README.md for more detail.")
+                      "\ntheir correlation with other exogeneous latent variables that represent composites")
     message(message2)
   }
   return(composites)
@@ -20,18 +19,18 @@ composites<-function (C){
 
 
 # creates the first part of the PIM model syntax
+# so this still created a latent variable with name BEH, not good
+# need to select rows of C that are not excluded by composites function
+
 PIM.uni<-function (C) {
   PIM.uni<-NULL
   cnames <- composites(C) #only var names that aren't in data
+  C1 <- C[rownames(C) %in% cnames, ] #submatrix with rows that are meant to be composites
   for (j in 1:length(cnames)){
-    cnamesj <- colnames(C)[C[j, ] == 1]
-    compj <- rownames(C)[j]
+    cnamesj <- colnames(C1)[C1[j, ] == 1]
+    compj <- rownames(C1)[j]
     if(length(cnamesj)==1){
-      message1<-paste0("Note: The composite named ",compj, " has only one component: ",
-                      cnamesj,". \nKeep this in mind when interpreting the results!",
-                      " See README.md for alternatives.")
-      message(message1)
-      #special syntax for composites with one component
+      #special syntax for composites with one component (does it work for obs vars?)
       PIMj <- sprintf("%s =~ 1*%s\n  %s ~~ 0*%s \n %s ~ 1  \n %s ~ 0*1",
                       compj, cnamesj[1], cnamesj[1], cnamesj[1], compj, cnamesj[1] )
 

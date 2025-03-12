@@ -35,9 +35,9 @@ The package includes automation for the following approaches:
 2) The Pseudo-Indicator Model (PIM) of Rose, Wagner, Mayer, and Nagengast (2019) 
 3) (yet to be implemented) the GLS method of Savalei and Rhemtulla (2017b)
 
-The main purpose of these three approaches is to handle missing data at the item level. When data are complete, these methods/models will return identical (or highly similar, depending on information matrix settings) results compared to the approach where composites are computed directly, and a model is fit to them. The composites are always sums or averages of the items; the weights are all equal and are fixed rather than estimated.
+The main purpose of these three approaches is to handle missing data at the item level. When data are complete, these methods/models will return identical (or highly similar, depending on information matrix settings) results compared to the approach where composites are computed directly, and a model is fit to them (see vignette TBA). The composites are always sums or averages of the items; the weights are all equal and are fixed rather than estimated.
 
-In the future, the package may also include confirmatory composite analysis (CCA; Henseler, YEAR), which is similar to PIM in that it models composites as latent variables, but it 1) finds optimally weighted composites (for prediction, and 2) does not allow indicators to influence other variables directly (but only through the composite). This approach will *not* return identical results to composite models with complete data, and is thus qualitatively different. CCA is currently being implemented in the development version of `lavaan`, but not in a way that would allow missing data on the indicators of exogenous composites. Including it in `twostage` would enable a study of its performance with missing data. 
+In the future, the package may also include confirmatory composite analysis (CCA; Henseler, YEAR), which is similar to PIM in that it models composites as latent variables, but it 1) finds optimally weighted composites (for prediction), and 2) does not allow indicators to influence other variables directly (but only through the composite). This approach will *not* return identical results to composite models with complete data, and is thus qualitatively different. CCA is currently being implemented in the development version of `lavaan`, but not in a way that would allow missing data on the indicators of exogenous composites. Including it in `twostage` would enable a study of its performance with missing data. 
 
 
 ## Installation
@@ -58,7 +58,8 @@ library(twostage)
 ## Example
 
 This example uses a built-in simulated dataset `misdata_mcar20`, 
-which contains 27 items, $Y_1$ to $Y_{27}$, where about half have 20\% missing data. The model is for composites $C_1$ to $C_9$, which are parcels of three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These composites are never explicitly computed under any of the three methods.  
+which contains 27 items, $Y_1$ to $Y_{27}$, where about half have 20\% missing data. The model is for composites $C_1$ to $C_9$, which are parcels of three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These composites are never explicitly computed under any of the three methods. 
+
 The composite model is a 3-factor model, with three indicators each, defined 
 via `lavaan` syntax as follows: 
 
@@ -120,15 +121,17 @@ C[9,25:27]<-1
 ```
 
 Once this matrix is created with the help of the `stage0` function or manually, 
-the composite-level model can be fit via item-level two-stage (also known as TSML), like so:
+the composite-level model can be fit using the methods included in the package. 
 
-```{r, include=FALSE}
+To fit it using it TSML:
+
+```{r}
 out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
 ```
 [Describe output once `summary(out_ts)` is available]
 
 
-To fit the PIM model, we first create the PIM syntax, as follows: 
+To fit it within a larger PIM model, we first create the `lavaan` PIM syntax, as follows: 
 
 ```{r}
 modpim <- PIM_syntax(compmodel = mod, C = C)
@@ -136,15 +139,16 @@ modpim <- PIM_syntax(compmodel = mod, C = C)
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It contains 
-the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator latent variable, 
-and then a special structure on the items. 
+the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator latent variable, and a special structure on the items. 
 
 We then fit the PIM model using FIML in `lavaan`, as follows:
 
-```{r, include=FALSE}
+```{r}
 fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
 fitpim
 ```
+
+[Describe output]
 
 ## To-do list (where to put this?)
 

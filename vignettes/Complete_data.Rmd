@@ -1,0 +1,137 @@
+---
+title: "Complete data"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Complete_data}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+
+#note to self: 
+#devtools::build_rmd("/vignettes/Complete_data.Rmd") 
+#will render the vignette, against a (temporarily installed) dev version of pkg
+
+```
+
+It is instructive to see how the item-level missing data approaches can be specified to yield the same results as the model fit directly to observed composites when there are no missing data. 
+
+We will use the built-in dataset `tpbdata`, which does not contain any missing values. This dataset was collected to test the theory of planned behavior, and contains 11 attitudes items, 3 perceived behavioral control items, 3 norms items, 3 intention items, and 1 measure of behavior; for more information, use `help(tpbdata)`. 
+
+Below, we create a new dataset that contains only the composites, specify the composite-level model, and fit it in `lavaan`: 
+
+```{r comp}
+library(twostage)
+
+#creating a new dataset and forming composites 
+tpbdatac<-data.frame(matrix(ncol = 0, nrow = nrow(tpbdata)))
+at_names <- grep("AT", names(tpbdata), value = TRUE) #names of 11 attitude items
+tpbdatac$ATTALL<-rowSums(tpbdata[at_names]) #new variable that is sum of 11 attitude items
+tpbdatac$PBCALL<-rowSums(tpbdata[c("PBC1","PBC2","PBC3")])
+tpbdatac$NORSALL<-rowSums(tpbdata[c("NORS1","NORS2","NORS3")])
+tpbdatac$INTALL<-rowSums(tpbdata[c("INT1","INT2","INT3")])
+tpbdatac$BEH<-rowSums(tpbdata["BEH"])
+
+#composite model (BEH stays as as single indicator variable)
+tpbmod<-'
+INTALL ~ ATTALL + PBCALL + NORSALL
+BEH ~ INTALL'
+
+fit_comp<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,meanstructure=TRUE)
+fit_comp
+est_comp<-lavaan::parameterestimates(fit_comp,ci=FALSE) #parameter estimates
+est_comp
+```
+
+Now, let's fit the same model to the original dataset containing only the items.
+For all approaches, we first need to define the matrix $C$ that relates composites to components. The end user can do this via:
+
+``` 
+C <- stage0(data=tpbdata,model=tpbcomp)
+```
+Below, we specify this matrix manually: 
+
+```{r C}
+cnames<-lavaan::lavNames(tpbmod)
+C <- matrix(0,nrow=length(cnames),ncol=length(colnames(tpbdata)))
+colnames(C)<-colnames(tpbdata)
+rownames(C)<-cnames
+C[1,c("INT1","INT2","INT3")]<-1
+C[2,c("BEH")]<-1
+C[3,grep("AT", names(tpbdata))]<-1
+C[4,c("PBC1","PBC2","PBC3")]<-1
+C[5,c("NORS1","NORS2","NORS3")]<-1
+C
+```
+
+We now fit the composites `tpbcomp` model using the TSML method. To match the complete data analysis estimates from `est_comp`, we have to specify expected rather than observed information use for Stage 1 of the TSML method (via `runcommand`). For Stage 2, which analyses the covariance matrix from Stage 1, the `sample.cov.rescale` command is necessary to avoid multiplication of the input matrix by $(N-1)/N$, which would yield slightly different results from the direct composites analysis.   
+
+```{r TSML}
+fit_tsml <- twostage(data = tpbdata, model = tpbmod, C = C,
+runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
+fixed.x=FALSE,sample.cov.rescale=FALSE")
+fit_tsml
+#organizing estimates (this should improve later)
+est_tsml<-cbind(lavaan::parameterestimates(fit_tsml$TS_Run_naive)[,1:5],fit_tsml$TS_SEs)
+names(est_tsml)[names(est_tsml) == "fit_tsml$TS_SEs"] <- "TSML se"
+row.names(est_tsml) <- NULL
+est_tsml
+```
+The test statistic printed is the "naive" test statistic, but in this case there is no missing data, so it matches the `fit_comp` printed value. 
+
+The output also shows the TS parameter estimates, the "naive" standard errors from Stage 2 (computed without adjusting for uncertainty due to incomplete data in Stage 1), and the robust TSML standard errors, adjusted for missing data uncertainty in Stage 1. In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the ``naive" and ``TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained when the model was fit directly to the composites:
+
+```{r comp_vs_TSML}
+#hide this?
+#cbind(est_comp[,1:5],est_tsml[,1:5])
+est_comp$est-est_tsml$est
+est_comp$se-est_tsml$se
+```
+
+Next, we fit the composites model embedded within the larger PIM model. We first obtain the PIM `lavaan` syntax: 
+```{r PIM1}
+tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
+cat(tpbpim)
+```
+
+This syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite (add more detail?). There is a note printed that does not apply to this particular model. See vignette on dealing with single-item composites for more detail. 
+
+We then fit this model in `lavaan`, omitting `missing="FIML"` given that there is no missing data:
+
+```{r PIM2}
+fit_pim <- lavaan::sem(tpbpim, data=tpbdata)
+fit_pim
+```
+The test statistic value and df are identical to `fit_comp`, even though the number of model parameters is much higher, because the items are also in the model (but in a saturated form).  The parameter estimates and standard errors for the relevant parameters are identical to those from the `fit_comp` run, but there are `r lavaan::fitmeasures(fit_pim)["npar"]` total parameters in the PIM model: 
+
+```{r PIM3}
+est_pim<-lavaan::parameterestimates(fit_pim,remove.nonfree=T)
+nrow(est_pim)
+```
+
+Below are the relevant parameters: 
+```{r PIM4}
+est_comp_key <- paste(est_comp$lhs, est_comp$op, est_comp$rhs, sep = "") # parameter identifier
+est_pim$key <- paste(est_pim$lhs, est_pim$op, est_pim$rhs, sep = "") # parameter identifier
+est_pim[est_pim$key %in% est_comp_key, 1:5]
+
+```
+
+
+
+
+
+As a sidenote, we could have also matched all three standard errors for all three approaches by using observed information, like so:
+```{r obs}
+
+```
+
+
+## Comparing fit statistics
+
+This is more complicated. 
