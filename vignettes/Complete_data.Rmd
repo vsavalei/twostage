@@ -14,30 +14,30 @@ knitr::opts_chunk$set(
 )
 
 #note to self: 
-#devtools::build_rmd("/vignettes/Complete_data.Rmd") 
-#will render the vignette, against a (temporarily installed) dev version of pkg
+#devtools::build_rmd("vignettes/Complete_data.Rmd") 
+#will render the vignette (to html, why not .md?), against a (temporarily installed) version of pkg
 
 ```
 
 It is instructive to see how the item-level missing data approaches can be specified to yield the same results as the model fit directly to observed composites when there are no missing data. 
 
-We will use the built-in dataset `tpbdata`, which does not contain any missing values. This dataset was collected to test the theory of planned behavior, and contains 11 attitudes items, 3 perceived behavioral control items, 3 norms items, 3 intention items, and 1 measure of behavior; for more information, use `help(tpbdata)`. 
+We will use the built-in dataset `tpbdata`, which does not contain any missing values. This dataset was collected to test the theory of planned behavior, and contains 11 Attitudes items, 3 Perceived Behavioral Control (PBC) items, 3 Norms items, 3 Intention items, and 1 measure of Behavior; for more information, see `help(tpbdata)`. We will fit the path model to composite scores that hypothesizes full mediation of the relationship between Atittudes, PBC, and Norms, on the one hand, and Behavior, on the other hand, through Intentions. 
 
-Below, we create a new dataset that contains only the composites, specify the composite-level model, and fit it in `lavaan`: 
+In the syntax below, we first create a new dataset that contains only the composites, and we then specify the composite-level model and fit it in `lavaan`: 
 
 ```{r comp}
 library(twostage)
 
 #creating a new dataset and forming composites 
-tpbdatac<-data.frame(matrix(ncol = 0, nrow = nrow(tpbdata)))
+tpbdatac<-data.frame(matrix(ncol = 0, nrow = nrow(tpbdata))) #new data frame
 at_names <- grep("AT", names(tpbdata), value = TRUE) #names of 11 attitude items
 tpbdatac$ATTALL<-rowSums(tpbdata[at_names]) #new variable that is sum of 11 attitude items
-tpbdatac$PBCALL<-rowSums(tpbdata[c("PBC1","PBC2","PBC3")])
-tpbdatac$NORSALL<-rowSums(tpbdata[c("NORS1","NORS2","NORS3")])
-tpbdatac$INTALL<-rowSums(tpbdata[c("INT1","INT2","INT3")])
-tpbdatac$BEH<-rowSums(tpbdata["BEH"])
+tpbdatac$PBCALL<-rowSums(tpbdata[c("PBC1","PBC2","PBC3")]) #new variable that is sum of 3 PBC items
+tpbdatac$NORSALL<-rowSums(tpbdata[c("NORS1","NORS2","NORS3")]) #new variable that is sum of 3 NORS items
+tpbdatac$INTALL<-rowSums(tpbdata[c("INT1","INT2","INT3")]) #new variable that is sum of 3 INT items
+tpbdatac$BEH<-rowSums(tpbdata["BEH"]) #BEH variable copied from the original dataset
 
-#composite model (BEH stays as as single indicator variable)
+#composite-level model (BEH stays as as single indicator variable)
 tpbmod<-'
 INTALL ~ ATTALL + PBCALL + NORSALL
 BEH ~ INTALL'
@@ -48,13 +48,14 @@ est_comp<-lavaan::parameterestimates(fit_comp,ci=FALSE) #parameter estimates
 est_comp
 ```
 
-Now, let's fit the same model to the original dataset containing only the items.
-For all approaches, we first need to define the matrix $C$ that relates composites to components. The end user can do this via:
+The printed chi-square, df, parameter estimates, and standard errors from `fit_comp` will be the values to match by the methods below. 
+
+Now, let's fit the same model to the original dataset containing only the items, without computing the composites explicitly, using the methods available in `twostage`. For all approaches, we first need to define the matrix $C$ that relates composites to components. The end user can assign components to composites interactively as follows:
 
 ``` 
-C <- stage0(data=tpbdata,model=tpbcomp)
+C <- stage0(data=tpbdata,model=tpbmod)
 ```
-Below, we specify this matrix manually: 
+For this vignette, we need to specify this matrix manually: 
 
 ```{r C}
 cnames<-lavaan::lavNames(tpbmod)
@@ -69,39 +70,32 @@ C[5,c("NORS1","NORS2","NORS3")]<-1
 C
 ```
 
-We now fit the composites `tpbcomp` model using the TSML method. To match the complete data analysis estimates from `est_comp`, we have to specify expected rather than observed information use for Stage 1 of the TSML method (via `runcommand`). For Stage 2, which analyses the covariance matrix from Stage 1, the `sample.cov.rescale` command is necessary to avoid multiplication of the input matrix by $(N-1)/N$, which would yield slightly different results from the direct composites analysis.   
+To fit the composite-level model to the raw items using the TSML method and match the complete data analysis, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and `sample.cov.rescale=FALSE` for Stage 2, which skips the multiplication of the input covariance matrix by $(N-1)/N$ (via `runcommand2`).   
 
 ```{r TSML}
 fit_tsml <- twostage(data = tpbdata, model = tpbmod, C = C,
 runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 fixed.x=FALSE,sample.cov.rescale=FALSE")
-fit_tsml
-#organizing estimates (this should improve later)
-est_tsml<-cbind(lavaan::parameterestimates(fit_tsml$TS_Run_naive)[,1:5],fit_tsml$TS_SEs)
-names(est_tsml)[names(est_tsml) == "fit_tsml$TS_SEs"] <- "TSML se"
-row.names(est_tsml) <- NULL
-est_tsml
+summary(fit_tsml)
 ```
-The test statistic printed is the "naive" test statistic, but in this case there is no missing data, so it matches the `fit_comp` printed value. 
-
-The output also shows the TS parameter estimates, the "naive" standard errors from Stage 2 (computed without adjusting for uncertainty due to incomplete data in Stage 1), and the robust TSML standard errors, adjusted for missing data uncertainty in Stage 1. In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the ``naive" and ``TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained when the model was fit directly to the composites:
+The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2(`se`), and the TSML standard errors, adjusted for missing data uncertainty in Stage 1. In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the ``naive" and ``TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained when the model was fit directly to the composites:
 
 ```{r comp_vs_TSML}
-#hide this?
-#cbind(est_comp[,1:5],est_tsml[,1:5])
-est_comp$est-est_tsml$est
-est_comp$se-est_tsml$se
+max(abs(est_comp$est-lavaan::parameterestimates(fit_tsml$TS_Run_naive)$est)) #comparing estimates
+max(abs(est_comp$se-lavaan::parameterestimates(fit_tsml$TS_Run_naive)$se)) #comparing complete data analysis and naive SEs from TSML
+max(abs(est_comp$se-fit_tsml$TS_SEs)) #comparing complete data analysis and TSML SEs 
 ```
 
-Next, we fit the composites model embedded within the larger PIM model. We first obtain the PIM `lavaan` syntax: 
+The naive chi-square is identical to the chi-square from the direct composites analysis in `fit_comp`. (The entire naive Stage 2 output is stored in `fit_tsml$TS_Run_naive`.) The residual-based TSML chi-square produces a slightly different value from the naive chi-square; this could be due to information settings (investigate).  
+
+
+Next, we use the PIM approach. The PIM model syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite (add more detail?). The composites model is then embedded within the larger PIM model. We obtain the `lavaan` syntax for PIM as follows: 
 ```{r PIM1}
 tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
 cat(tpbpim)
 ```
 
-This syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite (add more detail?). There is a note printed that does not apply to this particular model. See vignette on dealing with single-item composites for more detail. 
-
-We then fit this model in `lavaan`, omitting `missing="FIML"` given that there is no missing data:
+The printed note does not apply to this particular model. (See vignette on dealing with single-item composites for more detail.) We then fit this model in `lavaan`, omitting `missing="FIML"` given that there is no missing data:
 
 ```{r PIM2}
 fit_pim <- lavaan::sem(tpbpim, data=tpbdata)
@@ -121,10 +115,6 @@ est_pim$key <- paste(est_pim$lhs, est_pim$op, est_pim$rhs, sep = "") # parameter
 est_pim[est_pim$key %in% est_comp_key, 1:5]
 
 ```
-
-
-
-
 
 As a sidenote, we could have also matched all three standard errors for all three approaches by using observed information, like so:
 ```{r obs}
