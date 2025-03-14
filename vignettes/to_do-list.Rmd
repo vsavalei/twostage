@@ -1,0 +1,99 @@
+---
+title: "to_do-list"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{to_do-list}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## Moved the To-Do list here: 
+
+## To-do list (where to put this?)
+
+Soon:
+
+1)  Provide `show()` and `summary()` for `twostage()` function only (not
+    for component functions), that looks much like lavaan output, but
+    with ML replaced with TSML, test statistic and p-value replaced with
+    res test statistic and p-value, and standard errors replaced with
+    two-stage standard errors (and labeled that way)
+
+2)  Add GLS
+
+3)  Reconsider how documentation is done for TSML functions – maybe
+    join, use inherit
+
+4)  Add robust TSML (Actually, I think this will just work if we pass
+    `MLR` to lavaan, but check, write a vignette)
+
+5)  Reconsider if constructing C is the best way to store info on
+    composites vs components (though it is needed for computations in
+    TSML and GLS, but not in PM). E.g., maybe it should be a list.
+
+6)  Add tests for all functions (currently, only one test is included,
+    to pass the rmd check)
+
+7) Rename into something reflecting items to composites? item2stage? items2comps?
+
+8) Need to include None as an option to stage0 function? and a lot of useful warning messages
+
+9) Need an average model for PIM (currently sums only). Maybe create arbitrary fixed weights for all (longer range?)
+
+10) Write functions to make comparisons among methods easier. For PIM, a function is needed to remove extra parameters from output of `parameterestimates()`. As well, a function creating keys and reordering parameters for easier comparisons (PIM will be out of order with TSML).
+
+11) Make the PIM syntax more compact (item covs currently are one per line)
+
+12) Functions for correct baseline model under PIM
+
+13) Adjustments due to missing data pop values in PIM CFI etc (RMSEA should be automatic by lavaan?)
+
+14) Functions for correct SRMR under PIM (to match TSML with complete data)
+
+
+Longer range?:
+
+1)  Provide accurate fit indices for model fit assessments that assess
+    the composite-level model only. For the PIM, this may have to be
+    nested fit indices, e.g., $\text{RMSEA}_\text{D}$. How to do fit
+    assessment for these models is probably at least one paper. The fit
+    assessment is a limited of the default PIM implementation, as is
+    noted in the original article.
+
+2)  Implement methods that do test hypotheses about relationships
+    flowing only through composites, i.e., confirmatory composite
+    analysis (CCA), e.g., Schuberth, Henseler, and Ogasawara (2021),
+    Henseler (book, year?). Currently, Yves has provided a preliminary
+    implementation of this approach in lavaan, but it has limitations,
+    such as it cannot handle missing data on items that correspond to
+    exogenous formative latent variables! It also restricts some
+    covariances among items so that constraints imposed by CCA cannot be
+    relaxed to obtain a PIM (these are nested models; see Siegel,
+    Savalei, and Rhemtulla (2025; submitted to PM).
+
+3)  Provide a way for the user to specify how components relate to
+    composites using newly invented lavaan syntax (developed for CCA)
+    for this. Example of such syntax:
+
+`model <- '   eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'`
+
+This should be translatable to a 5 x 2 matrix C, with rows labeled etas
+and columns labeled xs, and with 1s corresponding to those xs that
+belong to certain etas. We could look into how lavaan parses this syntax
+and stores the result.
+
+Longer longer longer term goal:
+
+1)  add the two-stage saturated method to lavaan (make it easy for Yves) 
+and extend current CCA implementation of lavaan so
+    that constraints can be relaxed, yielding PIM
+
+2) Research question: comparison to SAM (Yves added support for second-level CFA)
+

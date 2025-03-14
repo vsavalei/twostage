@@ -438,7 +438,13 @@ twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL
   return(s2)
 }
 
-#summary method for twostage() function
+
+#' Summary method for twostage function
+#'
+#' @param object An object of class 'twostage'.
+#' @param ... Additional arguments passed to the summary method (none so far)
+#'
+#' @export
 summary.twostage <- function(object, ...) {
 
   #validate object structure

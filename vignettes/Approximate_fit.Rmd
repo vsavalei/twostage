@@ -1,0 +1,19 @@
+---
+title: "Approximate_fit"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Approximate_fit}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(twostage)
+```
