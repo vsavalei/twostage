@@ -89,10 +89,10 @@ fixed.x=FALSE,sample.cov.rescale=FALSE")
 The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2(`se`), and the TSML standard errors, adjusted for missing data uncertainty in Stage 1: 
 
 ```{r TSML2}
-#summary(fit_tsml) #does not work, conflict with summary from lavaan?
-#class(fit_tsml) #only twostage
+#class(fit_tsml) #twostage
 #class(fit_tsml$TS_Run_naive) #this is of class lavaan
-summary.twostage(fit_tsml) #does work
+summary(fit_tsml) #doesnt work
+#summary.twostage(fit_tsml) #does work
 ```
 
 In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the "naive" and "TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained in `fit_comp`, when the model was fit directly to the composites:
