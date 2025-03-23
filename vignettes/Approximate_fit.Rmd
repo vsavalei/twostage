@@ -1,5 +1,5 @@
 ---
-title: "Approximate_fit"
+title: "Approximate Fit Assessment with Composite Models"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Approximate_fit}
@@ -14,6 +14,27 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r setup}
+```{r setup, echo=FALSE, include=FALSE}
 library(twostage)
+
+#devtools::build_rmd("vignettes/Approximate_fit.Rmd") 
+
+#Run build and not build_rmd(): Use devtools::build_vignettes() to build the vignettes. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
+#Update: this moved files to doc, but there are not the files to modify. 
 ```
+
+As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same. With incomplete data, this is generally no longer the case. 
+<!--Nice text I'm writing here, maybe it should be in the readme or general intro rather than hidden in approximate fit?-->
+The "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which was optimized using an estimate of the covariance matrix and the mean of the composites, obtained using algebra from the EM/FIML covariance matrix and means of the components from Stage 1. In fact, their mean and covariance estimates in Stage 2 are full information ML estimates. Thus, the population values of RMSEA, CFI etc that these sample estimates are estimating are the same as those for complete data (if the mechanism is MAR so that Stage 1 estimates are consistent). They are also based on the most information we could extract from the data. 
+
+In contrast, explicitly computing composites using ad hoc methods such as averaging all available items (ACML) or declaring the composite score as missing if any of the components are missing (SL-FIML)  will result in loss of information and also likely bias, unless the data are MCAR [e.g., Chen, Savalei, and Rhemtulla, 2017] (https://pmc.ncbi.nlm.nih.gov/articles/PMC7725695/). If the data are imputed at the item level, however, before the composites are created, this will yield fit indices that have the same population values. 
+
+Despite the consistency of the naive TSML fit indices 
+, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> The advantage of TS over FIML, as discussed in this paper, is that the population values of fit indices are already correct. 
+
+On the other hand, some PIM fit metrics can be weird even with complete data. Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model has to be specified to get the right CFI and other relative fit indices. The SRMR also needs to be computed differently. [We need these developments in a paper, and functions for these]. The AIC/BIC values are not relevant as long as the same type of model is being compared (e.g., if different types of path models for composites are compared using the AIC, where all are implemented via PIM, that should be fine.)
+
+Additionally, it is not a given that RMSEA will be unaffected with incomplete data. With incomplete data, as PIM is essentially FIML, the FIML-based RMSEA will be biased downward, relative to TSML-based RMSEA. See [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). However, lavaan now automatically adjusts for that and prints a robust version even with ML. (do a sep vignette on fit assessment). I don't know what it does for the CFI! But since the baseline model will have to be recomputed, this adjustment will have to be recomputed, so we need functions for this). 
+
+
+

@@ -13,87 +13,53 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
+<!-- build_rmd("vignettes/to_do-list.Rmd") -->
 
-## Moved the To-Do list here: 
+## To Do list 
 
-## To-do list (where to put this?)
+1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors (labeled that way)? Or not? This would be similar to, e.g., what `blavaan` does. Pros: a) nice for the end user, b) we learn a lot about `lavaan` (especially following `blavaan`'s example, where parameter estimates etc are stored in lavaan slots as well) and potentially make it easier to convince Yves to just add this method to `lavaan`. Cons: a) may take time, b) it is pretty important to me to have access to the "naive" TSML run from Stage 2, so we want to save that somewhere, but if the output becomes not a list but a lavaan-type object, this has nowhere to go. Ideally, the output is two lavaan-type objects: naive-run, another copy modified with TS. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
 
-Soon:
-
-1)  Provide `show()` and `summary()` for `twostage()` function only (not
-    for component functions), that looks much like lavaan output, but
-    with ML replaced with TSML, test statistic and p-value replaced with
-    res test statistic and p-value, and standard errors replaced with
-    two-stage standard errors (and labeled that way)
+19) While the PIM model is run in `lavaan`, the output is not ideal. Design/write a function or a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`.    
 
 2)  Add GLS
 
-3)  Reconsider how documentation is done for TSML functions – maybe
-    join, use inherit
+4)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). Think about fit indices for all method. Write a vignette. 
 
-4)  Add robust TSML (Actually, I think this will just work if we pass
-    `MLR` to lavaan, but check, write a vignette)
+5)  Reconsider if constructing a giant 0-1 C is the best way to store info on composites vs components. This matrix is needed for computations in TSML and GLS, but not in PIM (even for the computations, there may be a more efficient way to do them.) E.g., maybe it should be a list.
 
-5)  Reconsider if constructing C is the best way to store info on
-    composites vs components (though it is needed for computations in
-    TSML and GLS, but not in PM). E.g., maybe it should be a list.
+20) Provide a way for the user to specify how components relate to composites using newly invented lavaan syntax (developed for CCA). Example of such syntax:
+`model <- '   eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'`
+This should be translatable to a 5 x 2 matrix C, with rows labeled etas and columns labeled xs, and with 1s corresponding to those xs that belong to certain etas. We could look into how lavaan parses this syntax and stores the result. So, user can specify C, OR specify this syntax in the function input?
 
-6)  Add tests for all functions (currently, only one test is included,
-    to pass the rmd check)
+6)  Write thorough tests for all functions (currently, only one test is included, to pass the rmd check)
 
-7) Rename into something reflecting items to composites? item2stage? items2comps?
+7) Update stage0 function to include None as an option. Make a good decision on how to handle  observed variables in the model that are not composites. Update vignette.   
 
-8) Need to include None as an option to stage0 function? and a lot of useful warning messages
+8) What are useful/informative error/warning messages? For example: user cannot pass a different estimator via `runcommand`, data must be continuous. Obviously there are infinitely many ways the TSML method can break (categorical data, multilevel or interactions in stage 2, etc, etc). What are the most glaring ones? 
 
-9) Need an average model for PIM (currently sums only). Maybe create arbitrary fixed weights for all (longer range?)
+9) Need an average model for PIM (currently sums only). Longer range: Maybe create arbitrary fixed weights for all. 
 
-10) Write functions to make comparisons among methods easier. For PIM, a function is needed to remove extra parameters from output of `parameterestimates()`. As well, a function creating keys and reordering parameters for easier comparisons (PIM will be out of order with TSML).
+10) Write functions to make comparisons among methods easier (this would be primarily for methodologists, e.g., a function creating keys and reordering parameters for easier comparisons. See currently ugly syntax in vignettes. 
 
-11) Make the PIM syntax more compact (item covs currently are one per line)
+11) Make the PIM.uni syntax more compact (item covs currently are one per line)
 
-12) Functions for correct baseline model under PIM
+12) Functions for correct baseline model under PIM, and hence correct fit indices. 
 
 13) Adjustments due to missing data pop values in PIM CFI etc (RMSEA should be automatic by lavaan?)
 
 14) Functions for correct SRMR under PIM (to match TSML with complete data)
 
+15)  Update how documentation is done for TSML and families of functions – join, use inherit
 
-Longer range?:
+16)  Once ready, rename package into something reflecting items to composites? item2stage? items2comps?
 
-1)  Provide accurate fit indices for model fit assessments that assess
-    the composite-level model only. For the PIM, this may have to be
-    nested fit indices, e.g., $\text{RMSEA}_\text{D}$. How to do fit
-    assessment for these models is probably at least one paper. The fit
-    assessment is a limited of the default PIM implementation, as is
-    noted in the original article.
+17) Implement confirmatory composite analysis (CCA; Schuberth, Henseler, and Ogasawara (2021),
+    Henseler (2021). Currently, Yves has provided a preliminary implementation of this approach in lavaan, but it has limitations, such as it cannot handle missing data on items that correspond to exogenous formative latent variables! It also restricts some covariances among items so that constraints imposed by CCA cannot be relaxed to obtain a PIM (these are nested models; see Siegel, Savalei, and Rhemtulla (2025; submitted to PM).
 
-2)  Implement methods that do test hypotheses about relationships
-    flowing only through composites, i.e., confirmatory composite
-    analysis (CCA), e.g., Schuberth, Henseler, and Ogasawara (2021),
-    Henseler (book, year?). Currently, Yves has provided a preliminary
-    implementation of this approach in lavaan, but it has limitations,
-    such as it cannot handle missing data on items that correspond to
-    exogenous formative latent variables! It also restricts some
-    covariances among items so that constraints imposed by CCA cannot be
-    relaxed to obtain a PIM (these are nested models; see Siegel,
-    Savalei, and Rhemtulla (2025; submitted to PM).
 
-3)  Provide a way for the user to specify how components relate to
-    composites using newly invented lavaan syntax (developed for CCA)
-    for this. Example of such syntax:
+Longer term goals/research:
 
-`model <- '   eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'`
+1)  Add TSML to lavaan, extend current CCA implementation so that constraints can be relaxed, yielding PIM
 
-This should be translatable to a 5 x 2 matrix C, with rows labeled etas
-and columns labeled xs, and with 1s corresponding to those xs that
-belong to certain etas. We could look into how lavaan parses this syntax
-and stores the result.
-
-Longer longer longer term goal:
-
-1)  add the two-stage saturated method to lavaan (make it easy for Yves) 
-and extend current CCA implementation of lavaan so
-    that constraints can be relaxed, yielding PIM
-
-2) Research question: comparison to SAM (Yves added support for second-level CFA)
+2) Comparison of TSML to SAM -- Yves added support for second-level CFA, so in principle TSML-like approach can be run via SAM (untested)
 

@@ -13,13 +13,12 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-#note to self: 
 #devtools::build_rmd("vignettes/Complete_data.Rmd") 
-#will render the vignette (to html, why not .md?), against a (temporarily installed) version of pkg
 
+#Run build and not build_rmd(): Use devtools::build_vignettes() to build the vignettes. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
 ```
 
-It is instructive to see how the item-level missing data approaches can be specified to yield the same results as the model fit directly to observed composites when there are no missing data. 
+It is instructive to see how the item-level models and approaches can yield the same results as when the model is fit directly to the composites, when there is no missing data. 
 
 We will use the built-in dataset `tpbdata`, which does not contain any missing values. This dataset was collected to test the theory of planned behavior, and contains 11 Attitudes items, 3 Perceived Behavioral Control (PBC) items, 3 Norms items, 3 Intention items, and 1 measure of Behavior; for more information, see `help(tpbdata)`. 
 
@@ -28,7 +27,6 @@ In the syntax below, we first create a new dataset that contains only the compos
 ```{r tpbdatac}
 library(twostage)
 
-#creating a new dataset and forming composites 
 tpbdatac<-data.frame(matrix(ncol = 0, nrow = nrow(tpbdata))) #new data frame
 at_names <- grep("AT", names(tpbdata), value = TRUE) #names of 11 attitude items
 tpbdatac$ATTALL<-rowSums(tpbdata[at_names]) #new variable that is sum of 11 attitude items
@@ -38,7 +36,7 @@ tpbdatac$INTALL<-rowSums(tpbdata[c("INT1","INT2","INT3")]) #new variable that is
 tpbdatac$BEH<-rowSums(tpbdata["BEH"]) #BEH variable copied from the original dataset
 ```
 
-We then specify the composite-level model of full mediation ($df=5$) and fit it in `lavaan`: 
+We then specify the composite-level model, which hypothesizes full mediation, and fit it in `lavaan`: 
 
 ```{r comp}
 #composite-level model (BEH stays as as single indicator variable)
@@ -52,16 +50,14 @@ est_comp<-lavaan::parameterestimates(fit_comp,ci=FALSE) #parameter estimates
 est_comp
 
 ```
-The printed chi-square, df, parameter estimates, and standard errors from `fit_comp` will be the values to match by the item-level methods for fitting composite models.
+The printed chi-square, df, parameter estimates, and standard errors from `fit_comp` will be the values to match by the item-level methods. All these methods fit the model to the original dataset `tpbdata` containing only the items, without computing the composites explicitly. 
 
-## Item-level Methods for Composites
-
-These methods fit the same model to the original dataset containing only the items, without computing the composites explicitly. For all approaches, we first need to define the matrix $C$ that relates composites to components. The end user can assign components to composites interactively as follows:
+We first need to define the matrix $C$ that relates composites to components. The end user can assign components to composites interactively as follows:
 
 ``` 
 C <- stage0(data=tpbdata,model=tpbmod)
 ```
-For this vignette, we need to specify this matrix manually: 
+For this vignette, we specify this matrix manually: 
 
 ```{r C}
 cnames<-lavaan::lavNames(tpbmod)
@@ -78,7 +74,7 @@ C
 
 ### TSML 
 
-To fit the composite-level model to the raw items using the TSML method and match the complete data analysis, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and `sample.cov.rescale=FALSE` for Stage 2, which skips the multiplication of the input covariance matrix by $(N-1)/N$ (via `runcommand2`).   
+To match the complete data analysis when using TSML, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and `sample.cov.rescale=FALSE` for Stage 2, which skips the multiplication of the input covariance matrix by $(N-1)/N$ (via `runcommand2`).   
 
 ```{r TSML1}
 fit_tsml <- twostage(data = tpbdata, model = tpbmod, C = C,
@@ -89,10 +85,7 @@ fixed.x=FALSE,sample.cov.rescale=FALSE")
 The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2(`se`), and the TSML standard errors, adjusted for missing data uncertainty in Stage 1: 
 
 ```{r TSML2}
-#class(fit_tsml) #twostage
-#class(fit_tsml$TS_Run_naive) #this is of class lavaan
-summary(fit_tsml) #doesnt work
-#summary.twostage(fit_tsml) #does work
+summary(fit_tsml) 
 ```
 
 In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the "naive" and "TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained in `fit_comp`, when the model was fit directly to the composites:
@@ -141,9 +134,9 @@ est_pim[est_pim$key %in% est_comp_key, 1:5]
 As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_tsml`.  
 
 
-### Approximate Fit Assessment (separate vignette eventually)
+### Approximate Fit Assessment 
 
-This is more complicated. With complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same: 
+With complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same: 
 
 ```{r afi1}
 afi_comp <- lavaan::fitmeasures(fit_comp)
@@ -151,13 +144,11 @@ afi_ts_naive <- lavaan::fitmeasures(fit_tsml$TS_Run_naive)
 round(cbind(afi_comp,afi_ts_naive),3)
 ```
 
-With incomplete data, even "naive" TSML estimates of RMSEA, CFI, etc will be better, as they will be based on the EM covariance matrix and means obtained in Stage 1, whereas a direct composites run would have to use some kind of available case analysis. However, small sample corrections to TSML fit indices could still be implemented to improve their performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TS when the model is at the composite level. (This is probably a paper)
-
 On the other hand, some PIM fit metrics can be weird even with complete data: 
 ```{r afi2}
 afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
-Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model has to be specified to get the right CFI and other relative fit indices. The SRMR also needs to be computed differently. [We need these developments in a paper, and functions for these]. The AIC/BIC values are not relevant as long as the same type of model is being compared (e.g., if different types of path models for composites are compared using the AIC, where all are implemented via PIM, that should be fine.)
+Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model has to be specified to get the right CFI and other relative fit indices with PIM. The SRMR also needs to be computed differently. [We need functions for these]. The AIC/BIC values are not relevant as long as the same type of model is being compared (e.g., if different types of path models for composites are compared using the AIC, where all are implemented via PIM, that should be fine.)
 
-Additionally, it is not a given that RMSEA will be unaffected with incomplete data. With incomplete data, as PIM is essentially FIML, the FIML-based RMSEA will be biased downward, relative to TSML-based RMSEA. See [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). However, lavaan now automatically adjusts for that and prints a robust version even with ML. (do a sep vignette on fit assessment). I don't know what it does for the CFI! But since the baseline model will have to be recomputed, this adjustment will have to be recomputed, so we need functions for this). 
+To learn more about approximate fit assessment with different methods for composite model, see [Approximate_fit vignette](../doc/Approximate_fit.html).

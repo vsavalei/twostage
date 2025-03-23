@@ -4,7 +4,7 @@
 \alias{summary.twostage}
 \title{Summary method for twostage function}
 \usage{
-summary.twostage(object, ...)
+\method{summary}{twostage}(object, ...)
 }
 \arguments{
 \item{object}{An object of class 'twostage'.}
