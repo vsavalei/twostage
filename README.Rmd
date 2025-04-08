@@ -127,9 +127,9 @@ To fit it using it TSML:
 
 ```{r}
 out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+summary(out_ts)
 ```
-[Describe output once `summary(out_ts)` is available]
-
+The output shows TSML parameter estimates from Stage 2, "naive" standard errors, and  TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The residual-based test statistic is also printed. This output assumes normality. For technical details on the standard error and test statistic computation, see [Savalei and Bentler, 2009] (https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
 
 To fit it within a larger PIM model, we first create the `lavaan` PIM syntax, as follows: 
 
@@ -146,8 +146,14 @@ We then fit the PIM model using FIML in `lavaan`, as follows:
 ```{r}
 fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
 fitpim
+
+ests <- lavaan::parameterestimates(fitpim)
+ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
+ests_comp
 ```
 
-[Describe output]
+This is a standard *lavaan* model; the user just has to ignore a lot of extraneous output pertaining to the item parameters. In the output shown above, the output of the `parameterestimates` function is modified by removing all rows referring to a "Y" variable (i.e., an item). 
 
+The only complicating element for TS and PIM methods is approximate fit assessment; this aspect is under development, more on this is in [Approximate_fit vignette](../doc/Approximate_fit.html).  
 
+When data are complete, both TS and PIM produce equivalent output to the complete data run on the manually-formed composites, as shown in [Complete_data vignette](../doc/Complete_data.html). 
