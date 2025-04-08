@@ -166,8 +166,8 @@ errors, and TSML standard errors, which are generally larger, reflecting
 greater uncertainty due to missing data in Stage 1. The residual-based
 test statistic is also printed. This output assumes normality. For
 technical details on the standard error and test statistic computation,
-see \[Savalei and Bentler, 2009\]
-(<https://www.tandfonline.com/doi/full/10.1080/10705510903008238>)
+see [Savalei and Bentler,
+2009](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
 
 To fit it within a larger PIM model, we first create the `lavaan` PIM
 syntax, as follows:
@@ -199,8 +199,8 @@ fitpim
 #>   Test statistic                                24.311
 #>   Degrees of freedom                                24
 #>   P-value (Chi-square)                           0.444
-ests <- lavaan::parameterestimates(fitpim)
 
+ests <- lavaan::parameterestimates(fitpim)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 #>     lhs op rhs    est    se      z pvalue ci.lower ci.upper
@@ -243,14 +243,15 @@ ests_comp
 ```
 
 This is a standard *lavaan* model; the user just has to ignore a lot of
-extraneous output pertaining to the item parameters. In the  
-above, the output of the `parameterestimates` function has been truncated by
+extraneous output pertaining to the item parameters. In the output shown
+above, the output of the `parameterestimates` function is modified by
 removing all rows referring to a “Y” variable (i.e., an item).
 
 The only complicating element for TS and PIM methods is approximate fit
 assessment; this aspect is under development, more on this is in
-[Approximate_fit vignette](../doc/Approximate_fit.html).
+Approximate_fit vignette. When data are complete, both TS and PIM
+produce equivalent output to the complete data run on the
+manually-formed composites, as shown in the Complete_data vignette.
 
-When data are complete, both TS and PIM produce equivalent output to the
-complete data run on the manually-formed composites, as shown in
-[Complete_data vignette](../doc/Complete_data.html).
+<!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
+&#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->
