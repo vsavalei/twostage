@@ -19,11 +19,13 @@ SEMs with parcels and 2) path analysis with scale scores.
 
 The package includes automation for the following approaches:
 
-1)  The two-stage ML (TSML) method of Savalei and Rhemtulla (2017a)
-2)  The Pseudo-Indicator Model (PIM) of Rose, Wagner, Mayer, and
-    Nagengast (2019)
-3)  (yet to be implemented) the GLS method of Savalei and Rhemtulla
-    (2017b)
+1)  The two-stage ML (TSML) method of [Savalei and Rhemtulla
+    (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880)
+2)  The Pseudo-Indicator Model (PIM) of [Rose, Wagner, Mayer, and
+    Nagengast
+    (2019)](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
+3)  (yet to be added) the GLS method of [Savalei and Rhemtulla
+    (2017b)](https://www.frontiersin.org/journals/psychology/articles/10.3389/fpsyg.2017.00767/full)
 
 The main purpose of these three approaches is to handle missing data at
 the item level. When data are complete, these methods/models will return
@@ -66,12 +68,11 @@ library(twostage)
 
 ## Example
 
-This example uses a built-in simulated dataset `misdata_mcar20`, which
-contains 27 items, $Y_1$ to $Y_{27}$, where about half have 20% missing
-data. The model is for composites $C_1$ to $C_9$, which are parcels of
-three items each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so
-on. These composites are never explicitly computed under any of the
-three methods.
+This example uses a simulated dataset `misdata_mcar20`, which contains
+27 items, $Y_1$ to $Y_{27}$, where about half have 20% missing data. The
+model is for composites $C_1$ to $C_9$, which are parcels of three items
+each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These
+composites are never explicitly computed under any of the three methods.
 
 The composite model is a 3-factor model, with three indicators each,
 defined via `lavaan` syntax as follows:
@@ -85,22 +86,23 @@ F3 =~ C7 + C8 + C9
 '
 ```
 
-To fit this model, we require the specification of a $27 \times 9$
-matrix $C$, whose columns are labeled with component names: $Y_1$ to
-$Y_{27}$, and whose rows are labeled with composite names: $C_1$ to
-$C_9$. The \[i,j\]th element of $C$ is nonzero (for sums, it is 1) if
-component $j$ belongs to composite $i$, and zero otherwise. To easily
-create this matrix using an interactive interface, use:
+To fit this composite model using the item-level methods in this
+package, the specification of a $27 \times 9$ matrix $C$ assigning
+components to composites is first required. The columns are labeled with
+component names: $Y_1$ to $Y_{27}$, and the rows are labeled with
+composite names: $C_1$ to $C_9$. The \[i,j\]th element of $C$ is nonzero
+(for sums, it is 1) if component $j$ belongs to composite $i$, and zero
+otherwise. To create this matrix using an interactive interface, use:
 
     C <- stage0(data=misdata_mcar20,model=mod)
 
-This function will first ask you whether your composites are sums or
-averages, and then it will ask you to assign each component to one of
-the composites that appear in the model. \[ADD/ADD FEATURE: If you
-select None, that variable will appear as itself in the model. See the
-vignette on treating observed covariates that are not composites\]
-
-You will get the following message to confirm your assignment:
+This function will first ask the user whether the composites are sums or
+averages, and then it will ask the user to assign each component to one
+of the variable names (assumed to be composites) that appear in the
+model. \[ADD/ADD FEATURE: If you select None, that variable will appear
+as itself in the model. See the vignette on treating observed covariates
+that are not composites\] The following message will confirm the
+assignment:
 
     Your composites are made up of the following components: 
     C1 :  Y1 Y2 Y3 
@@ -114,11 +116,11 @@ You will get the following message to confirm your assignment:
     C9 :  Y25 Y26 Y27 
     If this is not correct, start over! 
 
-Once this matrix is created with the help of the `stage0` function or
-manually, the composite-level model can be fit using the methods
+Once the $C$ matrix is created with the help of the `stage0` function
+(or manually), the composite-level model can be fit using the methods
 included in the package.
 
-To fit it using it TSML:
+To fit the composite-level model using TSML:
 
 ``` r
 out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
@@ -165,12 +167,14 @@ The output shows TSML parameter estimates from Stage 2, “naive” standard
 errors, and TSML standard errors, which are generally larger, reflecting
 greater uncertainty due to missing data in Stage 1. The residual-based
 test statistic is also printed. This output assumes normality. For
-technical details on the standard error and test statistic computation,
-see [Savalei and Bentler,
-2009](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
+technical details on the standard errors and the residual-based test
+statistic computation, see [Savalei and Bentler (
+2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
+and [Savalei and Rhemtulla
+(2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
 
-To fit it within a larger PIM model, we first create the `lavaan` PIM
-syntax, as follows:
+To fit the composite model using PIM, the package automates the creation
+of the `lavaan` PIM syntax:
 
 ``` r
 modpim <- PIM_syntax(compmodel = mod, C = C)
@@ -179,8 +183,11 @@ modpim <- PIM_syntax(compmodel = mod, C = C)
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
 contains the definition of each composite $C_i$, $i=1,\ldots,9$, as a
 single-indicator latent variable, and a special structure on the items.
+For details, see [Rose, Wagner, Mayer, and Nagengast
+(2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
 
-We then fit the PIM model using FIML in `lavaan`, as follows:
+The PIM model can be fit directly in `lavaan`, using FIML to treat
+missing data on the items:
 
 ``` r
 fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
@@ -242,10 +249,11 @@ ests_comp
 #> 432  F3 ~1      0.000 0.000     NA     NA    0.000    0.000
 ```
 
-This is a standard *lavaan* model; the user just has to ignore a lot of
-extraneous output pertaining to the item parameters. In the output shown
-above, the output of the `parameterestimates` function is modified by
-removing all rows referring to a “Y” variable (i.e., an item).
+As the interest is in the composite model, the user just has to ignore a
+lot of extraneous output pertaining to the item parameters. In the
+output shown above, the output of the `parameterestimates` function is
+modified by removing all rows referring to a “Y” variable (i.e., an
+item).
 
 The only complicating element for TS and PIM methods is approximate fit
 assessment; this aspect is under development, more on this is in
