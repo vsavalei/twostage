@@ -2,6 +2,7 @@
 
 S3method(twostage::summary,twostage)
 export(PIM_syntax)
+export(compare_est)
 export(stage0)
 export(stage1)
 export(stage1a)
