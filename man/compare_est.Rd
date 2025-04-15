@@ -2,20 +2,17 @@
 % Please edit documentation in R/compare.R
 \name{compare_est}
 \alias{compare_est}
-\title{Compare TSML and PIM Estimates and Fit}
+\title{Compare Estimates of Common Parameters}
 \usage{
-compare_est(fitted_ts, fitted_pim)
+compare_est(...)
 }
 \arguments{
-\item{fitted_ts}{A twostage object}
-
-\item{fitted_pim}{A lavaan object for a PIM model}
+\item{...}{objects (lavaan or twostage)}
 }
 \value{
-A data frame with estimates and SEs from both models for the
-composite-level model parameters (i.e., excluding item-level parameters of PIM),
-in the style of \code{parameterestimates()} of \code{lavaan}, merged into one, with key.
+A data frame with estimates and SEs from both models for common model parameters
+in the style of \code{parameterestimates()} of \code{lavaan}
 }
 \description{
-Compare TSML and PIM Estimates and Fit
+Compare Estimates of Common Parameters
 }

@@ -23,6 +23,6 @@ Suggests:
     testthat (>= 3.0.0)
 Config/testthat/edition: 3
 Depends: R(>= 4.0)
-Imports: utils, stats, lavaan
+Imports: utils, stats, lavaan, methods
 LazyData: true
 VignetteBuilder: knitr

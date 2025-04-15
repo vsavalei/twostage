@@ -71,15 +71,12 @@ F2 =~ C4 + C5 + C6
 F3 =~ C7 + C8 + C9
 '
 ```
-To fit this composite model using the item-level methods in this package, the specification of a $27 \times 9$ matrix $C$ assigning components to composites is first required. The columns are labeled with component names: $Y_1$ to $Y_{27}$, and the rows are labeled with composite names: $C_1$ to $C_9$. The [i,j]th element of $C$ is nonzero (for sums, it is 1) if component $j$ belongs to 
-composite $i$, and zero otherwise. To create this matrix using an interactive
-interface, use: 
+To fit this composite model using the item-level methods in this package, the specification of a $27 \times 9$ matrix $C$ assigning components to composites is first required. The columns are labeled with component names: $Y_1$ to $Y_{27}$, and the rows are labeled with composite names: $C_1$ to $C_9$. The [i,j]th element of $C$ is nonzero (for sums, it is 1) if component $j$ belongs to composite $i$, and zero otherwise. To create this matrix using an interactive interface, use: 
 
 ```
 C <- stage0(data=misdata_mcar20,model=mod)
 ```
-This function will first ask the user whether the composites are sums or averages, and
-then it will ask the user to assign each component to one of the variable names (assumed to be composites) that appear in the model. [ADD/ADD FEATURE: If you select None, that variable will appear as itself in the model. See the vignette on treating observed covariates that are not composites] The following message will confirm the assignment:
+This function will first ask the user whether the composites are sums or averages, and then it will ask the user to assign each component to one of the variable names (assumed to be composites) that appear in the model. The following message will confirm the assignment:
 
 ```
 Your composites are made up of the following components: 
@@ -114,14 +111,13 @@ C[8,22:24]<-1
 C[9,25:27]<-1
 ```
 
-Once the $C$ matrix is created with the help of the `stage0` function (or manually), 
-the composite-level model can be fit using the methods included in the package. 
+Once the $C$ matrix is created with the help of the `stage0` function (or manually), the composite-level model can be fit using the methods included in the package. 
 
 To fit the composite-level model using TSML:
 
 ```{r}
-out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
-summary(out_ts)
+fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+summary(fit_ts)
 ```
 The output shows TSML parameter estimates from Stage 2, "naive" standard errors, and  TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The residual-based test statistic is also printed. This output assumes normality. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880). 
 
@@ -138,17 +134,28 @@ the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator la
 The PIM model can be fit directly in `lavaan`, using FIML to treat missing data on the items:
 
 ```{r}
-fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
-fitpim
+fit_pim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
+fit_pim
 
-ests <- lavaan::parameterestimates(fitpim)
+ests <- lavaan::parameterestimates(fit_pim)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 ```
 
 As the interest is in the composite model, the user just has to ignore a lot of extraneous output pertaining to the item parameters. In the output shown above, the output of the `parameterestimates` function is modified by removing all rows referring to a "Y" variable (i.e., an item). 
 
-The only complicating element for TS and PIM methods is approximate fit assessment; this aspect is under development, more on this is in Approximate_fit vignette. When data are complete, both TS and PIM produce equivalent output to the complete data run on the manually-formed composites, as shown in the Complete_data vignette. 
+To compare estimates of common parameters in TS and PIM, the user can use built-in compare functions:
+
+```{r}
+comp_table <- compare_est(fit_pim,fit_ts)
+
+#rounding numeric columns to three decimal places
+as.data.frame(lapply(comp_table, function(x) {
+  if(is.numeric(x)) { round(x, 3) } else {x} }))
+
+```
+
+The only complicating element for TS and PIM methods is approximate fit assessment; this aspect is under development, see Approximate_fit vignette. When data are complete, both TS and PIM produce equivalent output to the complete data run on the manually-formed composites, see the Complete_data vignette. 
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 

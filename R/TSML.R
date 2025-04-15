@@ -2,7 +2,9 @@
 # TSML functions #################
 
 #' @import lavaan
-
+#' @importFrom methods as
+#' @importFrom stats pnorm
+#'
 #namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd<- function (cnames) {
   name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
@@ -164,9 +166,9 @@ stage1 <- function (data,runcommand=NULL) {
 #' @param C The matrix of component-composite assignments that is the output of stage0
 #' (or user-supplied)
 #'
-#' @return  A list with 4 objects: N (sample size), mhd (estimated means),
+#' @return  A list with 4 objects: mhd (estimated means),
 #' shd (estimated covariance matrix), ohd (estimated asymptotic covariance matrix
-#' of mhb and shb elements) for the composites
+#' of mhb and shb elements) for the composites, and N (sample size)
 #'
 #' @export
 #'
@@ -241,24 +243,11 @@ stage1a <- function (S1.output, C) {
 #' standard errors to obtain robust TS standard errors (for normal data), computes
 #' the residual-based test statistic (for normal data)
 #'
-#' @param S1a.output Output from stage1a, a list with three objects (shd, mhd, ohd)
-#' @param N Sample size
+#' @param S1a.output Output from stage1a, a list with four objects (shd, mhd, ohd, N)
 #' @param model The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
 #'
-#' @returns For now, a list with four components:
-#'
-#' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
-#' Parameter estimates from this run are TSML estimates.
-#'
-#' TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
-#' for the two-stage nature of the estimation, assuming normality)
-#'
-#' T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)#' T_res_pvalue: the p-value for the residual based test statistic
-#'
-#'This output will be re-arranged into something better eventually. Correct fit indices
-#'will also be added.
-#'
+#' @return An object of class `twostage`, inheriting class `lavaan`
 #' @export
 #'
 #' @examples
@@ -290,7 +279,7 @@ stage1a <- function (S1.output, C) {
 #'
 #'out_s1 <- stage1(misdata1)
 #'out_s1a <- stage1a(out_s1,C)
-#'out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
+#'out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 #'
 #'
 stage2 <- function (S1a.output, model,runcommand2=NULL) {
@@ -318,19 +307,25 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
     #change here:
     # TS_SE <- sqrt(diag(Ohtt))
 
-    ## alternative would be to relabel "se" into "se_naive"
+    ## RMD check doesn't like this
+    ## I'm using this function to ensure parameter ordering is the same
+    ## and to insert nonfree values (this is easy though via parTable)
+    ## this function relies on others (lav_model_x2GLIST)
+    ## maybe I'm overthinking this: is the correct order guaranteed here?
     S2@ParTable$se_ts <- lavaan:::lav_model_vcov_se(lavmodel = S2@Model,
                                                     lavpartable = S2@ParTable,
                                                     VCOV = Ohtt)
     #Note: This doesn't change VCOV
     #e.g., lavInspect(S2,"vcov") will give the "wrong" (naive) answer
-    #we could change this by replacing (?):
-    #Ohtt <- str(S2@vcov$vcov)
+    #Ohtt <- str(S2@vcov$vcov) #also "naive"
+    #but I think we want to preserve the naive run
+    #we could tr to save the vcov in another slot (careful not to break lavaan)
 
     #Normal-theory residual-based test statistic
     et <- c(residuals(S2)$mean,lav_matrix_vech(residuals(S2)$cov)) #so swap
     ahd <- solve(ohd.reordered)/N
-    Tres <- (N-1)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
+    #executive decision April 15, 2025: Replaced N-1 with N!
+    Tres <- (N)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
     pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
     #mauling lavaan -- is this safe?
@@ -364,7 +359,7 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
 #' @param runcommand Additional arguments to pass to lavaan for stage1
 #' @param runcommand2 Additional arguments to pass to lavaan for stage2
 #'
-#' @return For now, a list with four components:
+#' @return An object of class `twostage`, inheriting class `lavaan`
 #'
 #' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
 #' Parameter estimates from this run are TSML estimates.
@@ -455,52 +450,56 @@ twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL
   return(s2)
 }
 
-#Or use:
-# setMethod("summary", "twostage",
-#           function(object, ...) {
-#             # Your custom summary code here
-#             cat("This is a custom summary for twostage objects\n")
-#             # Optionally, call the lavaan summary method
-#             callNextMethod()
-#           })
 
-#' Summary method for twostage function -- currently this does not work
-#'
-#' @param object An object of class 'twostage'.
-#' @param ... Additional arguments passed to the summary method (none so far)
-#'
-#' @exportMethod twostage::summary
-#'
-summary.twostage <- function(object, ...) {
-  if (!inherits(object, "twostage")) {
-    stop("This does not appear to be an object generated by twostage()!")
-  }
+#rudimentary version
+#i want to toggle naive.se to be on for summary, but off for compare functions
+parameterEstimates_ts <- function(object,naive.se=TRUE) {
 
-  #create a table of estimates and ses, se=TRUE is necessary
-  est<-parameterestimates(object,se=TRUE,ci=FALSE,remove.nonfree=T)
+            if (!inherits(object, "twostage")) {
+              stop("This does not appear to be an object generated by twostage()!")
+            }
 
-  se_ts <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
-  z_ts <-  est[,"est"]/se_ts
-  pvalue_ts <- 2 * (1 - pnorm(abs(z_ts))) #from lavaan
+            #by default estimates only (no ses or cis unless requested) for class isn't just lavaan
+            est<-parameterEstimates(object,se=naive.se, ci=FALSE,remove.nonfree=T)
+            se_ts <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+            z_ts <-  est[,"est"]/se_ts
+            pvalue_ts <- 2 * (1 - pnorm(abs(z_ts))) #from lavaan
 
-  TS_table<-cbind(est,se_ts,z_ts,pvalue_ts)
-
-  #create a sentence with test statistic results to print
-  Tres <- object@Fit@test$twostage$test
-  df <- object@Fit@test$twostage$df
-  pval <- object@Fit@test$twostage$pval
-
-  test.output<-paste("The residual-based TSML chi-square is",
-                     round(Tres,3),"against",df, "degrees of freedom, with a p-value of",
-                     round(pval,3))
-
-  cat("Summary of Two-Stage Analysis \n")
-  cat("----------------------------\n")
-  cat("Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and pvalue),
-      and the corrected TSML standard errors (with z-test and p-value): \n")
-  print(TS_table, quote=FALSE,row.names=FALSE)
-  cat("----------------------------\n")
-  cat(test.output, "\n")
+            out<-cbind(est,se_ts,z_ts,pvalue_ts)
+            return(out)
 }
+
+
+
+#summary method for object of class twostage, move out eventually
+
+setMethod("summary", "twostage",
+          function(object, ...) {
+
+            if (!inherits(object, "twostage")) {
+              stop("This does not appear to be an object generated by twostage()!")
+            }
+
+            #create a table of estimates and ses, including naive ses and TSML ses
+            TS_table<-parameterEstimates_ts(object,naive.se=TRUE)
+
+            #create a sentence with test statistic results to print
+            Tres <- object@Fit@test$twostage$test
+            df <- object@Fit@test$twostage$df
+            pval <- object@Fit@test$twostage$pval
+
+            test.output<-paste("The residual-based TSML chi-square is",
+                               round(Tres,3),"against",df, "degrees of freedom, with a p-value of",
+                               round(pval,3))
+
+            cat("Summary of Two-Stage Analysis \n")
+            cat("----------------------------\n")
+            cat("Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and pvalue),
+      and the corrected TSML standard errors (with z-test and p-value): \n")
+            print(TS_table, quote=FALSE,row.names=FALSE)
+            cat("----------------------------\n")
+            cat(test.output, "\n")
+
+          })
 
 

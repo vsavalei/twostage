@@ -18,7 +18,7 @@ twostage(data, model, C = NULL, runcommand = NULL, runcommand2 = NULL)
 \item{runcommand2}{Additional arguments to pass to lavaan for stage2}
 }
 \value{
-For now, a list with four components:
+An object of class \code{twostage}, inheriting class \code{lavaan}
 
 TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
 Parameter estimates from this run are TSML estimates.
