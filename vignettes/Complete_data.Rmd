@@ -94,16 +94,16 @@ In addition, estimates and standard errors from `fit_comp` and `fit_ts` are iden
 
 ```{r comp_vs_ts1}
 comp_table <- compare_est(fit_comp,fit_ts)
-#rounding numeric columns to three decimal places
+#rounding to three decimal places
 as.data.frame(lapply(comp_table, function(x) {
-  if(is.numeric(x)) { round(x, 3) } else {x} }))
+    if(is.numeric(x)) { round(x, 3) } else {x} }))
 ```
 
 Here are the maximum differences:
 
 ```{r comp_vs_ts2}
-max(abs(comp_table$est.x - comp_table$est.y)) 
-max(abs(comp_table$se - comp_table$se_ts)) 
+max(abs(comp_table$est.fit_comp - comp_table$est.fit_ts)) 
+max(abs(comp_table$se.fit_comp - comp_table$se.fit_ts)) 
 ```
 
 The naive chi-square is identical to the chi-square from `fit_comp`: 
@@ -123,7 +123,9 @@ print(c(chisq_ts,df,pvalue_ts))
 
 Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original references, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
 
-Instead, it will be equal to the chi-square from the GLS method, which can be verified by running:
+<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. No idea what's going on. 
+
+Instead, it will be closer to the chi-square from the GLS method (differences are likely due to using $N$ versus $N-1$: 
 
 ```{r gls}
 fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,
@@ -131,8 +133,7 @@ fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,
 lavaan::fitmeasures(fit_comp_gls)[c("chisq","df","pvalue")] 
 
 ```
-
-When the model is correct, both GLS and ML are asymptotically fully efficient, and they are also asymptotically equivalent. 
+When the model is correct, both GLS and ML are asymptotically fully efficient, and they are also asymptotically equivalent. --> 
 
 ### PIM
 
@@ -154,9 +155,9 @@ The test statistic value and df are identical to `fit_comp`, even though the num
 The parameter estimates and standard errors for the relevant parameters are essentially identical to those from the `fit_comp` run: 
 
 ```{r PIM3}
-comp_table <- compare_est(fit_comp,fit_pim)[,c("est.x","se.x","est.y","se.y")]
-max(abs(comp_table$est.x - comp_table$est.y)) 
-max(abs(comp_table$se.x - comp_table$se.y)) 
+comp_table <- compare_est(fit_comp,fit_pim)[,c("est.fit_comp","se.fit_comp","est.fit_pim","se.fit_pim")]
+max(abs(comp_table$est.fit_comp - comp_table$est.fit_pim)) 
+max(abs(comp_table$se.fit_comp - comp_table$se.fit_pim)) 
 ```
 <!--I wonder what the differences in the 6th decimal place are due to!-->
 
