@@ -2,7 +2,9 @@
 # TSML functions #################
 
 #' @import lavaan
-
+#' @importFrom methods as
+#' @importFrom stats pnorm
+#'
 #namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd<- function (cnames) {
   name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
@@ -117,7 +119,7 @@ stage0<-function (data, model) {
 #'
 #' @param runcommand Additional arguments to pass to lavaan
 #'
-#' @return  A list with 3 objects: mhb (estimated means),
+#' @return  A list with 4 objects: N (sample size), mhb (estimated means),
 #' shb (estimated covariance matrix), ohb (estimated asymptotic covariance matrix
 #' of mhb and shb elements)
 #'
@@ -147,7 +149,8 @@ stage1 <- function (data,runcommand=NULL) {
       shb <- fitted.values(S1)$cov    			#sigma-hat-beta
       mhb <- fitted.values(S1)$mean         #mu-hat-beta
       ohb <- vcov(S1)  #asy cov matrix
-      S1.output <- list(shb,mhb,ohb)
+      N <- S1@Data@nobs[[1]]
+      S1.output <- list(shb,mhb,ohb,N)
     } else {S1.output <- NULL } #end if converged loop
   } else {S1.output <- NULL } #end try-error loop
   return(S1.output)
@@ -158,14 +161,14 @@ stage1 <- function (data,runcommand=NULL) {
 #' Stage1a of TSML: Converts the means, covariance matrix, and asymptotic covariance matrix
 #' of components to the corresponding quantities for the composites
 #'
-#' @param S1.output The output of stage1, a list with three objects (means, covariance matrix,
+#' @param S1.output The output of stage1, a list with 4 objects (N, means, covariance matrix,
 #' and asymptotic covariance matrix of components)
 #' @param C The matrix of component-composite assignments that is the output of stage0
 #' (or user-supplied)
 #'
-#' @return  A list with 3 objects: mhd (estimated means),
+#' @return  A list with 4 objects: mhd (estimated means),
 #' shd (estimated covariance matrix), ohd (estimated asymptotic covariance matrix
-#' of mhb and shb elements) for the composites
+#' of mhb and shb elements) for the composites, and N (sample size)
 #'
 #' @export
 #'
@@ -205,6 +208,7 @@ stage1a <- function (S1.output, C) {
     shb <- S1.output[[1]]
     mhb <- S1.output[[2]]
     ohb <- S1.output[[3]]
+    N <- S1.output[[4]] #not used here, passed on to stage2
 
     cnames<-rownames(C)
     k <- nrow(C) #number of composites
@@ -228,7 +232,7 @@ stage1a <- function (S1.output, C) {
     rownames(ohd)<-colnames(ohd) <- namesohd(cnames)
     #order in ohd: vectorized non-red Sigma, then mu
   } #end of big non-null else
-  S1a.output <- list(shd, mhd,ohd)
+  S1a.output <- list(shd, mhd,ohd, N)
   return(S1a.output)
 }
 
@@ -239,24 +243,11 @@ stage1a <- function (S1.output, C) {
 #' standard errors to obtain robust TS standard errors (for normal data), computes
 #' the residual-based test statistic (for normal data)
 #'
-#' @param S1a.output Output from stage1a, a list with three objects (shd, mhd, ohd)
-#' @param N Sample size
+#' @param S1a.output Output from stage1a, a list with four objects (shd, mhd, ohd, N)
 #' @param model The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
 #'
-#' @returns For now, a list with four components:
-#'
-#' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
-#' Parameter estimates from this run are TSML estimates.
-#'
-#' TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
-#' for the two-stage nature of the estimation, assuming normality)
-#'
-#' T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)#' T_res_pvalue: the p-value for the residual based test statistic
-#'
-#'This output will be re-arranged into something better eventually. Correct fit indices
-#'will also be added.
-#'
+#' @return An object of class `twostage`, inheriting class `lavaan`
 #' @export
 #'
 #' @examples
@@ -288,13 +279,14 @@ stage1a <- function (S1.output, C) {
 #'
 #'out_s1 <- stage1(misdata1)
 #'out_s1a <- stage1a(out_s1,C)
-#'out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
+#'out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 #'
 #'
-stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
+stage2 <- function (S1a.output, model,runcommand2=NULL) {
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
   ohd <- S1a.output[[3]]
+  N <- S1a.output[[4]]
 
   S2 <- try(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
                 sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))),silent=TRUE)
@@ -311,24 +303,50 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
     ohd.reordered <- ohd[new_order,new_order]
 
     Ohtt <- bread %*% t(meat)%*%ohd.reordered%*%meat%*%bread  #ohm-hat-theta-tilde
-    TS_SE <- sqrt(diag(Ohtt))
 
+    #change back to avoid relying on internal lavaan function:
+    #S2@ParTable$se_ts <- sqrt(diag(Ohtt))
+    #se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+
+    #set TS SEs to initially equal naive SEs, to match nonfree values and length
+    S2@ParTable$se_ts <-S2@ParTable$se
+
+    #update se_ts for free parameters
+    S2@ParTable$se_ts[S2@ParTable$free!=0] <- sqrt(diag(Ohtt)) #how to check order?
+
+    ## This prior solution relied on an internal lavaan function to ensure correct
+    ## order, but RMD check doesn't like this
+
+    #S2@ParTable$se_ts <- lavaan:::lav_model_vcov_se(lavmodel = S2@Model,
+    #            lavpartable = S2@ParTable, VCOV = Ohtt)
+
+    #Note: lavInspect(S2,"vcov") will still give the "wrong" (naive) answer
+    #Ohtt <- str(S2@vcov$vcov) #also "naive"
+    #but I think we want to preserve the naive run
+    #we could try to save the vcov in another slot (careful not to break lavaan)
+
+    #Normal-theory residual-based test statistic
     et <- c(residuals(S2)$mean,lav_matrix_vech(residuals(S2)$cov)) #so swap
     ahd <- solve(ohd.reordered)/N
-    Tres <- (N-1)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
+    #executive decision April 15, 2025: Replaced N-1 with N!
+    Tres <- (N)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
     pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
-    result <- list(S2, TS_SE, Tres, pval)
-    names(result) <- c("TS_Run_naive", "TS_SEs", "T_res", "T_res_pvalue")
+    #mauling lavaan -- is this safe?
+    #writing into S2@test was not (broke lavaan summary)
+    #blavaan directly overwrites @Fit@test slots
+    S2@Fit@test$twostage$test <- Tres
+    S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
+    S2@Fit@test$twostage$pval <- pval
 
-    } #end if SEs were computed
-  else { #if lavaan can't compute SEs, we won't try either)
-    result <- list(S2, NA, NA, NA)
-  }
+    } #end if
 
-  return(result)
+  #assign twostage class to the results
+  S2 <- as(S2, "twostage") #cannot direct assign class for S4 objects
+  return(S2)
 
 }
+
 
 #' twostage
 #'
@@ -345,18 +363,8 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' @param runcommand Additional arguments to pass to lavaan for stage1
 #' @param runcommand2 Additional arguments to pass to lavaan for stage2
 #'
-#' @return For now, a list with four components:
+#' @return An object of class `twostage`, inheriting class `lavaan`
 #'
-#' TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
-#' Parameter estimates from this run are TSML estimates.
-#'
-#' TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
-#' for the two-stage nature of the estimation, assuming normality)
-#'
-#' T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)
-#'
-#'This output will be re-arranged into something better eventually. Correct fit indices
-#'will also be added.
 #'
 #' @export
 #'
@@ -418,8 +426,9 @@ stage2 <- function (S1a.output, N, model,runcommand2=NULL) {
 #' @references
 #'Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
 
+
 twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL) {
-  N <- nrow(data)
+
   #stage 0, if needed: relating components to composite via user input
   if (is.null(C)) {
     # Define C using stage0 when C is NULL
@@ -430,41 +439,65 @@ twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL
   #stage1a: saturated solution transformation to composites
   s1a <-stage1a(S1.output=s1,C)
   #stage2: model fit to composites
-  s2 <- stage2(S1a.output=s1a, N = N,model = model,runcommand2=runcommand2)
-
-  #assign a class to the results
-  class(s2) <- c("twostage","list")
+  s2 <- stage2(S1a.output=s1a, model = model,runcommand2=runcommand2)
 
   return(s2)
 }
 
 
-#' Summary method for twostage function
-#'
-#' @param object An object of class 'twostage'.
-#' @param ... Additional arguments passed to the summary method (none so far)
-#'
-#' @exportS3Method twostage::summary
-#'
-summary.twostage <- function(object, ...) {
-  if (!inherits(object, "twostage")) {
-    stop("This does not appear to be an object generated by twostage()!")
-  }
-  #create a table of estimates and ses
-  df<-fitmeasures(object$TS_Run_naive)["df"]
-  est<-cbind(parameterestimates(object$TS_Run_naive,remove.nonfree=T)[,1:5])
-  TS_table<-cbind(est,object$TS_SEs)
-  names(TS_table)[names(TS_table) == "object$TS_SEs"] <- "TSML se"
-  #create a sentence with test statistic results to print
-  test.output<-paste("The residual-based TSML chi-square is",
-                     round(object$T_res,3),"against",df, "degrees of freedom, with a p-value of",
-                     round(object$T_res_pvalue,3))
+#rudimentary version
+#i want to toggle naive.se to be on for summary, but off for compare functions
+parameterEstimates_ts <- function(object,naive.se=TRUE) {
 
-  cat("Summary of Two-Stage Analysis \n")
-  cat("----------------------------\n")
-  cat("Two-stage parameter estimates, naive standard errors, and two-stage standard errors: \n")
-  print(TS_table, quote=FALSE,row.names=FALSE)
-  cat("----------------------------\n")
-  cat(test.output, "\n")
+            if (!inherits(object, "twostage")) {
+              stop("This does not appear to be an object generated by twostage()!")
+            }
+
+            #by default, estimates only (no ses or cis) when class isn't only lavaan
+            #therefore, se argument below is needed to get ses
+            est<-parameterEstimates(object,se=naive.se, ci=FALSE,remove.nonfree=T)
+            names(est)[names(est) == "se"] <- "se_naive"
+            names(est)[names(est) == "z"] <- "z_naive"
+            names(est)[names(est) == "pvalue"] <- "pvalue_naive"
+            se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+            z <-  est[,"est"]/se
+            pvalue <- 2 * (1 - pnorm(abs(z))) #from lavaan
+
+            out<-cbind(est,se,z,pvalue)
+            return(out)
 }
+
+
+
+#summary method for object of class twostage, move out eventually
+
+setMethod("summary", "twostage",
+          function(object, ...) {
+
+            if (!inherits(object, "twostage")) {
+              stop("This does not appear to be an object generated by twostage()!")
+            }
+
+            #create a table of estimates and ses, including naive ses and TSML ses
+            TS_table<-parameterEstimates_ts(object,naive.se=TRUE)
+
+            #create a sentence with test statistic results to print
+            Tres <- object@Fit@test$twostage$test
+            df <- object@Fit@test$twostage$df
+            pval <- object@Fit@test$twostage$pval
+
+            test.output<-paste("The residual-based TSML chi-square is",
+                               round(Tres,3),"against",df, "degrees of freedom, with a p-value of",
+                               round(pval,3))
+
+            cat("Summary of Two-Stage Analysis \n")
+            cat("----------------------------\n")
+            cat("Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and pvalue),
+      and the corrected TSML standard errors (with z-test and p-value): \n")
+            print(TS_table, quote=FALSE,row.names=FALSE)
+            cat("----------------------------\n")
+            cat(test.output, "\n")
+
+          })
+
 

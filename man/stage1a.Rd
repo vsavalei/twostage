@@ -7,16 +7,16 @@
 stage1a(S1.output, C)
 }
 \arguments{
-\item{S1.output}{The output of stage1, a list with three objects (means, covariance matrix,
+\item{S1.output}{The output of stage1, a list with 4 objects (N, means, covariance matrix,
 and asymptotic covariance matrix of components)}
 
 \item{C}{The matrix of component-composite assignments that is the output of stage0
 (or user-supplied)}
 }
 \value{
-A list with 3 objects: mhd (estimated means),
+A list with 4 objects: mhd (estimated means),
 shd (estimated covariance matrix), ohd (estimated asymptotic covariance matrix
-of mhb and shb elements) for the composites
+of mhb and shb elements) for the composites, and N (sample size)
 }
 \description{
 Stage1a of TSML: Converts the means, covariance matrix, and asymptotic covariance matrix

@@ -18,18 +18,7 @@ twostage(data, model, C = NULL, runcommand = NULL, runcommand2 = NULL)
 \item{runcommand2}{Additional arguments to pass to lavaan for stage2}
 }
 \value{
-For now, a list with four components:
-
-TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
-Parameter estimates from this run are TSML estimates.
-
-TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
-for the two-stage nature of the estimation, assuming normality)
-
-T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)
-
-This output will be re-arranged into something better eventually. Correct fit indices
-will also be added.
+An object of class \code{twostage}, inheriting class \code{lavaan}
 }
 \description{
 Fits the model to composite based on the raw data on components using item-level two-stage

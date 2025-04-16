@@ -1,0 +1,2 @@
+setClass("twostage",
+         contains = "lavaan")

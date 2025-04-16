@@ -4,30 +4,17 @@
 \alias{stage2}
 \title{stage2}
 \usage{
-stage2(S1a.output, N, model, runcommand2 = NULL)
+stage2(S1a.output, model, runcommand2 = NULL)
 }
 \arguments{
-\item{S1a.output}{Output from stage1a, a list with three objects (shd, mhd, ohd)}
-
-\item{N}{Sample size}
+\item{S1a.output}{Output from stage1a, a list with four objects (shd, mhd, ohd, N)}
 
 \item{model}{The lavaan model for the composites}
 
 \item{runcommand2}{Additional arguments to pass to lavaan}
 }
 \value{
-For now, a list with four components:
-
-TS_Run_naive (the lavaan object for the naive (complete data) model fit for the composites).
-Parameter estimates from this run are TSML estimates.
-
-TS_SEs (the TSML standard errors, computed by adjusting the naive standard errors
-for the two-stage nature of the estimation, assuming normality)
-
-T_res (the residual based test statistic) and T_res_pvalue (the p-value for the residual based test statistic)#' T_res_pvalue: the p-value for the residual based test statistic
-
-This output will be re-arranged into something better eventually. Correct fit indices
-will also be added.
+An object of class \code{twostage}, inheriting class \code{lavaan}
 }
 \description{
 Performs stage2 of TSML. Fits the model to the estimated vector of means and the estimated
@@ -63,7 +50,7 @@ C[6,16:18]<-1
 
 out_s1 <- stage1(misdata1)
 out_s1a <- stage1a(out_s1,C)
-out_s2 <- stage2(out_s1a, N = nrow(misdata1), model = mod1,runcommand2="mimic='EQS'")
+out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 
 
 }

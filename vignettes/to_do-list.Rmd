@@ -17,9 +17,16 @@ knitr::opts_chunk$set(
 
 ## To Do list 
 
-1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors (labeled that way)? Or not? This would be similar to, e.g., what `blavaan` does. Pros: a) nice for the end user, b) we learn a lot about `lavaan` (especially following `blavaan`'s example, where parameter estimates etc are stored in lavaan slots as well) and potentially make it easier to convince Yves to just add this method to `lavaan`. Cons: a) may take time, b) it is pretty important to me to have access to the "naive" TSML run from Stage 2, so we want to save that somewhere, but if the output becomes not a list but a lavaan-type object, this has nowhere to go. Ideally, the output is two lavaan-type objects: naive-run, another copy modified with TS. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
+21) In TS functions to save standard errors, I use an internal lavaan function. RMD check doesn't like this, nor does the suggested help file. Do we care about this? [I think I did this as an easy way to add/drop non-free parameters, but use parTable?]
+```
+❯ checking dependencies in R code ... NOTE
+  ':::' call which should be '::': 'lavaan:::lav_model_vcov_se'
+    See the note in ?`:::` about the use of this operator.
+```
 
-19) While the PIM model is run in `lavaan`, the output is not ideal. Design/write a function or a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`.    
+1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors (labeled that way)? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this when fit indices are added. "Naive" standard errors are also saved. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
+
+19) While the PIM model is run in `lavaan`, the output is not ideal. Design/write a function or a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
 
 2)  Add GLS
 

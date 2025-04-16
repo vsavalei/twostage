@@ -99,10 +99,7 @@ otherwise. To create this matrix using an interactive interface, use:
 This function will first ask the user whether the composites are sums or
 averages, and then it will ask the user to assign each component to one
 of the variable names (assumed to be composites) that appear in the
-model. \[ADD/ADD FEATURE: If you select None, that variable will appear
-as itself in the model. See the vignette on treating observed covariates
-that are not composites\] The following message will confirm the
-assignment:
+model. The following message will confirm the assignment:
 
     Your composites are made up of the following components: 
     C1 :  Y1 Y2 Y3 
@@ -123,44 +120,10 @@ included in the package.
 To fit the composite-level model using TSML:
 
 ``` r
-out_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
-summary(out_ts)
-#> Summary of Two-Stage Analysis 
-#> ----------------------------
-#> Two-stage parameter estimates, naive standard errors, and two-stage standard errors: 
-#>  lhs op rhs         est        se   TSML se
-#>   F1 =~  C2  1.02193658 0.3579328 0.3790369
-#>   F1 =~  C3  1.38926575 0.4766224 0.5078380
-#>   F2 =~  C5  1.19819027 0.3712583 0.4204921
-#>   F2 =~  C6  1.29248625 0.3870511 0.4327614
-#>   F3 =~  C8  0.50252629 0.2247838 0.2413742
-#>   F3 =~  C9  1.21419672 0.3532458 0.4010741
-#>   C1 ~~  C1  3.01850878 0.3907862 0.4168094
-#>   C2 ~~  C2  3.68118084 0.4557431 0.4951376
-#>   C3 ~~  C3  2.78671087 0.5204495 0.5704592
-#>   C4 ~~  C4  3.57287005 0.4145500 0.4718739
-#>   C5 ~~  C5  3.45781977 0.4373025 0.5011573
-#>   C6 ~~  C6  2.91885671 0.4145512 0.4623456
-#>   C7 ~~  C7  2.74306637 0.3628939 0.4131604
-#>   C8 ~~  C8  3.16669743 0.3332076 0.3679581
-#>   C9 ~~  C9  3.13697082 0.4649928 0.5285742
-#>   F1 ~~  F1  0.67578595 0.3270536 0.3441623
-#>   F2 ~~  F2  0.64868483 0.3078294 0.3455100
-#>   F3 ~~  F3  0.76015959 0.3223813 0.3671408
-#>   F1 ~~  F2  0.34270935 0.1495455 0.1614227
-#>   F1 ~~  F3  0.33202639 0.1508528 0.1661643
-#>   F2 ~~  F3  0.58960029 0.2008429 0.2222176
-#>   C1 ~1      0.25996869 0.1359098 0.1410413
-#>   C2 ~1     -0.11576178 0.1481037 0.1520786
-#>   C3 ~1      0.11284636 0.1430213 0.1482134
-#>   C4 ~1      0.08381759 0.1452851 0.1549407
-#>   C5 ~1      0.05747750 0.1481403 0.1584999
-#>   C6 ~1     -0.02888770 0.1414655 0.1516308
-#>   C7 ~1     -0.11409123 0.1323485 0.1431886
-#>   C8 ~1      0.11175214 0.1295890 0.1400749
-#>   C9 ~1      0.03200253 0.1459050 0.1537131
-#> ----------------------------
-#> The residual-based TSML chi-square is 24.827 against 24 degrees of freedom, with a p-value of 0.415
+fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+summary(fit_ts)
+#>   Length    Class     Mode 
+#>        1 twostage       S4
 ```
 
 The output shows TSML parameter estimates from Stage 2, “naive” standard
@@ -190,8 +153,8 @@ The PIM model can be fit directly in `lavaan`, using FIML to treat
 missing data on the items:
 
 ``` r
-fitpim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
-fitpim
+fit_pim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
+fit_pim
 #> lavaan 0.6-20.2265 ended normally after 261 iterations
 #> 
 #>   Estimator                                         ML
@@ -207,7 +170,7 @@ fitpim
 #>   Degrees of freedom                                24
 #>   P-value (Chi-square)                           0.444
 
-ests <- lavaan::parameterestimates(fitpim)
+ests <- lavaan::parameterestimates(fit_pim)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 #>     lhs op rhs    est    se      z pvalue ci.lower ci.upper
@@ -255,11 +218,84 @@ output shown above, the output of the `parameterestimates` function is
 modified by removing all rows referring to a “Y” variable (i.e., an
 item).
 
+To compare estimates of common parameters in TS and PIM, the user can
+use built-in compare functions:
+
+``` r
+comp_table <- compare_est(fit_pim,fit_ts)
+
+#rounding numeric columns to three decimal places
+as.data.frame(lapply(comp_table, function(x) {
+  if(is.numeric(x)) { round(x, 3) } else {x} }))
+#>    lhs op rhs est.fit_pim se.fit_pim z.fit_pim pvalue.fit_pim est.fit_ts
+#> 1   C1 ~~  C1       3.028      0.428     7.069          0.000      3.019
+#> 2   C1 ~1           0.263      0.141     1.866          0.062      0.260
+#> 3   C2 ~~  C2       3.590      0.505     7.106          0.000      3.681
+#> 4   C2 ~1          -0.120      0.152    -0.789          0.430     -0.116
+#> 5   C3 ~~  C3       2.833      0.574     4.934          0.000      2.787
+#> 6   C3 ~1           0.115      0.148     0.774          0.439      0.113
+#> 7   C4 ~~  C4       3.620      0.473     7.658          0.000      3.573
+#> 8   C4 ~1           0.079      0.155     0.507          0.612      0.084
+#> 9   C5 ~~  C5       3.393      0.497     6.828          0.000      3.458
+#> 10  C5 ~1           0.049      0.158     0.307          0.759      0.057
+#> 11  C6 ~~  C6       2.997      0.471     6.366          0.000      2.919
+#> 12  C6 ~1          -0.031      0.152    -0.203          0.839     -0.029
+#> 13  C7 ~~  C7       2.791      0.438     6.375          0.000      2.743
+#> 14  C7 ~1          -0.119      0.144    -0.823          0.410     -0.114
+#> 15  C8 ~~  C8       3.171      0.375     8.457          0.000      3.167
+#> 16  C8 ~1           0.110      0.140     0.784          0.433      0.112
+#> 17  C9 ~~  C9       3.189      0.512     6.227          0.000      3.137
+#> 18  C9 ~1           0.038      0.153     0.248          0.804      0.032
+#> 19  F1 ~~  F1       0.665      0.355     1.876          0.061      0.676
+#> 20  F1 ~~  F2       0.339      0.163     2.074          0.038      0.343
+#> 21  F1 ~~  F3       0.312      0.171     1.824          0.068      0.332
+#> 22  F1 =~  C2       1.089      0.415     2.626          0.009      1.022
+#> 23  F1 =~  C3       1.386      0.543     2.554          0.011      1.389
+#> 24  F2 ~~  F2       0.642      0.342     1.881          0.060      0.649
+#> 25  F2 ~~  F3       0.606      0.231     2.621          0.009      0.590
+#> 26  F2 =~  C5       1.248      0.440     2.838          0.005      1.198
+#> 27  F2 =~  C6       1.269      0.422     3.008          0.003      1.292
+#> 28  F3 ~~  F3       0.779      0.393     1.984          0.047      0.760
+#> 29  F3 =~  C8       0.511      0.242     2.113          0.035      0.503
+#> 30  F3 =~  C9       1.173      0.414     2.831          0.005      1.214
+#>    se.fit_ts z.fit_ts pvalue.fit_ts
+#> 1      0.417    7.242         0.000
+#> 2      0.141    1.843         0.065
+#> 3      0.495    7.435         0.000
+#> 4      0.152   -0.761         0.447
+#> 5      0.570    4.885         0.000
+#> 6      0.148    0.761         0.446
+#> 7      0.472    7.572         0.000
+#> 8      0.155    0.541         0.589
+#> 9      0.501    6.900         0.000
+#> 10     0.158    0.363         0.717
+#> 11     0.462    6.313         0.000
+#> 12     0.152   -0.191         0.849
+#> 13     0.413    6.639         0.000
+#> 14     0.143   -0.797         0.426
+#> 15     0.368    8.606         0.000
+#> 16     0.140    0.798         0.425
+#> 17     0.529    5.935         0.000
+#> 18     0.154    0.208         0.835
+#> 19     0.344    1.964         0.050
+#> 20     0.161    2.123         0.034
+#> 21     0.166    1.998         0.046
+#> 22     0.379    2.696         0.007
+#> 23     0.508    2.736         0.006
+#> 24     0.346    1.877         0.060
+#> 25     0.222    2.653         0.008
+#> 26     0.420    2.849         0.004
+#> 27     0.433    2.987         0.003
+#> 28     0.367    2.070         0.038
+#> 29     0.241    2.082         0.037
+#> 30     0.401    3.027         0.002
+```
+
 The only complicating element for TS and PIM methods is approximate fit
-assessment; this aspect is under development, more on this is in
-Approximate_fit vignette. When data are complete, both TS and PIM
-produce equivalent output to the complete data run on the
-manually-formed composites, as shown in the Complete_data vignette.
+assessment; this aspect is under development, see Approximate_fit
+vignette. When data are complete, both TS and PIM produce equivalent
+output to the complete data run on the manually-formed composites, see
+the Complete_data vignette.
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->

@@ -13,7 +13,7 @@ It should not contain any other variables.}
 \item{runcommand}{Additional arguments to pass to lavaan}
 }
 \value{
-A list with 3 objects: mhb (estimated means),
+A list with 4 objects: N (sample size), mhb (estimated means),
 shb (estimated covariance matrix), ohb (estimated asymptotic covariance matrix
 of mhb and shb elements)
 }

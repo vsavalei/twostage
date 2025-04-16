@@ -13,9 +13,9 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-#devtools::build_rmd("vignettes/Complete_data.Rmd") 
+#Use devtools::build_rmd("vignettes/Complete_data.Rmd") to just test one vignette
 
-#Run build and not build_rmd(): Use devtools::build_vignettes() to build the vignettes. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
+#To build all vignettes properly, run devtools::build_vignettes(), not build_rmd above. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
 ```
 
 It is instructive to see how the item-level models and approaches can yield the same results as when the model is fit directly to the composites, when there is no missing data. 
@@ -77,7 +77,7 @@ C
 To match the complete data analysis when using TSML, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and `sample.cov.rescale=FALSE` for Stage 2, which skips the multiplication of the input covariance matrix by $(N-1)/N$ (via `runcommand2`).   
 
 ```{r TSML1}
-fit_tsml <- twostage(data = tpbdata, model = tpbmod, C = C,
+fit_ts <- twostage(data = tpbdata, model = tpbmod, C = C,
 runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 fixed.x=FALSE,sample.cov.rescale=FALSE")
 ```
@@ -85,22 +85,55 @@ fixed.x=FALSE,sample.cov.rescale=FALSE")
 The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2(`se`), and the TSML standard errors, adjusted for missing data uncertainty in Stage 1: 
 
 ```{r TSML2}
-summary(fit_tsml) 
+summary(fit_ts) 
 ```
 
-In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the "naive" and "TSML" standard errors are identical. In addition, both the estimates and the standard errors are identical to six decimal places (Note: I actually expected better...) to what was obtained in `fit_comp`, when the model was fit directly to the composites:
+In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the "naive" and "TSML" standard errors are identical. 
 
-```{r comp_vs_TSML}
-max(abs(est_comp$est-lavaan::parameterestimates(fit_tsml$TS_Run_naive)$est)) #comparing estimates
-max(abs(est_comp$se-lavaan::parameterestimates(fit_tsml$TS_Run_naive)$se)) #comparing complete data analysis and naive SEs from TSML
-max(abs(est_comp$se-fit_tsml$TS_SEs)) #comparing complete data analysis and TSML SEs 
+In addition, estimates and standard errors from `fit_comp` and `fit_ts` are identical to six decimal places. Below is their comparison side by side (rounded to three decimal places):  
+
+```{r comp_vs_ts1}
+comp_table <- compare_est(fit_comp,fit_ts)
+#rounding to three decimal places
+as.data.frame(lapply(comp_table, function(x) {
+    if(is.numeric(x)) { round(x, 3) } else {x} }))
 ```
 
-The naive chi-square is identical to the chi-square from the direct composites analysis in `fit_comp`. (The entire naive Stage 2 output is stored in `fit_tsml$TS_Run_naive`.) The residual-based TSML chi-square produces a slightly different value from the naive chi-square; because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (A much smaller source of difference is that it uses N-1 rather than N as sample size multiplier, but this could be changed.) Instead, it will be equal to the chi-square from the GLS method, which can be verified by running:
+Here are the maximum differences:
+
+```{r comp_vs_ts2}
+max(abs(comp_table$est.fit_comp - comp_table$est.fit_ts)) 
+max(abs(comp_table$se.fit_comp - comp_table$se.fit_ts)) 
 ```
-fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,meanstructure=TRUE,estimator="GLS")
+
+The naive chi-square is identical to the chi-square from `fit_comp`: 
+
+```{r comp_vs_ts3}
+lavaan::fitmeasures(fit_ts)[c("chisq","df","pvalue")] 
 ```
-When the model is correct, both GLS and ML are asymptotically fully efficient, and they are also asymptotically equivalent. 
+
+The residual-based TSML chi-square produces a slightly different value from the naive chi-square:
+
+```{r comp_vs_ts4}
+chisq_ts <- fit_ts@Fit@test$twostage$test
+df <- fit_ts@Fit@test$twostage$df
+pvalue_ts <- fit_ts@Fit@test$twostage$pval
+print(c(chisq_ts,df,pvalue_ts))
+```
+
+Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original references, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
+
+<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. No idea what's going on. 
+
+Instead, it will be closer to the chi-square from the GLS method (differences are likely due to using $N$ versus $N-1$: 
+
+```{r gls}
+fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,
+                          meanstructure=TRUE,estimator="GLS")
+lavaan::fitmeasures(fit_comp_gls)[c("chisq","df","pvalue")] 
+
+```
+When the model is correct, both GLS and ML are asymptotically fully efficient, and they are also asymptotically equivalent. --> 
 
 ### PIM
 
@@ -119,36 +152,33 @@ est_pim<-lavaan::parameterestimates(fit_pim,ci=FALSE)
 ```
 The test statistic value and df are identical to `fit_comp`, even though the number of model parameters is much higher (`r lavaan::fitmeasures(fit_pim)["npar"]`), because the items are also in the model (but in a saturated form).  
 
-The parameter estimates and standard errors for the relevant parameters are identical to those from the `fit_comp` run: 
+The parameter estimates and standard errors for the relevant parameters are essentially identical to those from the `fit_comp` run: 
 
 ```{r PIM3}
-#grab parameter names from the complete data run
-est_comp_key <- paste(est_comp$lhs, est_comp$op, est_comp$rhs, sep = "")
-#grab parameter names from the PIM run
-est_pim$key <- paste(est_pim$lhs, est_pim$op, est_pim$rhs, sep = "") 
-#show estimates and standard errors from the PIM run only for relevant parameters
-est_pim[est_pim$key %in% est_comp_key, 1:5]
-
+comp_table <- compare_est(fit_comp,fit_pim)[,c("est.fit_comp","se.fit_comp","est.fit_pim","se.fit_pim")]
+max(abs(comp_table$est.fit_comp - comp_table$est.fit_pim)) 
+max(abs(comp_table$se.fit_comp - comp_table$se.fit_pim)) 
 ```
+<!--I wonder what the differences in the 6th decimal place are due to!-->
 
-As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_tsml`.  
+As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_ts`.  
 
 
 ### Approximate Fit Assessment 
 
-With complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same: 
+With complete data, fit measures for the direct composites run and the "naive" Stage 2 fit measures for the TSML run are the same: 
 
 ```{r afi1}
 afi_comp <- lavaan::fitmeasures(fit_comp)
-afi_ts_naive <- lavaan::fitmeasures(fit_tsml$TS_Run_naive) 
+afi_ts_naive <- lavaan::fitmeasures(fit_ts) 
 round(cbind(afi_comp,afi_ts_naive),3)
 ```
 
-On the other hand, some PIM fit metrics can be weird even with complete data: 
+On the other hand, some PIM fit metrics can be weird: 
 ```{r afi2}
 afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
-Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model has to be specified to get the right CFI and other relative fit indices with PIM. The SRMR also needs to be computed differently. [We need functions for these]. The AIC/BIC values are not relevant as long as the same type of model is being compared (e.g., if different types of path models for composites are compared using the AIC, where all are implemented via PIM, that should be fine.)
+Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model would have to be specified to get the right CFI and other relative fit indices with PIM. The SRMR also needs to be computed differently. The AIC/BIC values are not relevant and should not be compared for the same composite model across different composite-model fitting methods. (But they can be compared for different models within the same type of method -- e.g., different models all fit via PIM or via TS). 
 
 To learn more about approximate fit assessment with different methods for composite model, see [Approximate_fit vignette](../doc/Approximate_fit.html).
