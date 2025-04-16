@@ -469,8 +469,15 @@ parameterEstimates_ts <- function(object,naive.se=TRUE) {
 
 
 
-#summary method for object of class twostage, move out eventually
-
+#' Summary method for twostage objects
+#'
+#' Provides a summary for objects of class "twostage".
+#'
+#' @param object An object of class "twostage".
+#' @param ... Additional arguments (currently not used).
+#' @return The summary of the "twostage" object.
+#' @exportMethod summary
+#'
 setMethod("summary", "twostage",
           function(object, ...) {
 

@@ -4,8 +4,7 @@ output: github_document
  
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via
-`devtools::build_readme()` -->
+<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
 
 
 ```{r, include = FALSE}
