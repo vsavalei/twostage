@@ -17,36 +17,25 @@ knitr::opts_chunk$set(
 
 ## To Do list 
 
-21) In TS functions to save standard errors, I use an internal lavaan function. RMD check doesn't like this, nor does the suggested help file. Do we care about this? [I think I did this as an easy way to add/drop non-free parameters, but use parTable?]
-```
-❯ checking dependencies in R code ... NOTE
-  ':::' call which should be '::': 'lavaan:::lav_model_vcov_se'
-    See the note in ?`:::` about the use of this operator.
-```
+1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this when fit indices are added. "Naive" standard errors are also saved. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
 
-1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors (labeled that way)? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this when fit indices are added. "Naive" standard errors are also saved. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
+21) Create `fitmeasures_ts()` function? Everything that looks awkward in the vignettes (here, complete data vignette accesses internal lavaan slots) should be a function. Or summary should spit out an object. 
 
-19) While the PIM model is run in `lavaan`, the output is not ideal. Design/write a function or a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
+19) While the PIM model is run in `lavaan`, the output is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
 
 2)  Add GLS
 
-4)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). Think about fit indices for all method. Write a vignette. 
-
-5)  Reconsider if constructing a giant 0-1 C is the best way to store info on composites vs components. This matrix is needed for computations in TSML and GLS, but not in PIM (even for the computations, there may be a more efficient way to do them.) E.g., maybe it should be a list.
+4)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). Think about fit indices. Write a vignette. 
 
 20) Provide a way for the user to specify how components relate to composites using newly invented lavaan syntax (developed for CCA). Example of such syntax:
 `model <- '   eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'`
 This should be translatable to a 5 x 2 matrix C, with rows labeled etas and columns labeled xs, and with 1s corresponding to those xs that belong to certain etas. We could look into how lavaan parses this syntax and stores the result. So, user can specify C, OR specify this syntax in the function input?
 
-6)  Write thorough tests for all functions (currently, only one test is included, to pass the rmd check)
+6)  Write many tests (currently, only one test is included, to pass the rmd check)
 
 7) Update stage0 function to include None as an option. Make a good decision on how to handle  observed variables in the model that are not composites. Update vignette.   
 
-8) What are useful/informative error/warning messages? For example: user cannot pass a different estimator via `runcommand`, data must be continuous. Obviously there are infinitely many ways the TSML method can break (categorical data, multilevel or interactions in stage 2, etc, etc). What are the most glaring ones? 
-
-9) Need an average model for PIM (currently sums only). Longer range: Maybe create arbitrary fixed weights for all. 
-
-10) Write functions to make comparisons among methods easier (this would be primarily for methodologists, e.g., a function creating keys and reordering parameters for easier comparisons. See currently ugly syntax in vignettes. 
+9) Need an average model for PIM (currently sums only). 
 
 11) Make the PIM.uni syntax more compact (item covs currently are one per line)
 
@@ -58,13 +47,22 @@ This should be translatable to a 5 x 2 matrix C, with rows labeled etas and colu
 
 15)  Update how documentation is done for TSML and families of functions – join, use inherit
 
-16)  Once ready, rename package into something reflecting items to composites? item2stage? items2comps?
-
-17) Implement confirmatory composite analysis (CCA; Schuberth, Henseler, and Ogasawara (2021),
-    Henseler (2021). Currently, Yves has provided a preliminary implementation of this approach in lavaan, but it has limitations, such as it cannot handle missing data on items that correspond to exogenous formative latent variables! It also restricts some covariances among items so that constraints imposed by CCA cannot be relaxed to obtain a PIM (these are nested models; see Siegel, Savalei, and Rhemtulla (2025; submitted to PM).
+16) Add missing data creation functions for simulations, try to make as generic as possible (old TSML functions from Mijke's project are model specific)
 
 
-Longer term goals/research:
+Longer term/uncertain:
+
+1) What are useful/informative error/warning messages? For example: user cannot pass a different estimator via `runcommand`, data must be continuous. Obviously there are infinitely many ways the TSML method can break (categorical data, multilevel or interactions in stage 2, etc, etc). What are the most glaring ones? 
+
+5)  Reconsider if constructing a giant 0-1 C is the best way to store info on composites vs components. This matrix is needed for computations in TSML and GLS, but not in PIM (even for the computations, there may be a more efficient way to do them.) E.g., maybe it should be a list.
+
+4) Arbitrary fixed weights for PIM and for TS?
+
+2) Implement confirmatory composite analysis (CCA; Schuberth, Henseler, and Ogasawara (2021), Henseler (2021). Currently, Yves has provided a preliminary implementation of this approach in lavaan, but it has limitations, such as it cannot handle missing data on items that correspond to exogenous formative latent variables! It also restricts some covariances among items so that constraints imposed by CCA cannot be relaxed to obtain a PIM (these are nested models; see Siegel, Savalei, and Rhemtulla (2025; submitted to PM).
+
+3) Rename package into something reflecting items to composites? item2stage? items2comps?
+
+Research:
 
 1)  Add TSML to lavaan, extend current CCA implementation so that constraints can be relaxed, yielding PIM
 

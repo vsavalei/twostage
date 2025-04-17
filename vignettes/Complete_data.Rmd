@@ -36,21 +36,24 @@ tpbdatac$INTALL<-rowSums(tpbdata[c("INT1","INT2","INT3")]) #new variable that is
 tpbdatac$BEH<-rowSums(tpbdata["BEH"]) #BEH variable copied from the original dataset
 ```
 
-We then specify the composite-level model, which hypothesizes full mediation, and fit it in `lavaan`: 
+We then specify the composite-level model, which hypothesizes full mediation: 
 
-```{r comp}
+```{r tpbmod}
 #composite-level model (BEH stays as as single indicator variable)
 tpbmod<-'
 INTALL ~ ATTALL + PBCALL + NORSALL
 BEH ~ INTALL'
+```
 
+We then fit it directly to the composites in `lavaan`: 
+```{r comp}
 fit_comp<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,meanstructure=TRUE)
 fit_comp
 est_comp<-lavaan::parameterestimates(fit_comp,ci=FALSE) #parameter estimates
 est_comp
 
 ```
-The printed chi-square, df, parameter estimates, and standard errors from `fit_comp` will be the values to match by the item-level methods. All these methods fit the model to the original dataset `tpbdata` containing only the items, without computing the composites explicitly. 
+The printed chi-square, df, parameter estimates, and standard errors from `fit_comp` will be the values to match by the item-level methods, which will fit the same model `tpbmod` to the original dataset `tpbdata` containing only the items, without computing the composites explicitly. 
 
 We first need to define the matrix $C$ that relates composites to components. The end user can assign components to composites interactively as follows:
 
@@ -74,7 +77,7 @@ C
 
 ### TSML 
 
-To match the complete data analysis when using TSML, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and `sample.cov.rescale=FALSE` for Stage 2, which skips the multiplication of the input covariance matrix by $(N-1)/N$ (via `runcommand2`).   
+To match the complete data analysis when using TSML, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and skip the default rescaling of the input covariance matrix in Stage 2 (via `runcommand2`).   
 
 ```{r TSML1}
 fit_ts <- twostage(data = tpbdata, model = tpbmod, C = C,
@@ -82,15 +85,15 @@ runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
 fixed.x=FALSE,sample.cov.rescale=FALSE")
 ```
 
-The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2(`se`), and the TSML standard errors, adjusted for missing data uncertainty in Stage 1: 
+The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2, which assume the input summary statistics into Stage 2 were obtained from complete data, and the TSML standard errors, which adjust for the uncertainty due to missing data: 
 
 ```{r TSML2}
 summary(fit_ts) 
 ```
 
-In this case, because the data are complete and we have matched the type of information used in Stage 1 to what is used by default with complete data, the "naive" and "TSML" standard errors are identical. 
+Because the data are complete and we have matched the type of information with what is used by default with complete data, the corrections in the "TSML" standard error formula "cancel out", and the "naive" and "TSML" standard errors are identical to all stored decimal places.  
 
-In addition, estimates and standard errors from `fit_comp` and `fit_ts` are identical to six decimal places. Below is their comparison side by side (rounded to three decimal places):  
+Estimates and standard errors from `fit_comp` and `fit_ts` are also identical to six decimal places. Below is their comparison side by side (rounded to three decimal places):  
 
 ```{r comp_vs_ts1}
 comp_table <- compare_est(fit_comp,fit_ts)
@@ -121,15 +124,15 @@ pvalue_ts <- fit_ts@Fit@test$twostage$pval
 print(c(chisq_ts,df,pvalue_ts))
 ```
 
-Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original references, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
+Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original papers on the residual-based chi-square with item-level missing data, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
 
 <!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. No idea what's going on. 
 
-Instead, it will be closer to the chi-square from the GLS method (differences are likely due to using $N$ versus $N-1$: 
+Instead, it will be closer to the chi-square from the GLS method: 
 
 ```{r gls}
 fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,
-                          meanstructure=TRUE,estimator="GLS")
+                          meanstructure=TRUE,estimator="GLS") 
 lavaan::fitmeasures(fit_comp_gls)[c("chisq","df","pvalue")] 
 
 ```
@@ -137,7 +140,7 @@ When the model is correct, both GLS and ML are asymptotically fully efficient, a
 
 ### PIM
 
-The PIM model syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite (add more detail?). The composites model is then embedded within the larger PIM model. We obtain the `lavaan` syntax for PIM as follows: 
+The PIM model syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite. The composites model is then embedded within the larger PIM model. We obtain the `lavaan` syntax for PIM as follows: 
 ```{r PIM1}
 tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
 cat(tpbpim)
@@ -166,19 +169,17 @@ As a sidenote, we could have also matched the standard errors for all three appr
 
 ### Approximate Fit Assessment 
 
-With complete data, fit measures for the direct composites run and the "naive" Stage 2 fit measures for the TSML run are the same: 
+With complete data, fit measures from the model fit directly to the composites (`fit_comp`) and the "naive" fit measures from Stage 2 of TSML (`fit_ts`) are the same. (This will not be the case with incomplete data). On the other hand, some PIM fit measures are weird:  
 
 ```{r afi1}
 afi_comp <- lavaan::fitmeasures(fit_comp)
 afi_ts_naive <- lavaan::fitmeasures(fit_ts) 
-round(cbind(afi_comp,afi_ts_naive),3)
-```
-
-On the other hand, some PIM fit metrics can be weird: 
-```{r afi2}
 afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
-Specifically, while the chi-square test and the RMSEA are unaffected, a custom baseline model would have to be specified to get the right CFI and other relative fit indices with PIM. The SRMR also needs to be computed differently. The AIC/BIC values are not relevant and should not be compared for the same composite model across different composite-model fitting methods. (But they can be compared for different models within the same type of method -- e.g., different models all fit via PIM or via TS). 
+
+Specifically, while the PIM chi-square test and the RMSEA are unaffected, the CFI and other relative fit index values is different. A custom baseline model would have to be specified to get the right CFI with PIM. The PIM SRMR is also different, and adjustments are needed to exclude the items.
+
+While the PIM AIC/BIC values are different, they are not relevant and should not be compared across different composite-model fitting methods. They *can* be compared for different composite models within the same type of method -- e.g., different models all fit via PIM. 
 
 To learn more about approximate fit assessment with different methods for composite model, see [Approximate_fit vignette](../doc/Approximate_fit.html).
