@@ -16,7 +16,7 @@ knitr::opts_chunk$set(
 
 ```{r setup}
 library(twostage)
-
+packageVersion("lavaan")
 ```
 <!--#Note to self: use devtools::build_rmd("vignettes/my-vignette.Rmd") to render the #vignette. This builds your vignette against a (temporarily installed) development #version of your package. -->
 
@@ -25,9 +25,9 @@ library(twostage)
 
 There are two options: 
 
-1) Assign these variables to their own composites, so that single-indicator latent variables are created for them. The advantage of this option is that the generated PIM syntax will be correct right away. The disadvantage is that a different name (from the observed variable's name) has to be assigned to this "composite", making the interpretation of the model results a little awkward. 
+1) Assign these variables to their own composites, so that single-indicator latent variables are created for them. The advantage of this option is that the generated PIM syntax will be complete. The disadvantage is that a different name (from the observed variable's name) has to be assigned to this "composite", making the interpretation of the model results a little awkward. 
 
-2) Include these variables in the model directly as observed variables. The advantage of this option is that the model is more interpretable. The disadvantage is that the generated PIM syntax will have to be modified manually to correlate observed and latent exogenous predictors. This is quite likely since true composites are treated as latent variables in PIM. 
+2) Include these variables in the model directly as observed variables. The advantage of this option is that the model is more interpretable. The disadvantage is that the generated PIM syntax will have to be modified manually to correlate observed and latent exogenous predictors. This is quite likely since true composites are treated as latent variables in PIM. UPDATE: I think this disadvantage is now gone, with `exog_cov=TRUE` argument.
 
 To do so, rename this variable in the composite model, and either regenerate C using stage0 function or rename the corresponding row of C. However, this may require manual modification of the resulting PIM syntax to correlate observed and latent exogenous predictors (see Github issue #415.
 
@@ -54,7 +54,7 @@ compmodel<-"C1 ~ C2 + C3"
 model1 <- PIM_syntax(C,compmodel)
 cat(model1)
 data1 <- misdata_mcar20[,c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")]
-out <- lavaan::sem(model1,data=data1)
+out<-lavaan::lavaan(model1,data=data1)
 df <- as.numeric(lavaan::fitmeasures(out)["df"])
 df
 
@@ -82,8 +82,7 @@ out2.mod
 
 ```
 
-<!-- Note to the self: I just realized that this function has no option for excluding
+<!-- Note to self: I just realized that this function has no option for excluding
 observed variables that are not composites, if they appear in the composites model. 
 However, if they are observed variables, they will also be in the dataset, so they can
-be assigned to their own `composite`. But the user may feed only a subportion of the data
-that truly are components: we need to have informative messages to guide all this.-->   
+be assigned to their own `composite`. But the user may feed only a subportion of the data that truly are components: we need to have informative messages to guide all this.-->   
