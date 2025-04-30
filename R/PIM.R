@@ -1,6 +1,7 @@
 #Functions to create a lavaan model syntax for PIM (Pseudo-Indicator Model)
-
 #TODO: Fix the code construction so that message2 is not necessary
+#TODO: ADD VARIANCES OR MARKER APPROACH FOR EXOGENEOUS LATENT VARS
+
 
 #grab names of "latent" variables or components (i.e., not in dataset) from the model
 composites<-function (C){
@@ -113,12 +114,15 @@ PIM.multi<-function (C) {
 comp_exog_covs_syntax<-function (compmodel) {
   partable<-lavaanify(compmodel)
 
-  # Define exogenous variables as rhs values with no `~` in `op` unless lhs is "1"
-  # Find endogenous vars (values in rhs with ~ in op when lhs is not 1)
-  end_names <- unique(partable$rhs[(partable$rhs %in% partable$lhs[partable$op == "~" &   partable$lhs != "1"])])
+  # Find endogenous vars (values in lhs with ~ in op when rhs is not 1)
+    end_names1 <- partable$lhs[partable$op == "~" &   partable$rhs != "1"]
+  # Find more endogenous vars (values in rhs with =~ in op), indicators of factors
+    end_names2 <- partable$rhs[partable$op == "=~"]
 
-  # Endogenous are not those in end_names
-  exog_names <- unique(partable$rhs[!(partable$rhs %in% end_names)])
+  # Endogenous appear in lhs(to avoid 1?) but not those in end_names1 or end_names2
+  # What about those that via fixed.x=TRUE would never appear in lhs, but only rhs?
+  # Do we just ignore fixed.x=TRUE because of missing data?
+    exog_names <- unique(partable$rhs[!(partable$rhs %in% c(end_names1, end_names2))])
 
   # Generate combinations of all pairs
   pairs <- utils::combn(exog_names, 2, simplify = FALSE)

@@ -4,8 +4,12 @@ output: github_document
  
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
+<!-- Render `README.Rmd` regularly tokeep `README.md` up-to-date, via `devtools::build_readme()` -->
 
+<!-- To view better, run: 
+detach("package:twostage", unload = TRUE)
+pkgdown::build_site() 
+-->
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -65,9 +69,9 @@ via `lavaan` syntax as follows:
 ```{r}
 #composite model
 mod <- '
-F1 =~ C1 + C2 + C3
-F2 =~ C4 + C5 + C6
-F3 =~ C7 + C8 + C9
+F1 =~ 1*C1 + C2 + C3
+F2 =~ 1*C4 + C5 + C6
+F3 =~ 1*C7 + C8 + C9
 '
 ```
 To fit this composite model using the item-level methods in this package, the specification of a $27 \times 9$ matrix $C$ assigning components to composites is first required. The columns are labeled with component names: $Y_1$ to $Y_{27}$, and the rows are labeled with composite names: $C_1$ to $C_9$. The [i,j]th element of $C$ is nonzero (for sums, it is 1) if component $j$ belongs to composite $i$, and zero otherwise. To create this matrix using an interactive interface, use: 
@@ -128,22 +132,24 @@ modpim <- PIM_syntax(compmodel = mod, C = C)
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It contains 
-the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator latent variable, and a special structure on the items. For details, see [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores) 
+the definition of each composite $C_i$, $i=1,\ldots,9$, as a single-indicator latent variable, and a special structure on the items. For details, see [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores) It is recommend to always check the part of the generated syntax pertaining to the composites (at the bottom). The default in `PIM_syntax` is to covary exogenous variables (whether observed variables, latent variables, or composites); to undo this default, use `exog_cov=FALSE`.  
 
-The PIM model can be fit directly in `lavaan`, using FIML to treat missing data on the items:
+The PIM model can be fit directly in `lavaan`. To treat missing data on the items, use FIML:
 
 ```{r}
-fit_pim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
+fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 fit_pim
+```
+Always confirm that the degrees of freedom are what you would expect for your composite model (if composites were formed directly). In this example,`fit_pm` returns the same df as `fit_ts`: 24. While the `sem` or `cfa` function produces identical output in this case, it is best to use the `lavaan()` function to fit PIMs to avoid any unintended defaults, given the nonstandard setup of this model. A complication is when there are true latent variables in the model, as in this example (F1 to F3), the `lavaan` function does not automatically fix their metric via the marker variable approach. This is the reason `modpim` has explicit 1s added to identify the marker variables. Alternatively, you could have fixed variances of F1-F3 to 1 in the model syntax. In the future we will automate this step. 
 
-ests <- lavaan::parameterestimates(fit_pim)
+To inspect parameter estimates, use `summary(fit_pim)` or the `parameterEstimates` function of `lavaan`. As the interest is in the composite model, the user has to ignore a lot of extraneous output pertaining to the item parameters. In the output shown below, we have removed all rows referring to "Y" variables (i.e., items).  
+```{r}
+ests <- lavaan::parameterEstimates(fit_pim,remove.nonfree=TRUE)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 ```
 
-As the interest is in the composite model, the user just has to ignore a lot of extraneous output pertaining to the item parameters. In the output shown above, the output of the `parameterestimates` function is modified by removing all rows referring to a "Y" variable (i.e., an item). 
-
-To compare estimates of common parameters in TS and PIM, the user can use built-in compare functions:
+To compare estimates of common parameters in TS and PIM, the user can use the `compare_est` function available in `twostage`:
 
 ```{r}
 comp_table <- compare_est(fit_pim,fit_ts)
