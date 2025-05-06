@@ -1,7 +1,10 @@
-# Note: I have tried using the simpler summary.twostage and print.
-# approaches (S3) but could not get them to work
-# The readme file would not generate the correct summary
-# I'd like to return to the simpler approach and figure out how to make it work
+
+
+#Note: I have tried using the simpler summary.twostage and print.
+#approaches (S3) but could not get them to work
+#The readme file would not generate the correct summary
+#Id like to return to the simpler approach and figure out how to make it work
+
 
 
 #' Summary method for twostage objects
@@ -46,7 +49,10 @@ setMethod("summary", "twostage",
           })
 
 
+
+
 #' Show method for 'SummaryTwostage' objects
+#'
 #' @param object An object of class 'SummaryTwostage'
 #' @export
 
@@ -74,3 +80,4 @@ setMethod("show", "SummaryTwostage", function(object) {
   cat("----------------------------\n")
   cat(test.output, "\n")
 })
+

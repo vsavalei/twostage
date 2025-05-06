@@ -86,8 +86,23 @@ mod <- '
 F1 =~ 1*C1 + C2 + C3
 F2 =~ 1*C4 + C5 + C6
 F3 =~ 1*C7 + C8 + C9
+F1 ~~ F1
+F2 ~~ F2
+F3 ~~ F3
 '
 ```
+
+Unlike with traditional CFA/SEM models, for true latent variables (*not*
+composites), the user must set their metric and variances explicitly in
+the composite model syntax. Above, the first loading of each true latent
+variable (F1, F2, F3) is set to 1, and their variances are free. This is
+because the PIM model will be fit via the `lavaan` function, which
+assumes nothing. \[Eventually, we will add automated syntax to fix
+this?\] The `PIM_syntax` automation function *will* correlate all
+exogenous variables in the model by default, so it is not necessary to
+specify, e.g., `F1 ~~ F2` in the composite model syntax (though it
+doesn’t hurt). In general, the user should aim to specify the composites
+model as explicitly and thoroughly as possible.
 
 To fit this composite model using the item-level methods in this
 package, the specification of a $27 \times 9$ matrix $C$ assigning
@@ -136,6 +151,9 @@ summary(fit_ts)
 #>   F2 =~  C6  1.292    0.387   3.339        0.001 0.433  2.987  0.003
 #>   F3 =~  C8  0.503    0.225   2.236        0.025 0.241  2.082  0.037
 #>   F3 =~  C9  1.214    0.353   3.437        0.001 0.401  3.027  0.002
+#>   F1 ~~  F1  0.676    0.327   2.066        0.039 0.344  1.964  0.050
+#>   F2 ~~  F2  0.649    0.308   2.107        0.035 0.346  1.877  0.060
+#>   F3 ~~  F3  0.760    0.322   2.358        0.018 0.367  2.070  0.038
 #>   C1 ~~  C1  3.019    0.391   7.724        0.000 0.417  7.242  0.000
 #>   C2 ~~  C2  3.681    0.456   8.077        0.000 0.495  7.435  0.000
 #>   C3 ~~  C3  2.787    0.520   5.354        0.000 0.570  4.885  0.000
@@ -145,9 +163,6 @@ summary(fit_ts)
 #>   C7 ~~  C7  2.743    0.363   7.559        0.000 0.413  6.639  0.000
 #>   C8 ~~  C8  3.167    0.333   9.504        0.000 0.368  8.606  0.000
 #>   C9 ~~  C9  3.137    0.465   6.746        0.000 0.529  5.935  0.000
-#>   F1 ~~  F1  0.676    0.327   2.066        0.039 0.344  1.964  0.050
-#>   F2 ~~  F2  0.649    0.308   2.107        0.035 0.346  1.877  0.060
-#>   F3 ~~  F3  0.760    0.322   2.358        0.018 0.367  2.070  0.038
 #>   F1 ~~  F2  0.343    0.150   2.292        0.022 0.161  2.123  0.034
 #>   F1 ~~  F3  0.332    0.151   2.201        0.028 0.166  1.998  0.046
 #>   F2 ~~  F3  0.590    0.201   2.936        0.003 0.222  2.653  0.008
@@ -179,7 +194,8 @@ of the `lavaan` PIM syntax:
 
 ``` r
 modpim <- PIM_syntax(compmodel = mod, C = C)
-#> Note: The following exogeneous variables in the composites model are correlated: F1, F2, F3. 
+#> Note: The following exogeneous variables in the composites model will be  correlated by default
+#> (unless overridden in the composite model syntax): F1, F2, F3. 
 #> If you do not want this, modify the composite model syntax manually or set exog_vars=FALSE.
 ```
 
@@ -199,38 +215,29 @@ the items, use FIML:
 
 ``` r
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
-#> Warning: lavaan->lav_object_post_check():  
-#>    covariance matrix of latent variables is not positive definite ; use 
-#>    lavInspect(fit, "cov.lv") to investigate.
 fit_pim
-#> lavaan 0.6-20.2307 ended normally after 296 iterations
+#> lavaan 0.6-20.2307 ended normally after 260 iterations
 #> 
 #>   Estimator                                         ML
 #>   Optimization method                           NLMINB
-#>   Number of model parameters                       378
+#>   Number of model parameters                       381
 #> 
 #>   Number of observations                           200
 #>   Number of missing patterns                        36
 #> 
 #> Model Test User Model:
 #>                                                       
-#>   Test statistic                                72.898
-#>   Degrees of freedom                                27
-#>   P-value (Chi-square)                           0.000
+#>   Test statistic                                24.311
+#>   Degrees of freedom                                24
+#>   P-value (Chi-square)                           0.444
 ```
 
 Always confirm that the degrees of freedom are what you would expect for
-your composite model (if composites were formed directly). In this
-example,`fit_pm` returns the same df as `fit_ts`: 24. While the `sem` or
-`cfa` function produces identical output in this case, it is best to use
-the `lavaan()` function to fit PIMs to avoid any unintended defaults,
-given the nonstandard setup of this model. A complication is when there
-are true latent variables in the model, as in this example (F1 to F3),
-the `lavaan` function does not automatically fix their metric via the
-marker variable approach. This is the reason `modpim` has explicit 1s
-added to identify the marker variables. Alternatively, you could have
-fixed variances of F1-F3 to 1 in the model syntax. In the future we will
-automate this step.
+your composite model (if data had been complete and the composites had
+been formed directly). In this example,`fit_pm` returns the same df as
+`fit_ts`: 24. While the `sem` function produces identical output in this
+case, it is best to use the `lavaan()` function to fit PIMs to avoid any
+unintended defaults, given the nonstandard setup of this model.
 
 To inspect parameter estimates, use `summary(fit_pim)` or the
 `parameterEstimates` function of `lavaan`. As the interest is in the
@@ -243,33 +250,36 @@ ests <- lavaan::parameterEstimates(fit_pim,remove.nonfree=TRUE)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 #>     lhs op rhs    est    se      z pvalue ci.lower ci.upper
-#> 5    C1 ~1      0.258 0.141  1.833  0.067   -0.018    0.533
-#> 7    C1 ~~  C1  3.695 0.383  9.643  0.000    2.944    4.445
-#> 12   C2 ~1     -0.118 0.152 -0.775  0.438   -0.416    0.180
-#> 14   C2 ~~  C2  4.399 0.464  9.474  0.000    3.489    5.309
-#> 19   C3 ~1      0.107 0.148  0.726  0.468   -0.182    0.397
-#> 21   C3 ~~  C3  4.079 0.431  9.470  0.000    3.234    4.923
-#> 26   C4 ~1      0.075 0.154  0.486  0.627   -0.227    0.377
-#> 28   C4 ~~  C4  4.189 0.466  8.989  0.000    3.275    5.102
-#> 33   C5 ~1      0.049 0.158  0.311  0.756   -0.260    0.358
-#> 35   C5 ~~  C5  4.339 0.480  9.048  0.000    3.399    5.279
-#> 40   C6 ~1     -0.023 0.151 -0.153  0.879   -0.319    0.273
-#> 42   C6 ~~  C6  3.962 0.431  9.203  0.000    3.118    4.806
-#> 47   C7 ~1     -0.095 0.143 -0.669  0.504   -0.375    0.184
-#> 49   C7 ~~  C7  3.457 0.381  9.078  0.000    2.711    4.203
-#> 54   C8 ~1      0.107 0.140  0.764  0.445   -0.168    0.382
-#> 56   C8 ~~  C8  3.373 0.369  9.152  0.000    2.651    4.095
-#> 61   C9 ~1      0.031 0.152  0.206  0.836   -0.267    0.330
-#> 63   C9 ~~  C9  4.201 0.448  9.375  0.000    3.323    5.079
-#> 416  F1 =~  C2 -0.058 0.479 -0.122  0.903   -0.997    0.880
-#> 417  F1 =~  C3  1.055 0.562  1.875  0.061   -0.048    2.157
-#> 419  F2 =~  C5  1.116 0.694  1.607  0.108   -0.245    2.477
-#> 420  F2 =~  C6  1.208 0.739  1.635  0.102   -0.240    2.656
-#> 422  F3 =~  C8 -0.010 0.342 -0.030  0.976   -0.681    0.661
-#> 423  F3 =~  C9  1.307 0.567  2.304  0.021    0.195    2.419
-#> 424  F1 ~~  F2  0.264 0.152  1.741  0.082   -0.033    0.561
-#> 425  F1 ~~  F3  0.422 0.213  1.988  0.047    0.006    0.839
-#> 426  F2 ~~  F3  0.376 0.192  1.955  0.051   -0.001    0.752
+#> 5    C1 ~1      0.263 0.141  1.866  0.062   -0.013    0.538
+#> 7    C1 ~~  C1  3.028 0.428  7.069  0.000    2.189    3.868
+#> 12   C2 ~1     -0.120 0.152 -0.789  0.430   -0.417    0.178
+#> 14   C2 ~~  C2  3.590 0.505  7.106  0.000    2.600    4.580
+#> 19   C3 ~1      0.115 0.148  0.774  0.439   -0.176    0.405
+#> 21   C3 ~~  C3  2.833 0.574  4.934  0.000    1.708    3.958
+#> 26   C4 ~1      0.079 0.155  0.507  0.612   -0.225    0.383
+#> 28   C4 ~~  C4  3.620 0.473  7.658  0.000    2.693    4.546
+#> 33   C5 ~1      0.049 0.158  0.307  0.759   -0.261    0.358
+#> 35   C5 ~~  C5  3.393 0.497  6.828  0.000    2.419    4.367
+#> 40   C6 ~1     -0.031 0.152 -0.203  0.839   -0.328    0.267
+#> 42   C6 ~~  C6  2.997 0.471  6.366  0.000    2.074    3.920
+#> 47   C7 ~1     -0.119 0.144 -0.823  0.410   -0.402    0.164
+#> 49   C7 ~~  C7  2.791 0.438  6.375  0.000    1.933    3.650
+#> 54   C8 ~1      0.110 0.140  0.784  0.433   -0.165    0.385
+#> 56   C8 ~~  C8  3.171 0.375  8.457  0.000    2.436    3.906
+#> 61   C9 ~1      0.038 0.153  0.248  0.804   -0.263    0.339
+#> 63   C9 ~~  C9  3.189 0.512  6.227  0.000    2.185    4.192
+#> 416  F1 =~  C2  1.089 0.415  2.626  0.009    0.276    1.901
+#> 417  F1 =~  C3  1.386 0.543  2.554  0.011    0.322    2.449
+#> 419  F2 =~  C5  1.248 0.440  2.838  0.005    0.386    2.111
+#> 420  F2 =~  C6  1.269 0.422  3.008  0.003    0.442    2.096
+#> 422  F3 =~  C8  0.511 0.242  2.113  0.035    0.037    0.985
+#> 423  F3 =~  C9  1.173 0.414  2.831  0.005    0.361    1.986
+#> 424  F1 ~~  F1  0.665 0.355  1.876  0.061   -0.030    1.360
+#> 425  F2 ~~  F2  0.642 0.342  1.881  0.060   -0.027    1.312
+#> 426  F3 ~~  F3  0.779 0.393  1.984  0.047    0.010    1.548
+#> 427  F1 ~~  F2  0.339 0.163  2.074  0.038    0.019    0.659
+#> 428  F1 ~~  F3  0.312 0.171  1.823  0.068   -0.023    0.647
+#> 429  F2 ~~  F3  0.606 0.231  2.621  0.009    0.153    1.060
 ```
 
 To compare estimates of common parameters in TS and PIM, the user can
@@ -282,33 +292,36 @@ comp_table <- compare_est(fit_pim,fit_ts)
 as.data.frame(lapply(comp_table, function(x) {
   if(is.numeric(x)) { round(x, 3) } else {x} }))
 #>    lhs op rhs est.fit_pim se.fit_pim z.fit_pim pvalue.fit_pim est.fit_ts
-#> 1   C1 ~~  C1       3.695      0.383     9.643          0.000      3.019
-#> 2   C1 ~1           0.258      0.141     1.833          0.067      0.260
-#> 3   C2 ~~  C2       4.399      0.464     9.474          0.000      3.681
-#> 4   C2 ~1          -0.118      0.152    -0.775          0.438     -0.116
-#> 5   C3 ~~  C3       4.079      0.431     9.470          0.000      2.787
-#> 6   C3 ~1           0.107      0.148     0.726          0.468      0.113
-#> 7   C4 ~~  C4       4.189      0.466     8.989          0.000      3.573
-#> 8   C4 ~1           0.075      0.154     0.486          0.627      0.084
-#> 9   C5 ~~  C5       4.339      0.480     9.048          0.000      3.458
-#> 10  C5 ~1           0.049      0.158     0.311          0.756      0.057
-#> 11  C6 ~~  C6       3.962      0.431     9.203          0.000      2.919
-#> 12  C6 ~1          -0.023      0.151    -0.153          0.879     -0.029
-#> 13  C7 ~~  C7       3.457      0.381     9.078          0.000      2.743
-#> 14  C7 ~1          -0.095      0.143    -0.669          0.504     -0.114
-#> 15  C8 ~~  C8       3.373      0.369     9.152          0.000      3.167
-#> 16  C8 ~1           0.107      0.140     0.764          0.445      0.112
-#> 17  C9 ~~  C9       4.201      0.448     9.375          0.000      3.137
-#> 18  C9 ~1           0.031      0.152     0.206          0.836      0.032
-#> 19  F1 ~~  F2       0.264      0.152     1.741          0.082      0.343
-#> 20  F1 ~~  F3       0.422      0.213     1.988          0.047      0.332
-#> 21  F1 =~  C2      -0.058      0.479    -0.122          0.903      1.022
-#> 22  F1 =~  C3       1.055      0.562     1.875          0.061      1.389
-#> 23  F2 ~~  F3       0.376      0.192     1.955          0.051      0.590
-#> 24  F2 =~  C5       1.116      0.694     1.607          0.108      1.198
-#> 25  F2 =~  C6       1.208      0.739     1.635          0.102      1.292
-#> 26  F3 =~  C8      -0.010      0.342    -0.030          0.976      0.503
-#> 27  F3 =~  C9       1.307      0.567     2.304          0.021      1.214
+#> 1   C1 ~~  C1       3.028      0.428     7.069          0.000      3.019
+#> 2   C1 ~1           0.263      0.141     1.866          0.062      0.260
+#> 3   C2 ~~  C2       3.590      0.505     7.106          0.000      3.681
+#> 4   C2 ~1          -0.120      0.152    -0.789          0.430     -0.116
+#> 5   C3 ~~  C3       2.833      0.574     4.934          0.000      2.787
+#> 6   C3 ~1           0.115      0.148     0.774          0.439      0.113
+#> 7   C4 ~~  C4       3.620      0.473     7.658          0.000      3.573
+#> 8   C4 ~1           0.079      0.155     0.507          0.612      0.084
+#> 9   C5 ~~  C5       3.393      0.497     6.828          0.000      3.458
+#> 10  C5 ~1           0.049      0.158     0.307          0.759      0.057
+#> 11  C6 ~~  C6       2.997      0.471     6.366          0.000      2.919
+#> 12  C6 ~1          -0.031      0.152    -0.203          0.839     -0.029
+#> 13  C7 ~~  C7       2.791      0.438     6.375          0.000      2.743
+#> 14  C7 ~1          -0.119      0.144    -0.823          0.410     -0.114
+#> 15  C8 ~~  C8       3.171      0.375     8.457          0.000      3.167
+#> 16  C8 ~1           0.110      0.140     0.784          0.433      0.112
+#> 17  C9 ~~  C9       3.189      0.512     6.227          0.000      3.137
+#> 18  C9 ~1           0.038      0.153     0.248          0.804      0.032
+#> 19  F1 ~~  F1       0.665      0.355     1.876          0.061      0.676
+#> 20  F1 ~~  F2       0.339      0.163     2.074          0.038      0.343
+#> 21  F1 ~~  F3       0.312      0.171     1.823          0.068      0.332
+#> 22  F1 =~  C2       1.089      0.415     2.626          0.009      1.022
+#> 23  F1 =~  C3       1.386      0.543     2.554          0.011      1.389
+#> 24  F2 ~~  F2       0.642      0.342     1.881          0.060      0.649
+#> 25  F2 ~~  F3       0.606      0.231     2.621          0.009      0.590
+#> 26  F2 =~  C5       1.248      0.440     2.838          0.005      1.198
+#> 27  F2 =~  C6       1.269      0.422     3.008          0.003      1.292
+#> 28  F3 ~~  F3       0.779      0.393     1.984          0.047      0.760
+#> 29  F3 =~  C8       0.511      0.242     2.113          0.035      0.503
+#> 30  F3 =~  C9       1.173      0.414     2.831          0.005      1.214
 #>    se.fit_ts z.fit_ts pvalue.fit_ts
 #> 1      0.417    7.242         0.000
 #> 2      0.141    1.843         0.065
@@ -328,22 +341,34 @@ as.data.frame(lapply(comp_table, function(x) {
 #> 16     0.140    0.798         0.425
 #> 17     0.529    5.935         0.000
 #> 18     0.154    0.208         0.835
-#> 19     0.161    2.123         0.034
-#> 20     0.166    1.998         0.046
-#> 21     0.379    2.696         0.007
-#> 22     0.508    2.736         0.006
-#> 23     0.222    2.653         0.008
-#> 24     0.420    2.849         0.004
-#> 25     0.433    2.987         0.003
-#> 26     0.241    2.082         0.037
-#> 27     0.401    3.027         0.002
+#> 19     0.344    1.964         0.050
+#> 20     0.161    2.123         0.034
+#> 21     0.166    1.998         0.046
+#> 22     0.379    2.696         0.007
+#> 23     0.508    2.736         0.006
+#> 24     0.346    1.877         0.060
+#> 25     0.222    2.653         0.008
+#> 26     0.420    2.849         0.004
+#> 27     0.433    2.987         0.003
+#> 28     0.367    2.070         0.038
+#> 29     0.241    2.082         0.037
+#> 30     0.401    3.027         0.002
 ```
 
-The only complicating element for TS and PIM methods is approximate fit
-assessment; this aspect is under development, see Approximate_fit
-vignette. When data are complete, both TS and PIM produce equivalent
-output to the complete data run on the manually-formed composites, see
-the Complete_data vignette.
+The TS and PIM estimates and standard errors are quite similar.
+Technically, the TS estimates are less efficient than FIML estimates,
+which FIML supposedly provides. However, this has not been evaluated in
+any simulations. When data are complete, both TS and PIM produce
+equivalent output to the complete data run on the manually-formed
+composites, see the Complete_data vignette.
+
+Approximate fit assessment of PIM models is a bit more complicated and
+requires special setup. The gist of the issue is that we want to assess
+the fit of the composite model, not the fit of the etire model. See
+Approximate_fit vignette for how to do this. Additionally, with missing
+data, both TS and PIM methods will require minor corrections to fit
+indices in order for them to mimic their would-be complete data values;
+eventually, the Approximate_fit vignette will show this as well.
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->

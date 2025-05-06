@@ -4,6 +4,7 @@
 #' @import lavaan
 #' @importFrom methods as
 #' @importFrom stats pnorm
+#' @importFrom methods show
 #'
 #namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd<- function (cnames) {

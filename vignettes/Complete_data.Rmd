@@ -143,17 +143,17 @@ When the model is correct, both GLS and ML are asymptotically fully efficient, a
 The PIM model syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite. The composites model is then embedded within the larger PIM model. We obtain the `lavaan` syntax for PIM as follows: 
 ```{r PIM1}
 tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
-cat(tpbpim)
+#cat(tpbpim)
 ```
 
 We then fit this model in `lavaan` (without declaring missing data):
 
 ```{r PIM2}
-fit_pim <- lavaan::sem(tpbpim, data=tpbdata)
+fit_pim <- lavaan::lavaan(tpbpim, data=tpbdata)
 fit_pim
 est_pim<-lavaan::parameterestimates(fit_pim,ci=FALSE) 
 ```
-The test statistic value and df are identical to `fit_comp`, even though the number of model parameters is much higher (`r lavaan::fitmeasures(fit_pim)["npar"]`), because the items are also in the model (but in a saturated form).  
+While the `sem` function also works here, it is best to use the `lavaan` function for PIM models to avoid any unintended defaults. The test statistic value and df are identical to `fit_comp`, even though the number of model parameters is much higher (`r lavaan::fitmeasures(fit_pim)["npar"]`), because the items are also in the model (but in a saturated form).  
 
 The parameter estimates and standard errors for the relevant parameters are essentially identical to those from the `fit_comp` run: 
 
@@ -166,10 +166,7 @@ max(abs(comp_table$se.fit_comp - comp_table$se.fit_pim))
 
 As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_ts`.  
 
-
-### Approximate Fit Assessment 
-
-With complete data, fit measures from the model fit directly to the composites (`fit_comp`) and the "naive" fit measures from Stage 2 of TSML (`fit_ts`) are the same. (This will not be the case with incomplete data). On the other hand, some PIM fit measures are weird:  
+Lastly, fit measures from the model fit directly to the composites (`fit_comp`) and the "naive" fit measures from Stage 2 of TSML (`fit_ts`) are the same. (This will not be the case with incomplete data). The PIM fit measures (`fit_pim`) that are expected to be the same, such as chi-square and RMSEA, are the same as TSML. 
 
 ```{r afi1}
 afi_comp <- lavaan::fitmeasures(fit_comp)
@@ -178,8 +175,4 @@ afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
 
-Specifically, while the PIM chi-square test and the RMSEA are unaffected, the CFI and other relative fit index values is different. A custom baseline model would have to be specified to get the right CFI with PIM. The PIM SRMR is also different, and adjustments are needed to exclude the items.
-
-While the PIM AIC/BIC values are different, they are not relevant and should not be compared across different composite-model fitting methods. They *can* be compared for different composite models within the same type of method -- e.g., different models all fit via PIM. 
-
-To learn more about approximate fit assessment with different methods for composite model, see [Approximate_fit vignette](../doc/Approximate_fit.html).
+Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR), as well as information criteria (e.g., AIC) are different for PIMs. Some of these can be recomputed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup; see [Approximate_fit vignette](../doc/Approximate_fit.html).

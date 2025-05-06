@@ -10,13 +10,15 @@ composites<-function (C){
   composites <-setdiff(model_names, component_names) #only var names that aren't in data
   common_elements <- intersect(model_names, component_names) #model var names that are also in the data
 
-  if (length(common_elements) > 0) {
-    message2 <- paste("Note: The following variables are treated as observed variables:",
-                      paste(common_elements, collapse = ", "),
-                      "\nThe generated PIM syntax may need to be manually modified to allow",
-                      "\ntheir correlation with other exogeneous latent variables that represent composites")
-    message(message2)
-  }
+  #Commented out; I am not sure we need this message anymore given automatic
+  #correlations among all exogenous vars regardless of type
+  # if (length(common_elements) > 0) {
+  #   message2 <- paste("Note: The following variables are treated as observed variables:",
+  #                     paste(common_elements, collapse = ", "),
+  #                     "\nThe generated PIM syntax may need to be manually modified to allow",
+  #                     "\ntheir correlation with other exogeneous latent variables that represent composites")
+  #   message(message2)
+  # }
   return(composites)
  }
 
@@ -108,21 +110,31 @@ PIM.multi<-function (C) {
 
 }
 
-#explicitly correlates exogenous variables in a model for composites
-##also useful for the baseline model for composites
-
+## explicitly correlates exogenous variables in a model for composites
+## also useful for the baseline model for composites
+## We need to add corelations among factors. Problem: here, we do not know which ones
+## are factors and which ones are composites.
+## In the PIM.uni.lavaan, we already free variances of composites, so this will
+## double up the syntax if appied indiscriminantly. In the PIM.uni.lavaan, however, we
+## do not have info about the model and names of true latent vars. Maybe combine these
+## two functions.
+## Problem with message4: if user ends orthogonal covs to compmodel, it will still
+## get printed. However, that message is no longer accurate, because user specification
+## will override this duplicate specification. (verified). We need a better unified way to set up the entire PIM.
 comp_exog_covs_syntax<-function (compmodel) {
   partable<-lavaanify(compmodel)
 
-  # Find endogenous vars (values in lhs with ~ in op when rhs is not 1)
-    end_names1 <- partable$lhs[partable$op == "~" &   partable$rhs != "1"]
+  # Find endogenous vars (values in lhs with ~ in op)
+  end_names1 <- unique(partable$lhs[partable$op == "~"]) # do not need to worry about 1
   # Find more endogenous vars (values in rhs with =~ in op), indicators of factors
-    end_names2 <- partable$rhs[partable$op == "=~"]
+  end_names2 <- unique(partable$rhs[partable$op == "=~"])
 
   # Endogenous appear in lhs(to avoid 1?) but not those in end_names1 or end_names2
   # What about those that via fixed.x=TRUE would never appear in lhs, but only rhs?
   # Do we just ignore fixed.x=TRUE because of missing data?
-    exog_names <- unique(partable$rhs[!(partable$rhs %in% c(end_names1, end_names2))])
+  # "" excludes empty rhs, which corresponds to mean structure parameters
+  # why isn't 1 stored in rhs? i don't know.
+  exog_names <- unique(partable$rhs[!(partable$rhs %in% c(end_names1, end_names2,""))])
 
   # Generate combinations of all pairs
   pairs <- utils::combn(exog_names, 2, simplify = FALSE)
@@ -131,7 +143,8 @@ comp_exog_covs_syntax<-function (compmodel) {
 
   # Collapse into a single string separated by newlines
   exog_covs <- paste(fpairs, collapse = "\n")
-  message4 <- paste0("Note: The following exogeneous variables in the composites model are correlated: ",paste(exog_names, collapse = ", "),". \nIf you do not want this, modify the composite model syntax manually or set exog_vars=FALSE.")
+  message4 <- paste0("Note: The following exogeneous variables in the composites model will be  correlated by default",
+              "\n(unless overridden in the composite model syntax): ",paste(exog_names, collapse = ", "),". \nIf you do not want this, modify the composite model syntax manually or set exog_cov=FALSE.")
   message(message4)
   return(exog_covs)
 }
