@@ -196,7 +196,7 @@ of the `lavaan` PIM syntax:
 modpim <- PIM_syntax(compmodel = mod, C = C)
 #> Note: The following exogeneous variables in the composites model will be  correlated by default
 #> (unless overridden in the composite model syntax): F1, F2, F3. 
-#> If you do not want this, modify the composite model syntax manually or set exog_vars=FALSE.
+#> If you do not want this, modify the composite model syntax manually or set exog_cov=FALSE.
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
@@ -357,18 +357,19 @@ as.data.frame(lapply(comp_table, function(x) {
 
 The TS and PIM estimates and standard errors are quite similar.
 Technically, the TS estimates are less efficient than FIML estimates,
-which FIML supposedly provides. However, this has not been evaluated in
-any simulations. When data are complete, both TS and PIM produce
-equivalent output to the complete data run on the manually-formed
-composites, see the Complete_data vignette.
+which the PIM setup supposedly provides. However, this has not been
+evaluated in any simulations. When data are complete, both TS and PIM
+produce equivalent output to the complete data run on the
+manually-formed composites (see the Complete_data vignette).
 
 Approximate fit assessment of PIM models is a bit more complicated and
 requires special setup. The gist of the issue is that we want to assess
-the fit of the composite model, not the fit of the etire model. See
-Approximate_fit vignette for how to do this. Additionally, with missing
-data, both TS and PIM methods will require minor corrections to fit
-indices in order for them to mimic their would-be complete data values;
-eventually, the Approximate_fit vignette will show this as well.
+the fit of the composite model, not the fit of the entire model. Some
+functions to automate this are described in the Approximate_fit
+vignette. Additionally, with missing data, both TS and PIM methods will
+require minor corrections to fit indices in order for them to mimic
+their would-be complete data values; eventually, the Approximate_fit
+vignette will show this as well.
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->
