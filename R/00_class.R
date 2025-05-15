@@ -1,2 +1,0 @@
-setClass("twostage",
-         contains = "lavaan")

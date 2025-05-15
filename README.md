@@ -1,6 +1,10 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
+<!-- Render `README.Rmd` regularly tokeep `README.md` up-to-date, via `devtools::build_readme()` -->
+<!-- To view better, run: 
+detach("package:twostage", unload = TRUE)
+pkgdown::build_site() 
+-->
 
 # Package `twostage`
 
@@ -79,11 +83,26 @@ defined via `lavaan` syntax as follows:
 ``` r
 #composite model
 mod <- '
-F1 =~ C1 + C2 + C3
-F2 =~ C4 + C5 + C6
-F3 =~ C7 + C8 + C9
+F1 =~ 1*C1 + C2 + C3
+F2 =~ 1*C4 + C5 + C6
+F3 =~ 1*C7 + C8 + C9
+F1 ~~ F1
+F2 ~~ F2
+F3 ~~ F3
 '
 ```
+
+Unlike with traditional CFA/SEM models, for true latent variables (*not*
+composites), the user must set their metric and variances explicitly in
+the composite model syntax. Above, the first loading of each true latent
+variable (F1, F2, F3) is set to 1, and their variances are free. This is
+because the PIM model will be fit via the `lavaan` function, which
+assumes nothing. \[Eventually, we will add automated syntax to fix
+this?\] The `PIM_syntax` automation function *will* correlate all
+exogenous variables in the model by default, so it is not necessary to
+specify, e.g., `F1 ~~ F2` in the composite model syntax (though it
+doesn’t hurt). In general, the user should aim to specify the composites
+model as explicitly and thoroughly as possible.
 
 To fit this composite model using the item-level methods in this
 package, the specification of a $27 \times 9$ matrix $C$ assigning
@@ -123,70 +142,39 @@ fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
 summary(fit_ts)
 #> Summary of Two-Stage Analysis 
 #> ----------------------------
-#> Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and pvalue),
-#>       and the corrected TSML standard errors (with z-test and p-value): 
-#>  lhs op rhs         est  se_naive    z_naive pvalue_naive        se          z
-#>   F1 =~  C2  1.02193658 0.3579328  2.8551076 4.302225e-03 0.3790369  2.6961397
-#>   F1 =~  C3  1.38926575 0.4766224  2.9148140 3.559006e-03 0.5078380  2.7356473
-#>   F2 =~  C5  1.19819027 0.3712583  3.2273766 1.249309e-03 0.4204921  2.8494955
-#>   F2 =~  C6  1.29248625 0.3870511  3.3393170 8.398466e-04 0.4327614  2.9866025
-#>   F3 =~  C8  0.50252629 0.2247838  2.2355987 2.537807e-02 0.2413742  2.0819390
-#>   F3 =~  C9  1.21419672 0.3532458  3.4372577 5.876363e-04 0.4010741  3.0273622
-#>   C1 ~~  C1  3.01850878 0.3907862  7.7241950 1.132427e-14 0.4168094  7.2419409
-#>   C2 ~~  C2  3.68118084 0.4557431  8.0773149 6.661338e-16 0.4951376  7.4346624
-#>   C3 ~~  C3  2.78671087 0.5204495  5.3544311 8.582601e-08 0.5704592  4.8850308
-#>   C4 ~~  C4  3.57287005 0.4145500  8.6186714 0.000000e+00 0.4718739  7.5716626
-#>   C5 ~~  C5  3.45781977 0.4373025  7.9071570 2.664535e-15 0.5011573  6.8996700
-#>   C6 ~~  C6  2.91885671 0.4145512  7.0410035 1.908695e-12 0.4623456  6.3131496
-#>   C7 ~~  C7  2.74306637 0.3628939  7.5588651 4.063416e-14 0.4131604  6.6392281
-#>   C8 ~~  C8  3.16669743 0.3332076  9.5036785 0.000000e+00 0.3679581  8.6061365
-#>   C9 ~~  C9  3.13697082 0.4649928  6.7462783 1.516853e-11 0.5285742  5.9347781
-#>   F1 ~~  F1  0.67578595 0.3270536  2.0662848 3.880160e-02 0.3441623  1.9635678
-#>   F2 ~~  F2  0.64868483 0.3078294  2.1072869 3.509272e-02 0.3455100  1.8774702
-#>   F3 ~~  F3  0.76015959 0.3223813  2.3579522 1.837606e-02 0.3671408  2.0704852
-#>   F1 ~~  F2  0.34270935 0.1495455  2.2916724 2.192455e-02 0.1614227  2.1230557
-#>   F1 ~~  F3  0.33202639 0.1508528  2.2009957 2.773633e-02 0.1661643  1.9981811
-#>   F2 ~~  F3  0.58960029 0.2008429  2.9356295 3.328717e-03 0.2222176  2.6532571
-#>   C1 ~1      0.25996869 0.1359098  1.9128031 5.577326e-02 0.1410413  1.8432092
-#>   C2 ~1     -0.11576178 0.1481037 -0.7816265 4.344341e-01 0.1520786 -0.7611973
-#>   C3 ~1      0.11284636 0.1430213  0.7890179 4.301015e-01 0.1482134  0.7613774
-#>   C4 ~1      0.08381759 0.1452851  0.5769178 5.639950e-01 0.1549407  0.5409657
-#>   C5 ~1      0.05747750 0.1481403  0.3879936 6.980207e-01 0.1584999  0.3626344
-#>   C6 ~1     -0.02888770 0.1414655 -0.2042031 8.381948e-01 0.1516308 -0.1905133
-#>   C7 ~1     -0.11409123 0.1323485 -0.8620514 3.886592e-01 0.1431886 -0.7967898
-#>   C8 ~1      0.11175214 0.1295890  0.8623581 3.884905e-01 0.1400749  0.7978030
-#>   C9 ~1      0.03200253 0.1459050  0.2193381 8.263867e-01 0.1537131  0.2081965
-#>        pvalue
-#>  7.014823e-03
-#>  6.225771e-03
-#>  4.378863e-03
-#>  2.820962e-03
-#>  3.734804e-02
-#>  2.466982e-03
-#>  4.423129e-13
-#>  1.048051e-13
-#>  1.034127e-06
-#>  3.685940e-14
-#>  5.212275e-12
-#>  2.734128e-10
-#>  3.153300e-11
-#>  0.000000e+00
-#>  2.942432e-09
-#>  4.958023e-02
-#>  6.045367e-02
-#>  3.840693e-02
-#>  3.374918e-02
-#>  4.569703e-02
-#>  7.971913e-03
-#>  6.529847e-02
-#>  4.465393e-01
-#>  4.464317e-01
-#>  5.885312e-01
-#>  7.168780e-01
-#>  8.489069e-01
-#>  4.255731e-01
-#>  4.249848e-01
-#>  8.350755e-01
+#> Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and p-value),
+#>  and the corrected TSML standard errors (with z-test and p-value): 
+#>  lhs op rhs    est se_naive z_naive pvalue_naive    se      z pvalue
+#>   F1 =~  C2  1.022    0.358   2.855        0.004 0.379  2.696  0.007
+#>   F1 =~  C3  1.389    0.477   2.915        0.004 0.508  2.736  0.006
+#>   F2 =~  C5  1.198    0.371   3.227        0.001 0.420  2.849  0.004
+#>   F2 =~  C6  1.292    0.387   3.339        0.001 0.433  2.987  0.003
+#>   F3 =~  C8  0.503    0.225   2.236        0.025 0.241  2.082  0.037
+#>   F3 =~  C9  1.214    0.353   3.437        0.001 0.401  3.027  0.002
+#>   F1 ~~  F1  0.676    0.327   2.066        0.039 0.344  1.964  0.050
+#>   F2 ~~  F2  0.649    0.308   2.107        0.035 0.346  1.877  0.060
+#>   F3 ~~  F3  0.760    0.322   2.358        0.018 0.367  2.070  0.038
+#>   C1 ~~  C1  3.019    0.391   7.724        0.000 0.417  7.242  0.000
+#>   C2 ~~  C2  3.681    0.456   8.077        0.000 0.495  7.435  0.000
+#>   C3 ~~  C3  2.787    0.520   5.354        0.000 0.570  4.885  0.000
+#>   C4 ~~  C4  3.573    0.415   8.619        0.000 0.472  7.572  0.000
+#>   C5 ~~  C5  3.458    0.437   7.907        0.000 0.501  6.900  0.000
+#>   C6 ~~  C6  2.919    0.415   7.041        0.000 0.462  6.313  0.000
+#>   C7 ~~  C7  2.743    0.363   7.559        0.000 0.413  6.639  0.000
+#>   C8 ~~  C8  3.167    0.333   9.504        0.000 0.368  8.606  0.000
+#>   C9 ~~  C9  3.137    0.465   6.746        0.000 0.529  5.935  0.000
+#>   F1 ~~  F2  0.343    0.150   2.292        0.022 0.161  2.123  0.034
+#>   F1 ~~  F3  0.332    0.151   2.201        0.028 0.166  1.998  0.046
+#>   F2 ~~  F3  0.590    0.201   2.936        0.003 0.222  2.653  0.008
+#>   C1 ~1      0.260    0.136   1.913        0.056 0.141  1.843  0.065
+#>   C2 ~1     -0.116    0.148  -0.782        0.434 0.152 -0.761  0.447
+#>   C3 ~1      0.113    0.143   0.789        0.430 0.148  0.761  0.446
+#>   C4 ~1      0.084    0.145   0.577        0.564 0.155  0.541  0.589
+#>   C5 ~1      0.057    0.148   0.388        0.698 0.158  0.363  0.717
+#>   C6 ~1     -0.029    0.141  -0.204        0.838 0.152 -0.191  0.849
+#>   C7 ~1     -0.114    0.132  -0.862        0.389 0.143 -0.797  0.426
+#>   C8 ~1      0.112    0.130   0.862        0.388 0.140  0.798  0.425
+#>   C9 ~1      0.032    0.146   0.219        0.826 0.154  0.208  0.835
 #> ----------------------------
 #> The residual-based TSML chi-square is 24.952 against 24 degrees of freedom, with a p-value of 0.408
 ```
@@ -206,6 +194,9 @@ of the `lavaan` PIM syntax:
 
 ``` r
 modpim <- PIM_syntax(compmodel = mod, C = C)
+#> Note: The following exogeneous variables in the composites model will be  correlated by default
+#> (unless overridden in the composite model syntax): F1, F2, F3. 
+#> If you do not want this, modify the composite model syntax manually or set exog_cov=FALSE.
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
@@ -213,14 +204,19 @@ contains the definition of each composite $C_i$, $i=1,\ldots,9$, as a
 single-indicator latent variable, and a special structure on the items.
 For details, see [Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
+It is recommend to always check the part of the generated syntax
+pertaining to the composites (at the bottom). The default in
+`PIM_syntax` is to covary exogenous variables (whether observed
+variables, latent variables, or composites); to undo this default, use
+`exog_cov=FALSE`.
 
-The PIM model can be fit directly in `lavaan`, using FIML to treat
-missing data on the items:
+The PIM model can be fit directly in `lavaan`. To treat missing data on
+the items, use FIML:
 
 ``` r
-fit_pim <- lavaan::sem(modpim, data=misdata_mcar20,missing="FIML")
+fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 fit_pim
-#> lavaan 0.6-20.2265 ended normally after 261 iterations
+#> lavaan 0.6-20.2307 ended normally after 260 iterations
 #> 
 #>   Estimator                                         ML
 #>   Optimization method                           NLMINB
@@ -234,57 +230,60 @@ fit_pim
 #>   Test statistic                                24.311
 #>   Degrees of freedom                                24
 #>   P-value (Chi-square)                           0.444
+```
 
-ests <- lavaan::parameterestimates(fit_pim)
+Always confirm that the degrees of freedom are what you would expect for
+your composite model (if data had been complete and the composites had
+been formed directly). In this example,`fit_pm` returns the same df as
+`fit_ts`: 24. While the `sem` function produces identical output in this
+case, it is best to use the `lavaan()` function to fit PIMs to avoid any
+unintended defaults, given the nonstandard setup of this model.
+
+To inspect parameter estimates, use `summary(fit_pim)` or the
+`parameterEstimates` function of `lavaan`. As the interest is in the
+composite model, the user has to ignore a lot of extraneous output
+pertaining to the item parameters. In the output shown below, we have
+removed all rows referring to “Y” variables (i.e., items).
+
+``` r
+ests <- lavaan::parameterEstimates(fit_pim,remove.nonfree=TRUE)
 ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
 ests_comp
 #>     lhs op rhs    est    se      z pvalue ci.lower ci.upper
 #> 5    C1 ~1      0.263 0.141  1.866  0.062   -0.013    0.538
-#> 11   C2 ~1     -0.120 0.152 -0.789  0.430   -0.417    0.178
-#> 17   C3 ~1      0.115 0.148  0.774  0.439   -0.176    0.405
-#> 23   C4 ~1      0.079 0.155  0.507  0.612   -0.225    0.383
-#> 29   C5 ~1      0.049 0.158  0.307  0.759   -0.261    0.358
-#> 35   C6 ~1     -0.031 0.152 -0.203  0.839   -0.328    0.267
-#> 41   C7 ~1     -0.119 0.144 -0.823  0.410   -0.402    0.164
-#> 47   C8 ~1      0.110 0.140  0.784  0.433   -0.165    0.385
-#> 53   C9 ~1      0.038 0.153  0.248  0.804   -0.263    0.339
-#> 370  F1 =~  C1  1.000 0.000     NA     NA    1.000    1.000
-#> 371  F1 =~  C2  1.089 0.415  2.626  0.009    0.276    1.901
-#> 372  F1 =~  C3  1.386 0.543  2.554  0.011    0.322    2.449
-#> 373  F2 =~  C4  1.000 0.000     NA     NA    1.000    1.000
-#> 374  F2 =~  C5  1.248 0.440  2.838  0.005    0.386    2.111
-#> 375  F2 =~  C6  1.269 0.422  3.008  0.003    0.442    2.096
-#> 376  F3 =~  C7  1.000 0.000     NA     NA    1.000    1.000
-#> 377  F3 =~  C8  0.511 0.242  2.113  0.035    0.037    0.985
-#> 378  F3 =~  C9  1.173 0.414  2.831  0.005    0.361    1.986
-#> 397  C1 ~~  C1  3.028 0.428  7.069  0.000    2.189    3.868
-#> 398  C2 ~~  C2  3.590 0.505  7.106  0.000    2.600    4.580
-#> 399  C3 ~~  C3  2.833 0.574  4.934  0.000    1.708    3.958
-#> 400  C4 ~~  C4  3.620 0.473  7.658  0.000    2.693    4.546
-#> 401  C5 ~~  C5  3.393 0.497  6.828  0.000    2.419    4.367
-#> 402  C6 ~~  C6  2.997 0.471  6.366  0.000    2.074    3.920
-#> 403  C7 ~~  C7  2.791 0.438  6.375  0.000    1.933    3.650
-#> 404  C8 ~~  C8  3.171 0.375  8.457  0.000    2.436    3.906
-#> 405  C9 ~~  C9  3.189 0.512  6.227  0.000    2.185    4.192
-#> 406  F1 ~~  F1  0.665 0.355  1.876  0.061   -0.030    1.360
-#> 407  F2 ~~  F2  0.642 0.342  1.881  0.060   -0.027    1.312
-#> 408  F3 ~~  F3  0.779 0.393  1.984  0.047    0.010    1.548
-#> 409  F1 ~~  F2  0.339 0.163  2.074  0.038    0.019    0.659
-#> 410  F1 ~~  F3  0.312 0.171  1.824  0.068   -0.023    0.647
-#> 411  F2 ~~  F3  0.606 0.231  2.621  0.009    0.153    1.060
-#> 430  F1 ~1      0.000 0.000     NA     NA    0.000    0.000
-#> 431  F2 ~1      0.000 0.000     NA     NA    0.000    0.000
-#> 432  F3 ~1      0.000 0.000     NA     NA    0.000    0.000
+#> 7    C1 ~~  C1  3.028 0.428  7.069  0.000    2.189    3.868
+#> 12   C2 ~1     -0.120 0.152 -0.789  0.430   -0.417    0.178
+#> 14   C2 ~~  C2  3.590 0.505  7.106  0.000    2.600    4.580
+#> 19   C3 ~1      0.115 0.148  0.774  0.439   -0.176    0.405
+#> 21   C3 ~~  C3  2.833 0.574  4.934  0.000    1.708    3.958
+#> 26   C4 ~1      0.079 0.155  0.507  0.612   -0.225    0.383
+#> 28   C4 ~~  C4  3.620 0.473  7.658  0.000    2.693    4.546
+#> 33   C5 ~1      0.049 0.158  0.307  0.759   -0.261    0.358
+#> 35   C5 ~~  C5  3.393 0.497  6.828  0.000    2.419    4.367
+#> 40   C6 ~1     -0.031 0.152 -0.203  0.839   -0.328    0.267
+#> 42   C6 ~~  C6  2.997 0.471  6.366  0.000    2.074    3.920
+#> 47   C7 ~1     -0.119 0.144 -0.823  0.410   -0.402    0.164
+#> 49   C7 ~~  C7  2.791 0.438  6.375  0.000    1.933    3.650
+#> 54   C8 ~1      0.110 0.140  0.784  0.433   -0.165    0.385
+#> 56   C8 ~~  C8  3.171 0.375  8.457  0.000    2.436    3.906
+#> 61   C9 ~1      0.038 0.153  0.248  0.804   -0.263    0.339
+#> 63   C9 ~~  C9  3.189 0.512  6.227  0.000    2.185    4.192
+#> 416  F1 =~  C2  1.089 0.415  2.626  0.009    0.276    1.901
+#> 417  F1 =~  C3  1.386 0.543  2.554  0.011    0.322    2.449
+#> 419  F2 =~  C5  1.248 0.440  2.838  0.005    0.386    2.111
+#> 420  F2 =~  C6  1.269 0.422  3.008  0.003    0.442    2.096
+#> 422  F3 =~  C8  0.511 0.242  2.113  0.035    0.037    0.985
+#> 423  F3 =~  C9  1.173 0.414  2.831  0.005    0.361    1.986
+#> 424  F1 ~~  F1  0.665 0.355  1.876  0.061   -0.030    1.360
+#> 425  F2 ~~  F2  0.642 0.342  1.881  0.060   -0.027    1.312
+#> 426  F3 ~~  F3  0.779 0.393  1.984  0.047    0.010    1.548
+#> 427  F1 ~~  F2  0.339 0.163  2.074  0.038    0.019    0.659
+#> 428  F1 ~~  F3  0.312 0.171  1.823  0.068   -0.023    0.647
+#> 429  F2 ~~  F3  0.606 0.231  2.621  0.009    0.153    1.060
 ```
 
-As the interest is in the composite model, the user just has to ignore a
-lot of extraneous output pertaining to the item parameters. In the
-output shown above, the output of the `parameterestimates` function is
-modified by removing all rows referring to a “Y” variable (i.e., an
-item).
-
 To compare estimates of common parameters in TS and PIM, the user can
-use built-in compare functions:
+use the `compare_est` function available in `twostage`:
 
 ``` r
 comp_table <- compare_est(fit_pim,fit_ts)
@@ -313,7 +312,7 @@ as.data.frame(lapply(comp_table, function(x) {
 #> 18  C9 ~1           0.038      0.153     0.248          0.804      0.032
 #> 19  F1 ~~  F1       0.665      0.355     1.876          0.061      0.676
 #> 20  F1 ~~  F2       0.339      0.163     2.074          0.038      0.343
-#> 21  F1 ~~  F3       0.312      0.171     1.824          0.068      0.332
+#> 21  F1 ~~  F3       0.312      0.171     1.823          0.068      0.332
 #> 22  F1 =~  C2       1.089      0.415     2.626          0.009      1.022
 #> 23  F1 =~  C3       1.386      0.543     2.554          0.011      1.389
 #> 24  F2 ~~  F2       0.642      0.342     1.881          0.060      0.649
@@ -356,11 +355,21 @@ as.data.frame(lapply(comp_table, function(x) {
 #> 30     0.401    3.027         0.002
 ```
 
-The only complicating element for TS and PIM methods is approximate fit
-assessment; this aspect is under development, see Approximate_fit
-vignette. When data are complete, both TS and PIM produce equivalent
-output to the complete data run on the manually-formed composites, see
-the Complete_data vignette.
+The TS and PIM estimates and standard errors are quite similar.
+Technically, the TS estimates are less efficient than FIML estimates,
+which the PIM setup supposedly provides. However, this has not been
+evaluated in any simulations. When data are complete, both TS and PIM
+produce equivalent output to the complete data run on the
+manually-formed composites (see the Complete_data vignette).
+
+Approximate fit assessment of PIM models is a bit more complicated and
+requires special setup. The gist of the issue is that we want to assess
+the fit of the composite model, not the fit of the entire model. Some
+functions to automate this are described in the Approximate_fit
+vignette. Additionally, with missing data, both TS and PIM methods will
+require minor corrections to fit indices in order for them to mimic
+their would-be complete data values; eventually, the Approximate_fit
+vignette will show this as well.
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->

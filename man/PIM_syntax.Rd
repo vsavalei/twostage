@@ -4,13 +4,15 @@
 \alias{PIM_syntax}
 \title{Creates lavaan syntax for a Pseudo-Indicator Model}
 \usage{
-PIM_syntax(C, compmodel)
+PIM_syntax(C, compmodel, exog_cov = TRUE)
 }
 \arguments{
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
 components}
 
 \item{compmodel}{A string with the lavaan model for composites}
+
+\item{exog_cov}{Should exogenous variables in the composite model be correlated?}
 }
 \value{
 A string with the full PIM model syntax
