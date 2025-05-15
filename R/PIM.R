@@ -203,11 +203,8 @@ PIM_syntax<-function (C,compmodel,exog_cov=TRUE) {
 }
 
 
-#Baseline Model Syntax for the Composites Model
-##if exo.cov=TRUE, exogenous variables in the compmodel are covaried
-##this needs to be thoroughly tested, especially for how it interacts with
-##fixed.x etc
-#' Title
+
+#' Baseline Model Syntax for the Composites Model
 #'
 #' @param compmodel Composite model syntax for which to create a baseline model
 #' @param exog_cov Should exogenous variables in the compmodel be correlated in the baseline model? If FALSE, all variables in the baseline model will be orthogonal.
@@ -221,11 +218,11 @@ PIM_syntax<-function (C,compmodel,exog_cov=TRUE) {
 #' basemodel1 <- compmodel_base(compmodel,exog_cov=FALSE) #all three composites are orthogonal
 #'
 compmodel_base<-function (compmodel,exog_cov=TRUE) {
-  component_names <- lavNames(compmodel)
+  comp_names <- lavNames(compmodel)
   # Create the text object
-  part1 <- paste(sapply(component_names, function(x) paste(x, "~~", x)),
+  part1 <- paste(sapply(comp_names, function(x) paste(x, "~~", x)),
                  collapse = " \n ") #all vars
-  part2 <- paste(sapply(component_names, function(x) paste(x, "~", 1)),
+  part2 <- paste(sapply(comp_names, function(x) paste(x, "~", 1)),
                  collapse = " \n ") #all means
 
   if(exog_cov){
@@ -236,9 +233,34 @@ compmodel_base<-function (compmodel,exog_cov=TRUE) {
   return(compmodel_base)
 }
 
-#fit baseline model for composites
+#NOTE: I think this function should take the regular composites model as input
+#Not the modified (already baseline) model, similar to the sat version
 #note: exog_cov argument is not used because whether exog covs are included or not
 #will be asked when compmodel_base syntax is created
+#
+#' Baseline Model Syntax for the PIM
+#'
+#' @param C A matrix of 0s and 1s, where rows are composites and columns are
+#'   components
+#' @param compmodel_base A string with lavaan baseline (null) model for composites
+#'
+#' @returns A string with the full PIM baseline model lavaan syntax
+#' @export
+#'
+#' @examples
+#' #C1 is the sum of Y1, Y2, and Y3
+#' #C2 is the sum of Y4, Y5, and Y6
+#' #C3 is Y7
+#' C<-matrix(0,nrow=3,ncol=7)
+#' C[1,1:3]<-1
+#' C[2,4:6]<-1
+#' C[3,7]<-1
+#' rownames(C)<-c("C1","C2","C3")
+#' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
+#' compmodel<-"C1 ~ C2 + C3"
+#' basemodel <- compmodel_base(compmodel)
+#' PIM_model_base <- PIM_syntax_base(C=C,compmodel=basemodel)
+#'
 PIM_syntax_base<-function (C,compmodel_base) {
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
@@ -247,3 +269,70 @@ PIM_syntax_base<-function (C,compmodel_base) {
   out <- paste(c(PIMu, PIMm,PIMulav,compmodel_base), collapse = "\n")
   return(out)
 }
+
+
+
+#' H1 (Saturated) Model Syntax for the Composites Model
+#'
+#' @param compmodel Composite model syntax for which to create a baseline model
+
+#' @returns H1 (Saturated) model lavaan syntax
+#' @export
+#'
+#' @examples
+#' compmodel<-"C1 ~ C2 + C3"
+#' satmodel <- compmodel_sat(compmodel)
+#'
+compmodel_sat<-function (compmodel) {
+  comp_names <- lavNames(compmodel)
+  # Create the text object
+  part1 <- paste(sapply(comp_names, function(x) paste(x, "~~", x)),
+                 collapse = " \n ") #all vars
+  part2 <- paste(sapply(comp_names, function(x) paste(x, "~", 1)),
+                 collapse = " \n ") #all means
+  pairs <- utils::combn(comp_names, 2, FUN = function(x) paste(x, collapse = " ~~ "))
+  part3 <- paste(pairs, collapse = " \n ") #all covs
+
+  compmodel_sat <- paste(c(part1, part2,part3), collapse = "\n")
+  return(compmodel_sat)
+}
+
+
+#fit saturated model for composites
+#rewrite this whole function file so that all PIM functions
+#are only called once, and all three models are created?
+#' Title
+#'
+#' @param C A matrix of 0s and 1s, where rows are composites and columns are
+#'   components
+#' @param compmodel Composite model lavaan syntax
+#'
+#' @returns A string with the full PIM baseline model lavaan syntax
+#' @export
+#'
+#' @examples
+#' #C1 is the sum of Y1, Y2, and Y3
+#' #C2 is the sum of Y4, Y5, and Y6
+#' #C3 is Y7
+#' C<-matrix(0,nrow=3,ncol=7)
+#' C[1,1:3]<-1
+#' C[2,4:6]<-1
+#' C[3,7]<-1
+#' rownames(C)<-c("C1","C2","C3")
+#' colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
+#' compmodel<-"C1 ~ C2 + C3"
+#' PIM_model_sat <- PIM_syntax_sat(C=C,compmodel=compmodel)
+#'
+PIM_syntax_sat<-function (C,compmodel) {
+  compmodel_sat <- compmodel_sat(compmodel)
+  PIMu <- PIM.uni(C)
+  PIMm <- PIM.multi(C)
+  PIMulav <- PIM.uni.lav(C)
+
+  out <- paste(c(PIMu, PIMm,PIMulav,compmodel_sat), collapse = "\n")
+  return(out)
+}
+
+
+
+

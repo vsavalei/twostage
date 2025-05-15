@@ -2,7 +2,7 @@
 % Please edit documentation in R/PIM.R
 \name{compmodel_base}
 \alias{compmodel_base}
-\title{Title}
+\title{Baseline Model Syntax for the Composites Model}
 \usage{
 compmodel_base(compmodel, exog_cov = TRUE)
 }
@@ -15,7 +15,7 @@ compmodel_base(compmodel, exog_cov = TRUE)
 Baseline model lavaan syntax
 }
 \description{
-Title
+Baseline Model Syntax for the Composites Model
 }
 \examples{
 compmodel<-"C1 ~ C2 + C3"

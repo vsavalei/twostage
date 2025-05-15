@@ -3,7 +3,7 @@
 
 #' @import lavaan
 #' @importFrom methods as
-#' @importFrom stats pnorm
+#' @importFrom stats pnorm cov2cor
 #' @importFrom methods show
 #'
 #namesohd (helper function): names rows/columns of the asy cov matrix from stage1
