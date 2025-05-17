@@ -18,8 +18,8 @@ Baseline model lavaan syntax
 Baseline Model Syntax for the Composites Model
 }
 \examples{
-compmodel<-"C1 ~ C2 + C3"
-basemodel <- compmodel_base(compmodel) #default is to covary C2 and C3
-basemodel1 <- compmodel_base(compmodel,exog_cov=FALSE) #all three composites are orthogonal
+compmodel <- "C1 ~ C2 + C3"
+basemodel <- compmodel_base(compmodel) # default is to covary C2 and C3
+basemodel1 <- compmodel_base(compmodel, exog_cov = FALSE) # all three composites are orthogonal
 
 }

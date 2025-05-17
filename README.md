@@ -1,6 +1,8 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
+
 <!-- Render `README.Rmd` regularly tokeep `README.md` up-to-date, via `devtools::build_readme()` -->
+
 <!-- To view better, run: 
 detach("package:twostage", unload = TRUE)
 pkgdown::build_site() 
@@ -72,10 +74,11 @@ library(twostage)
 ## Example
 
 This example uses a simulated dataset `misdata_mcar20`, which contains
-27 items, $Y_1$ to $Y_{27}$, where about half have 20% missing data. The
-model is for composites $C_1$ to $C_9$, which are parcels of three items
-each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These
-composites are never explicitly computed under any of the three methods.
+27 items, $`Y_1`$ to $`Y_{27}`$, where about half have 20% missing data.
+The model is for composites $`C_1`$ to $`C_9`$, which are parcels of
+three items each, in order; for example, $`C_1 = Y_1 + Y_2 + Y_3`$, and
+so on. These composites are never explicitly computed under any of the
+three methods.
 
 The composite model is a 3-factor model, with three indicators each,
 defined via `lavaan` syntax as follows:
@@ -105,12 +108,13 @@ doesn’t hurt). In general, the user should aim to specify the composites
 model as explicitly and thoroughly as possible.
 
 To fit this composite model using the item-level methods in this
-package, the specification of a $27 \times 9$ matrix $C$ assigning
+package, the specification of a $`27 \times 9`$ matrix $`C`$ assigning
 components to composites is first required. The columns are labeled with
-component names: $Y_1$ to $Y_{27}$, and the rows are labeled with
-composite names: $C_1$ to $C_9$. The \[i,j\]th element of $C$ is nonzero
-(for sums, it is 1) if component $j$ belongs to composite $i$, and zero
-otherwise. To create this matrix using an interactive interface, use:
+component names: $`Y_1`$ to $`Y_{27}`$, and the rows are labeled with
+composite names: $`C_1`$ to $`C_9`$. The \[i,j\]th element of $`C`$ is
+nonzero (for sums, it is 1) if component $`j`$ belongs to composite
+$`i`$, and zero otherwise. To create this matrix using an interactive
+interface, use:
 
     C <- stage0(data=misdata_mcar20,model=mod)
 
@@ -131,7 +135,7 @@ model. The following message will confirm the assignment:
     C9 :  Y25 Y26 Y27 
     If this is not correct, start over! 
 
-Once the $C$ matrix is created with the help of the `stage0` function
+Once the $`C`$ matrix is created with the help of the `stage0` function
 (or manually), the composite-level model can be fit using the methods
 included in the package.
 
@@ -194,15 +198,14 @@ of the `lavaan` PIM syntax:
 
 ``` r
 modpim <- PIM_syntax(compmodel = mod, C = C)
-#> Note: The following exogeneous variables in the composites model will be  correlated by default
-#> (unless overridden in the composite model syntax): F1, F2, F3. 
+#> The following exogeneous variables in the composites model will be  correlated by default:F1, F2, F3. 
 #> If you do not want this, modify the composite model syntax manually or set exog_cov=FALSE.
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
-contains the definition of each composite $C_i$, $i=1,\ldots,9$, as a
-single-indicator latent variable, and a special structure on the items.
-For details, see [Rose, Wagner, Mayer, and Nagengast
+contains the definition of each composite $`C_i`$, $`i=1,\ldots,9`$, as
+a single-indicator latent variable, and a special structure on the
+items. For details, see [Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
 It is recommend to always check the part of the generated syntax
 pertaining to the composites (at the bottom). The default in
