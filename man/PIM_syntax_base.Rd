@@ -2,21 +2,23 @@
 % Please edit documentation in R/PIM.R
 \name{PIM_syntax_base}
 \alias{PIM_syntax_base}
-\title{Baseline Model Syntax for the PIM}
+\title{Baseline (Null) Model Syntax for the PIM}
 \usage{
-PIM_syntax_base(C, compmodel_base)
+PIM_syntax_base(C, compmodel, exog_cov = TRUE)
 }
 \arguments{
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
 components}
 
-\item{compmodel_base}{A string with lavaan baseline (null) model for composites}
+\item{compmodel}{A string with lavaan model for composites}
+
+\item{exog_cov}{Should the exogenous variables (latent or observed) in the compmodel remain correlated in the baseline (null) model?}
 }
 \value{
-A string with the full PIM baseline model lavaan syntax
+A string with the PIM baseline model lavaan syntax
 }
 \description{
-Baseline Model Syntax for the PIM
+Creates syntax for a special baseline (null) PIM model to compute incremental fit indices. The item-level model is the same. Uncorrelates all variables in the composite model while keeping the PIM structure at the item level.
 }
 \examples{
 # C1 is the sum of Y1, Y2, and Y3
@@ -29,7 +31,6 @@ C[3, 7] <- 1
 rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
-basemodel <- compmodel_base(compmodel)
-PIM_model_base <- PIM_syntax_base(C = C, compmodel = basemodel)
+PIM_model_base <- PIM_syntax_base(C = C, compmodel = compmodel)
 
 }

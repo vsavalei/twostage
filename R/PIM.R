@@ -138,17 +138,23 @@ comp_exog_covs_syntax <- function(compmodel) {
   # why isn't 1 stored in rhs? i don't know.
   exog_names <- unique(partable$rhs[!(partable$rhs %in% c(end_names1, end_names2, ""))])
 
-  # Generate combinations of all pairs
-  pairs <- utils::combn(exog_names, 2, simplify = FALSE)
-  # Format pairs into the desired string
-  fpairs <- sapply(pairs, function(x) paste(x[1], "~~", x[2]))
+  # below needs to work when there is only one exogenous var
 
-  # Collapse into a single string separated by newlines
-  exog_covs <- paste(fpairs, collapse = "\n")
-  message4 <- paste0(
-    "The following exogeneous variables in the composites model will be  correlated by default:", paste(exog_names, collapse = ", "), ". \nIf you do not want this, modify the composite model syntax manually or set exog_cov=FALSE."
-  )
-  message(message4)
+  if (length(exog_names) < 2) {
+    exog_covs <- "\n"
+  } else {
+    # Generate combinations of all pairs
+    pairs <- utils::combn(exog_names, 2, simplify = FALSE)
+    # Format pairs into the desired string
+    fpairs <- sapply(pairs, function(x) paste(x[1], "~~", x[2]))
+
+    # Collapse into a single string separated by newlines
+    exog_covs <- paste(fpairs, collapse = "\n")
+    message4 <- paste0(
+      "The following exogeneous variables in the composites model will be  correlated by default:", paste(exog_names, collapse = ", "), ". \nIf you do not want this, modify the composite model syntax manually or set exog_cov=FALSE."
+    )
+    message(message4)
+  }
   return(exog_covs)
 }
 
@@ -211,19 +217,7 @@ PIM_syntax <- function(C, compmodel, exog_cov = TRUE) {
 
 
 
-#' Baseline Model Syntax for the Composites Model
-#'
-#' @param compmodel Composite model syntax for which to create a baseline model
-#' @param exog_cov Should exogenous variables in the compmodel be correlated in the baseline model? If FALSE, all variables in the baseline model will be orthogonal.
-#'
-#' @returns Baseline model lavaan syntax
-#' @export
-#'
-#' @examples
-#' compmodel <- "C1 ~ C2 + C3"
-#' basemodel <- compmodel_base(compmodel) # default is to covary C2 and C3
-#' basemodel1 <- compmodel_base(compmodel, exog_cov = FALSE) # all three composites are orthogonal
-#'
+# Baseline Model Syntax for the Composites Model, internal
 compmodel_base <- function(compmodel, exog_cov = TRUE) {
   comp_names <- lavNames(compmodel)
 
@@ -262,28 +256,15 @@ compmodel_base <- function(compmodel, exog_cov = TRUE) {
   return(compmodel_base)
 }
 
-
-
-
-
-
-
-
-
-
-
-# NOTE: I think this function should take the regular composites model as input
-# Not the modified (already baseline) model, similar to the sat version
-# note: exog_cov argument is not used because whether exog covs are included or not
-# will be asked when compmodel_base syntax is created
-#
-#' Baseline Model Syntax for the PIM
+#' Baseline (Null) Model Syntax for the PIM
+#'
+#' Creates syntax for a special baseline (null) PIM model to compute incremental fit indices. The item-level model is the same. Uncorrelates all variables in the composite model while keeping the PIM structure at the item level.
 #'
 #' @param C A matrix of 0s and 1s, where rows are composites and columns are
 #'   components
-#' @param compmodel_base A string with lavaan baseline (null) model for composites
-#'
-#' @returns A string with the full PIM baseline model lavaan syntax
+#' @param compmodel A string with lavaan model for composites
+#' @param exog_cov Should the exogenous variables (latent or observed) in the compmodel remain correlated in the baseline (null) model?
+#' @returns A string with the PIM baseline model lavaan syntax
 #' @export
 #'
 #' @examples
@@ -297,15 +278,23 @@ compmodel_base <- function(compmodel, exog_cov = TRUE) {
 #' rownames(C) <- c("C1", "C2", "C3")
 #' colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 #' compmodel <- "C1 ~ C2 + C3"
-#' basemodel <- compmodel_base(compmodel)
-#' PIM_model_base <- PIM_syntax_base(C = C, compmodel = basemodel)
+#' PIM_model_base <- PIM_syntax_base(C = C, compmodel = compmodel)
 #'
-PIM_syntax_base <- function(C, compmodel_base) {
+PIM_syntax_base <- function(C, compmodel, exog_cov = TRUE) {
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
   PIMulav <- PIM.uni.lav(C)
 
-  out <- paste(c(PIMu, PIMm, PIMulav, compmodel_base), collapse = "\n")
+  basemodel <- compmodel_base(compmodel, exog_cov = exog_cov)
+
+  out <- paste(c(
+    "##--------PIM setup (item-level): ----------##",
+    PIMu, PIMm, PIMulav,
+    "##--------END OF PIM setup (item-level)----------##",
+    "",
+    "##--------Composite Model (inspect carefully): ----------##",
+    basemodel
+  ), collapse = "\n")
   return(out)
 }
 

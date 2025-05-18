@@ -21,13 +21,13 @@ knitr::opts_chunk$set(
 #Update: this moved files to doc, but there are not the files to modify. 
 ```
 
-## Obtaining Correct Composite-Level Fit Measures for PIM
+# Obtaining Correct Composite-Level Fit Indices for PIM
 
 There are two separate issues with default approximate fit indices printed for TSML and PIM. The more major issue, which is only applicable to PIM, is that incremental fit indices (those depending on the baseline or null model, such as CFI and TLI), as well as indices depending on model residuals, such as SRMR, are based on the model for the raw items, not for the composites. They will be based on different variables than those from TSML or from a model fit directly to composites (if they had been available, e.g., with complete data), and they are not comparable across these methods.
 
 We assume that the researcher's interest is in the assessment of the composite model fit. That is, if the data had been complete, the researcher would have just computed the composites from the data and fit the model directly. Therefore, fit indices based on the raw items are not what the researcher wants to know. For example, the default CFI printed when fitting the PIM is evaluating the fit of PIM against the default baseline model in `lavaan`, which will un-correlate all items. A better null model would un-correlate the variables in the composite model, while leaving the composite construction and item structure intact (which involves a lot of correlations). This will match what the baseline model is when the composite model is fit directly to the composites with complete data. Similarly, the default SRMR printed with PIM is comparing observed correlations among the items to model-implied correlations among the items. To match what would happen with complete data when the composite model is fit directly, we would want to compare the observed correlations among *composites* (and any other observed variables in the composite model) to the model-implied correlations among composites (and any other observed variables). The correct SRMR for PIM will therefore compare saturated and structured estimates of the relationships among variables in the composite, while keeping the PIM item structure intact in both models.
 
-### Example 1. Complete Data
+## Example 1. Complete Data
 
 We first illustrate how to adjust CFI/TLI and SRMR in PIM models on a complete data example from the complete data vignette. We first create the dataset for the variables in the composite model and fit the model directly to it, recording the values of fit indices. These will be the values to replicate in PIM:
 
@@ -84,35 +84,35 @@ fitm_pim <- lavaan::fitMeasures(fit_pim)[c("npar","chisq","df","baseline.chisq",
 round(fitm_pim,3)
 
 ```
-We can see that while the model chi-square, model df, and the RMSEA agree between `fit_pim` and `fit_comp`, the baseline model fit, the CFI/TLI, and SRMR differ. 
 
-To get the right CFI/TLI, we need a new baseline model that only un-correlates variables in the composite model, while leaving the rest of the PIM structure intact. The function `compmodel_base` will create a baseline model, which un-correlates all the variables (except possibly for exogenous predictors), while estimating their means and variances. We recommend to always look at the baseline model syntax to verify it is what was intended (and modify as needed).
+We can see that while the model chi-square, model df, and the RMSEA agree between `fit_pim` and `fit_comp`, the baseline model fit, the CFI/TLI, and SRMR differ.
+
+To get the right CFI/TLI, we need a new baseline model that only un-correlates variables in the composite model, while leaving the rest of the PIM structure intact. The function `PIM_syntax_base` will create a PIM model where the model for composites is now a null model, which un-correlates all the variables (except possibly for exogenous predictors), while estimating their means and variances.
 
 ```{r base1}
-basemod <- compmodel_base(tpbmod)
-cat(basemod)
+tpbpim_base <- PIM_syntax_base(C=C, compmodel=tpbmod, exog_cov=TRUE)
+#cat(tpbpim_base)
 ```
 
-By default, the three exogenous predictors remain correlated, which can be undone by specifying `exog_cov=FALSE`. Correlated exogenous predictors are usually the default in `lavaan` if the exogenous variables have not been mentioned in the syntax except as predictors.\footnote{In `lavaan`, the default baseline model will change if any of the exogenous variables are mentioned in the syntax by specifying their variance or a covariance; in this case, their correlations in the baseline model will be set to zero instead of freely estimated. This default can be confusing, but it is `lavaan`'s attempt to keep the baseline model nested within the fitted model.} Next we create the full PIM syntax by joining the baseline model for composites to the PIM setup for the items. This can be done using the function `PIM_syntax_base`:
+We recommend to always look at the baseline model syntax to verify it is what was intended (and modify as needed). You can do this by running the commented out `cat()` command above. While the PIM syntax is long, the composite model part is clearly flagged with:
 
-```{r base2}
-tpbpim_base <- PIM_syntax_base(C=C,compmodel=basemod)
-#tpbpim_base <- PIM_syntax(C=C,compmodel=basemod,exog_cov=FALSE)
+```         
+##--------Composite Model (inspect carefully): ----------##
 ```
 
-The only difference between the function `PIM_syntax_base` and the original function `PIM_syntax` is that the former does not have `exog_cov=TRUE` argument, creating syntax that is equivalent to setting it to false. The baseline model syntax can be obtained equivalently using the original function as shown above (commented out). Because in the baseline model all variables are exogenous, setting `exog_cov=TRUE` would correlate *all* of them, resulting in a saturated composites model, not a baseline composites model. Thus, if using the original function `PIM_syntax`, we must set it to false, and explicitly add the correlations among the variables that are exogenous in the H0 model `tpbmod` via the syntax created by `compmodel_base`. This will be fixed in the future to be less confusing!! 
+By default, the three exogenous predictors remain correlated, which can be undone by specifying `exog_cov=FALSE`. Correlated exogenous predictors are usually the default in `lavaan` if the exogenous variables have not been mentioned in the syntax except as predictors.\footnote{In `lavaan`, the default baseline model will change if any of the exogenous variables are mentioned in the syntax by specifying their variance or a covariance; in this case, their correlations in the baseline model will be set to zero instead of freely estimated. This default can be confusing, but it is `lavaan`'s attempt to keep the baseline model nested within the fitted model.}
 
 We now fit the PIM baseline model and look at the model-implied covariance structure for the variables in the composite model to confirm there are 7 zeros, as expected:
 
 ```{r base3}
 fit_pim_base <- lavaan::lavaan(tpbpim_base, data=tpbdata)
 
-comp_names <- lavaan::lavNames(basemod) 
+comp_names <- lavaan::lavNames(tpbmod) 
 Sigma <- lavaan::lavInspect(fit_pim_base,"cov.all")
 round(Sigma[comp_names,comp_names],3)
 ```
 
-All chi-square and df values are the same to the corresponding output for complete data.\footnote{In addition to the CFI, the proposed model and the baseline model can be compared using RMSEA for the difference test, printed as part of this output. It should be large and unreasonable if we are to reject the baseline model.} Below is a quick way to verify this: 
+All chi-square and df values are the same to the corresponding output for complete data.\footnote{In addition to the CFI, the proposed model and the baseline model can be compared using RMSEA for the difference test, printed as part of this output. It should be large and unreasonable if we are to reject the baseline model.} Below is a quick way to verify this:
 
 ```{r base5}
 lavaan::lavTestLRT(fit_pim,fit_pim_base)
@@ -129,20 +129,22 @@ pim.incremental
 round(fitm_comp[c("cfi","tli")],3)
 
 ```
-These are identical to what was printed for complete data. 
+
+These are identical to what was printed for complete data.
 
 We now show how to get the correct SRMR. The correct SRMR should capture the difference in the model-reproduced covariances between two models: H0 (`tpbmod`) and H1 (the saturated composites model). With complete data, the covariance matrix under H1 is just the sample covariance matrix. There are 5 variables in `tpbmod`, so there are a total of $p^*=5(6)/2=15$ residuals that SRMR summarizes. In contrast, in PIM, there are 21 raw items, and the SRMR is a summary of the residuals for these items, comparing H0 (`fit_pim`) to a saturated model where all 21 items are freely inter-correlated.
 
-To get the correct SRMR for the composite model from PIM, we first need to fit a PIM H1, which will freely inter-correlate the variables in the composites model, while keeping the PIM structure on the items (as with the baseline model). The function `PIM_syntax_sat` will take H0 model as input (`tpbmod`) and simply turn it into a saturated model before combining with the PIM structure [**do this for baseline**]: 
+To get the correct SRMR for the composite model from PIM, we first need to fit a PIM H1, which will freely inter-correlate the variables in the composites model, while keeping the PIM structure on the items (as with the baseline model). The function `PIM_syntax_sat` will take H0 model as input (`tpbmod`) and turn it into a saturated model before combining with the PIM structure:
 
 ```{r srmr1}
 tpbpim_sat <- PIM_syntax_sat(C=C,compmodel=tpbmod)
 fit_pim_sat <- lavaan::lavaan(tpbpim_sat, data=tpbdata)
 
 ```
-The resulting model should have zero degrees of freedom. 
 
-The correct SRMR should be based on the differences between the model-implied covariances for the composite model variables between `fit_pim` and `fit_pim_sat`, which are shown below (this step is not necessary): 
+The resulting model should have zero degrees of freedom.
+
+The correct SRMR should be based on the differences between the model-implied covariances for the composite model variables between `fit_pim` and `fit_pim_sat`, which are shown below (this step is not necessary):
 
 ```{r srmr2}
 comp_names <- lavaan::lavNames(tpbmod)
@@ -165,16 +167,20 @@ round(fitm_comp[c("srmr_mplus","srmr_mplus_nomean")],3)
 
 Both SRMR without the means and one with the means match the corresponding values from complete data. Because PIM models were developed for missing data, `meanstructure=TRUE` is likely always on when these models are used; however, if a model has a saturated mean structure (as is the case here), it is better to use the no-mean version of SRMR that does not average over mean structure residuals (which will be zero or very close it, artificially improving the value).
 
-As shown in the complete data vignette, the TSML fit indices will already match the complete data fit indices because all output from Stage 2 is already based on just the variables in the composite model. 
+As shown in the complete data vignette, the TSML fit indices will already match the complete data fit indices because all output from Stage 2 is already based on just the variables in the composite model.
+
+Finally, a very awkward initial function will obtain all fit measures for PIM at once, only printing those that have been adjusted or that do not need an adjustment: 
+
+```{r allfit}
+fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
+```
 
 
-## Obtaining Better PIM Fit Indices with Incomplete Data
+## Example 2. Inomplete Data
 
-With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount of model misfit, relative to what it would have been had the data been complete [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111).. As PIM is a model that uses FIML in a clever way to treat item-level missing data, the PIM RMSEA and CFI/TLI (computed using the corrected baseline model, as shown above) will be biased downward. However, *lavaan* now automatically adjusts for this bias and prints robust versions of CFI/TLI/RMSEA with FIML. But will this work correctly with a custom baseline model? Let's find out. 
+With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount of model misfit, relative to what it would have been had the data been complete [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). As PIM is a model that uses FIML in a clever way to treat item-level missing data, the PIM RMSEA and CFI/TLI (computed using the corrected baseline model, as shown above) will be biased downward. However, *lavaan* now automatically adjusts for this bias and prints robust versions of CFI/TLI/RMSEA with FIML.
 
-### Example 2a. Incomplete Data with PIM
-
-We will use the example from the README file. Here, the composite model is a 3-factor model with 9 composite indicators, and the data are 27 raw items in the `misdata_mcar20` file. Below we set up the composite model and the C matrix, and we fit the composite model using PIM:   
+We will use the example from the README file. Here, the composite model is a 3-factor model with 9 composite indicators, and the data are 27 raw items in the `misdata_mcar20` file. Below we set up the composite model and the C matrix, and we fit the composite model using PIM:
 
 ```{r}
 mod <- '
@@ -206,30 +212,19 @@ C[9,25:27]<-1
 
 modpim <- PIM_syntax(compmodel = mod, C = C)
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
-#summary(fit_pim,fit.measures=TRUE) #slow b/c robust
-#SRMR = 0.024
-#Robust RMSEA = .024, RMSEA =.008 
-# CFI=.999, TLI = .981, Robust CFI = .990, Robust TLI = .861
 
 fitm_pim <- lavaan::fitMeasures(fit_pim)
-round(fitm_pim[c("cfi","cfi.robust","tli","tli.robust","rmsea","rmsea.robust","srmr_mplus","srmr_mplus_nomean")],3) #slow b/c robust, figure out why (diff project)
-#source: lav_fit_fiml_corrected function in lav_fit_utils.R
-#
-#below is how to toggle robust measures to off to speed things up:
-#fitm_pim_norobust <- lavaan::fitMeasures(fit_pim,fm.args = list(robust = FALSE))
-#fitm_pim_norobust["cfi.robust"]
+round(fitm_pim[c("cfi","cfi.robust","tli","tli.robust","rmsea","rmsea.robust","srmr_mplus","srmr_mplus_nomean")],3) 
 ```
 
-Let's see if changing the baseline model works and still produces a robust CFI (if it does, we will trust `lavaan` on this and won't verify it (for now)): 
+Let's see if changing the baseline model works and still produces a robust CFI (if it does, we will trust `lavaan` on this and won't verify it (for now)):
 
 ```{r}
-basemod <- compmodel_base(mod)
-cat(basemod)
-
-mod_base <- PIM_syntax_base(C=C,compmodel=basemod)
+mod_base <- PIM_syntax_base(C=C,compmodel=mod)
+#cat(mod_base) #always check! 
 fit_pim_base <- lavaan::lavaan(mod_base, data=misdata_mcar20,missing="FIML")
 
-comp_names <- lavaan::lavNames(basemod) 
+comp_names <- lavaan::lavNames(mod) 
 Sigma <- lavaan::lavInspect(fit_pim_base,"cov.all")
 round(Sigma[comp_names,comp_names],3) #looks good, uncorrelated C1-C9
 
@@ -237,15 +232,16 @@ pim.incremental <- lavaan::fitMeasures(fit_pim, baseline.model=fit_pim_base,   f
 pim.incremental 
 ```
 
-These are different from the values obtained with the default baseline model, but the  original and robust version are identical to three decimal places. We need to create a situation where they are different to ensure something is happening. If I modify `mod` to include `F1 ~ 0*F2`, I get: 
-```
+These are different from the values obtained with the default baseline model, but the original and robust version are identical to three decimal places. We need to create a situation where they are different to ensure something is happening. If I modify `mod` to include `F1 ~ 0*F2`, I get:
+
+```         
         rmsea rmsea.robust        cfi          tli   cfi.robust   tli.robust 
        0.042        0.053        0.887        0.838        0.980        0.972 
-
 ```
-This is a bit suspect since the missing data correction would typically be expected to worsen fit. However, there is also an improvement in the RMSEA robust version. But at least we have verified that something is happening, we just need to verify that what is happening is correct. For now, we will trust `lavaan`. 
 
-For completeness, let's get the correct SRMR. 
+This is a bit suspect since the missing data correction would typically be expected to worsen fit. However, there is also an improvement in the RMSEA robust version. But at least we have verified that something is happening, we just need to verify that what is happening is correct. For now, we will trust `lavaan`.
+
+For completeness, let's get the correct SRMR.
 
 ```{r}
 pim_sat <- PIM_syntax_sat(C=C,compmodel=mod)
@@ -255,26 +251,19 @@ srmr <- srmr_mplus_pim(fit_pim,fit_pim_sat,mod)
 srmr
 ```
 
-Conclusion: for PIM, the robustification of fit indices happens automatically (if lavaan is right). 
+Conclusion: for PIM, the robustification of fit indices happens automatically (if lavaan is right).
 
+# Obtaining Better TSML Fit Indices
 
-## Obtaining Better Small Sample Properties for TSML Fit Indices with Incomplete Data
+## Example 1. Complete Data
 
-When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct and do not require adjustments. However, they can still receive a small sample adjustment that basically amounts to subtracting more than just df to get the noncentrality parameters. The indices would also not to be based on $T_\text{res}$ with normal data, but on the original chi-square $T$, with an appropriate $df$ subtraction. I need to work this out? 
+As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same. Thus, there is nothing to illustrate!
+
+## Example 2. Incomplete Data
+
+When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> These small sample adjustments basically amount to subtracting more than just df to get the noncentrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. **I need to work this out**
 
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
-summary(fit_ts)
+#summary(fit_ts)
 ```
-
-
-
-The next two sections discuss how to fix the more minor issues with fit indices, which is that in small samples they may also require adjustments. (Or, their popultio values are off by a BIT due to missing data).
-
-## Obtaining Better Small Sample Properties for TSML Fit Indices
-
-As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with complete data, fit measures for the direct composites run and the naive Stage 2 fit measures for the TSML run are the same. With incomplete data, this is generally no longer the case. The "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which was optimized using an estimate of the covariance matrix and the mean of the composites, obtained from the EM/FIML covariance matrix and means of the components from Stage 1. In fact, their mean and covariance estimates in Stage 2 are full information ML estimates. Thus, the population values of RMSEA, CFI etc that these sample estimates are estimating are the same as those for complete data (if the mechanism is MAR so that Stage 1 estimates are consistent). They are also based on the most information we could extract from the data.
-
-In contrast, explicitly computing composites using ad hoc methods such as averaging all available items (ACML) or declaring the composite score as missing if any of the components are missing (SL-FIML) will result in loss of information and also likely bias, unless the data are MCAR [e.g., Chen, Savalei, and Rhemtulla, 2017] (<https://pmc.ncbi.nlm.nih.gov/articles/PMC7725695/>). If the data are imputed at the item level, however, before the composites are created, this will yield fit indices that have the same population values.
-
-Despite the consistency of the naive TSML fit indices , small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> The advantage of TS over FIML, as discussed in this paper, is that the population values of fit indices are already correct.

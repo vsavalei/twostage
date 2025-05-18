@@ -17,11 +17,13 @@ knitr::opts_chunk$set(
 
 ## To Do list 
 
+
+
 1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this when fit indices are added. "Naive" standard errors are also saved. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
 
 21) Create `fitmeasures_ts()` function? Everything that looks awkward in the vignettes (here, complete data vignette accesses internal lavaan slots) should be a function. Or summary should spit out an object. 
 
-19) While the PIM model is run in `lavaan`, the output is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, adjusting fit indices, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
+19) While the PIM model is run in `lavaan`, the output is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
 
 2)  Add GLS
 
@@ -33,17 +35,17 @@ This should be translatable to a 5 x 2 matrix C, with rows labeled etas and colu
 
 6)  Write many tests (currently, only one test is included, to pass the rmd check)
 
-7) Update stage0 function to include None as an option. Make a good decision on how to handle  observed variables in the model that are not composites. Update vignette.   
+7) Update stage0 function to include None as an option. Make a good decision on how to handle  observed variables in the model that are not composites. Update vignette. 
+
+8) Currently, the baseline (null) and saturated PIM models are set up and fit separately, when using fitMeasures_pim() or when using individual component functions (as discussed in Approximate_fit vignette). This is redundant (the PIM syntax setup, anyway). But also, as lavaan fits the baseline and saturated models right away, possibly the same should be when a PIM model is fit. I don't know if it is possible to specify a custom baseline or H1 model into the `lavaan()` function (I doubt it though). If not, think of some other way to only create the PIM item syntax once? 
 
 9) Need an average model for PIM (currently sums only). 
 
+10) Functions for correct finite sample fit indices for TSML
+
 11) Make the PIM.uni syntax more compact (item covs currently are one per line)
 
-12) Functions for correct baseline model under PIM, and hence correct fit indices. 
-
-13) Adjustments due to missing data pop values in PIM CFI etc (RMSEA should be automatic by lavaan?)
-
-14) Functions for correct SRMR under PIM (to match TSML with complete data)
+12) Verify that PIM FIML robust fit indices are computed correctly by `lavaan` (some weirdness here, see Approximate Fit vignette).
 
 15)  Update how documentation is done for TSML and families of functions – join, use inherit
 
