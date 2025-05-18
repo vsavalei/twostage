@@ -7,7 +7,7 @@
 compmodel_sat(compmodel)
 }
 \arguments{
-\item{compmodel}{Composite model syntax for which to create a baseline model}
+\item{compmodel}{Composite model syntax for which to create a saturated model}
 }
 \value{
 H1 (Saturated) model lavaan syntax
@@ -16,7 +16,7 @@ H1 (Saturated) model lavaan syntax
 H1 (Saturated) Model Syntax for the Composites Model
 }
 \examples{
-compmodel<-"C1 ~ C2 + C3"
+compmodel <- "C1 ~ C2 + C3"
 satmodel <- compmodel_sat(compmodel)
 
 }
