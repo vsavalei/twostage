@@ -446,8 +446,16 @@ twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL
 }
 
 
-#rudimentary version
+#  rudimentary version of parameter estimates function
 #i want to toggle naive.se to be on for summary, but off for compare functions
+#' Display Twostage Parameter Estimates and SEs
+#'
+#' @param object Object of class twostage
+#' @param naive.se Whether naive standard errors from Stage 2 should be included
+#'
+#' @returns Dataframe with TS estimates and SEs
+#' @export
+#'
 parameterEstimates_ts <- function(object,naive.se=TRUE) {
 
             if (!inherits(object, "twostage")) {
