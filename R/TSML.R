@@ -319,10 +319,13 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
   ohd <- S1a.output[[3]]
   N <- S1a.output[[4]]
 
-  S2 <- try(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
-                sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))),silent=TRUE)
-  #find a sane and consistent way to do the line below
-  if(inherits(try(vcov(S2)),"try-error")==FALSE){
+  S2 <- tryCatch(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
+                sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))),error=function (e)
+                {message("Error encountered: ", e$message)
+                  return(NA)})
+  #trying something new, below works b/c of tryCatch
+  #may need another subloop to catch cases where vcov has some diagonal NAs
+  if(lavInspect(S2,"converged")){
 
     ddh <- lavInspect(S2, "delta") #model derivatives
     bread <- lavInspect(S2, "vcov")*N
@@ -372,10 +375,8 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
 
     } #end if
 
-  #assign twostage class to the results
-  S2 <- as(S2, "twostage") #cannot direct assign class for S4 objects
-  return(S2)
-
+ S2 <- as(S2, "twostage") #cannot direct assign class for S4 objects
+ return(S2)
 }
 
 
