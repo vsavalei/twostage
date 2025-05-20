@@ -4,14 +4,18 @@
 \alias{stage0}
 \title{stage0}
 \usage{
-stage0(data, model)
+stage0(data, model, which_col = NA, type = NA)
 }
 \arguments{
 \item{data}{A data file with components (items) to be assigned to composites.
 It should not contain other variables (or else feed in only selected columns as data).}
 
-\item{model}{A lavaan model for the composites. It is only used to extract composite names
-via lavNames().}
+\item{model}{A lavaan model for the composites, used to extract composite names}
+
+\item{which_col}{(optional) A vector of length of names(data), with entries identifying the number of the composite
+(in the order they appear in the composites model) to which a component should be signed}
+
+\item{type}{(optional) Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)}
 }
 \value{
 A matrix C with rownames set to composite names, and columnnames set to
@@ -31,16 +35,20 @@ or average scores.
 }
 \examples{
 
-\dontrun{ #The menu cannot be used non-interactively
 # TPB Model for Composites (Full mediation)
 tpbmod<-'
 INTALL ~ ATTALL + PBCALL + NORMALL
 BEH ~ INTALL'
+\dontrun{
+#The menu cannot be used non-interactively
+C <- stage0(tpbdata, tpbmod)
+}
+#Or, provide assignment non-interactively
+#The composites are in the order listed in lavNames(tpbmod)
+#The components are in the order of names(tpbdata)
+ which_col <- c(rep(4,3),rep(5,3),rep(2,1),rep(1,3),rep(3,11))
+ C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
 
-stage0(tpbdata, tpbmod)
-
-
-# With appropriate selections, this should result in the message:
 #Your composites are made up of the following components:
 #INTALL :  INT1 INT2 INT3
 # BEH :  BEH
@@ -48,6 +56,5 @@ stage0(tpbdata, tpbmod)
 #PBCALL :  PBC1 PBC2 PBC3
 #NORMALL :  NORS1 NORS2 NORS3
 #If this is not correct, start over!
-}
 
 }

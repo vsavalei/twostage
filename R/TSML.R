@@ -50,9 +50,10 @@ write.sat <- function(p, varnames) {
 #'
 #' @param data A data file with components (items) to be assigned to composites.
 #' It should not contain other variables (or else feed in only selected columns as data).
-#' @param model A lavaan model for the composites. It is only used to extract composite names
-#' via lavNames().
-#'
+#' @param model A lavaan model for the composites, used to extract composite names
+#' @param type  (optional) Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)
+#' @param which_col (optional) A vector of length of names(data), with entries identifying the number of the composite
+#' (in the order they appear in the composites model) to which a component should be signed
 #' @return A matrix C with rownames set to composite names, and columnnames set to
 #' component (item) names. A non-zero value in each row corresponds to the assignment of that
 #' component to that composite, with the non-zero value as the weight. Current options for weights
@@ -63,16 +64,21 @@ write.sat <- function(p, varnames) {
 #'
 #' @examples
 #'
-#'\dontrun{ #The menu cannot be used non-interactively
 #' # TPB Model for Composites (Full mediation)
 #' tpbmod<-'
 #' INTALL ~ ATTALL + PBCALL + NORMALL
 #' BEH ~ INTALL'
+#'\dontrun{
+#' #The menu cannot be used non-interactively
+#' C <- stage0(tpbdata, tpbmod)
+#' }
+#' #Or, provide assignment non-interactively
+#' #The composites are in the order listed in lavNames(tpbmod)
+#' #The components are in the order of names(tpbdata)
+#  #Therefore, the correct assignment vector is:
+#'  which_col <- c(rep(4,3),rep(5,3),rep(2,1),rep(1,3),rep(3,11))
+#'  C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
 #'
-#' stage0(tpbdata, tpbmod)
-#'
-#'
-#'# With appropriate selections, this should result in the message:
 #' #Your composites are made up of the following components:
 #' #INTALL :  INT1 INT2 INT3
 #' # BEH :  BEH
@@ -80,20 +86,44 @@ write.sat <- function(p, varnames) {
 #' #PBCALL :  PBC1 PBC2 PBC3
 #' #NORMALL :  NORS1 NORS2 NORS3
 #' #If this is not correct, start over!
-#'}
 #'
-stage0<-function (data, model) {
+stage0<-function (data, model,which_col=NA,type=NA) {
   cnames<-lavNames(model)
   C <- matrix(0,nrow=length(cnames),ncol=length(colnames(data)))
   colnames(C)<-colnames(data) #component names
   rownames(C)<-cnames #composite names
+
+  if(!(type %in% c(1, 2))){
   prompt_type <- paste("Are your composites sums or averages of components?")
   type <- utils::menu(c("Sums","Averages"), title = prompt_type)
+  }
+
+  if (!missing(which_col)) { #use assignment vector if provided
+
+    #if which_col is not a vector of length of colnames(data), throw error
+    if (length(which_col) != length(colnames(data))) {
+      stop("Error: 'which_col' must be of of length equal to number of columns in the data.")
+    }
+
+    #if which_col has any values other than 1 to length(cnames), throw error
+    if (any(!which_col %in% 1:length(cnames))) {
+      stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.
+         ")
+    }
+
+    for (i in 1:length(colnames(data))){
+      ind_i <- which_col[i]
+      C[ind_i,i]<-1
+    }
+
+    } else { # menu prompt for each component
 
   for (i in 1:length(colnames(data))){
     prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
     ind_i <- utils::menu(cnames, title = prompt_message)
     C[ind_i,i]<-1
+  }
+
   }
 
   cat("Your composites are made up of the following components: \n")
