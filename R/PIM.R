@@ -210,8 +210,16 @@ PIM_syntax <- function(C, compmodel, exog_cov = TRUE) {
     comp_exog_covs_syntax <- NULL
   }
 
+  out <- paste(c(
+    "##--------PIM setup (item-level): ----------##",
+    PIMu, PIMm, PIMulav,
+    "##--------END OF PIM setup (item-level)----------##",
+    "",
+    "##--------Composite Model (inspect carefully): ----------##",
+    compmodel, comp_exog_covs_syntax
+  ), collapse = "\n")
 
-  out <- paste(c(PIMu, PIMm, PIMulav, compmodel, comp_exog_covs_syntax), collapse = "\n")
+
   return(out)
 }
 
