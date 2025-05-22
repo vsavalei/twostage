@@ -326,7 +326,7 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
   #trying something new, below works b/c of tryCatch
   #may need another subloop to catch cases where vcov has some diagonal NAs
   if(lavInspect(S2,"converged")){
-    if(!is.null(lavInspect(S2,"vcov"))){ #is this too broad? can check if any diags are NA
+    if(!is.null(suppressWarnings(lavInspect(S2, "vcov")))){ #may need to also check if any diags are NA
     ddh <- lavInspect(S2, "delta") #model derivatives
     bread <- lavInspect(S2, "vcov")*N
     Hh <-   lavInspect(S2, "h1.information.expected")
