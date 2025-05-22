@@ -326,7 +326,7 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
   #trying something new, below works b/c of tryCatch
   #may need another subloop to catch cases where vcov has some diagonal NAs
   if(lavInspect(S2,"converged")){
-
+    if(!is.null(lavInspect(S2,"vcov"))){ #is this too broad? can check if any diags are NA
     ddh <- lavInspect(S2, "delta") #model derivatives
     bread <- lavInspect(S2, "vcov")*N
     Hh <-   lavInspect(S2, "h1.information.expected")
@@ -372,7 +372,7 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
     S2@Fit@test$twostage$test <- Tres
     S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
     S2@Fit@test$twostage$pval <- pval
-
+      } #end if vcov
     } #end if
 
  S2 <- as(S2, "twostage") #cannot direct assign class for S4 objects
