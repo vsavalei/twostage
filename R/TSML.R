@@ -499,11 +499,16 @@ parameterEstimates_ts <- function(object,naive.se=TRUE) {
             names(est)[names(est) == "se"] <- "se_naive"
             names(est)[names(est) == "z"] <- "z_naive"
             names(est)[names(est) == "pvalue"] <- "pvalue_naive"
+
             se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+
+            if(!is.null(se)) {
             z <-  est[,"est"]/se
             pvalue <- 2 * (1 - pnorm(abs(z))) #from lavaan
 
-            out<-cbind(est,se,z,pvalue)
+            out<-cbind(est,se,z,pvalue)}
+
+            else {out <- est}
             return(out)
 }
 
