@@ -67,9 +67,12 @@ setMethod("show", "SummaryTwostage", function(object) {
   df <- object$df
   pval <- object$pval
 
+  if (!is.null(Tres)){
   test.output <- paste("The residual-based TSML chi-square is", round(Tres, 3),
                        "against", df, "degrees of freedom, with a p-value of",
-                       round(pval, 3))
+                       round(pval, 3))} else {
+  test.output <- paste("The residual-based TSML chi-square could not be computed.")
+                       }
 
   cat("Summary of Two-Stage Analysis \n")
   cat("----------------------------\n")
