@@ -1,4 +1,4 @@
-#testing advice/general philosophy:
+# testing advice/general philosophy:
 
 #
 # Focus on testing the external interface to your functions - if you test the
@@ -22,42 +22,42 @@
 #
 
 
-#this test is for a scenario with three composites, one of length one
+# this test is for a scenario with three composites, one of length one
 test_that("df and fmin of a PIM model are zero", {
-  #C1 is the sum of Y1, Y2, and Y3
+  # C1 is the sum of Y1, Y2, and Y3
   #' #C2 is the sum of Y4, Y5, and Y6
   #' #C3 is Y7
-  C<-matrix(0,nrow=3,ncol=7)
-  C[1,1:3]<-1
-  C[2,4:6]<-1
-  C[3,7]<-1
-  rownames(C)<-c("C1","C2","C3")
-  colnames(C)<-c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")
-  compmodel<-"C1 ~ C2 + C3"
-  model1 <- PIM_syntax(C,compmodel)
-  data1 <- misdata_mcar20[,c("Y1","Y2","Y3","Y4","Y5","Y6","Y7")]
-  out <- lavaan::sem(model1,data=data1)
+  C <- matrix(0, nrow = 3, ncol = 7)
+  C[1, 1:3] <- 1
+  C[2, 4:6] <- 1
+  C[3, 7] <- 1
+  rownames(C) <- c("C1", "C2", "C3")
+  colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
+  compmodel <- "C1 ~ C2 + C3"
+  model1 <- PIM_syntax(C, compmodel)
+  data1 <- misdata_mcar20[, c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")]
+  out <- lavaan::sem(model1, data = data1)
   df <- as.numeric(fitmeasures(out)["df"])
   fmin <- as.numeric(fitmeasures(out)["fmin"])
   expect_equal(df, 0)
-  expect_equal(fmin,0)
+  expect_equal(fmin, 0)
 })
 
-#add a test where the expectation is an error
-#expect_warning()
-#expect_error()
+# add a test where the expectation is an error
+# expect_warning()
+# expect_error()
 # Does the code fail? Specifically, does it fail for the right reason?
 # Does the accompanying message make sense to the human who needs to deal with the error?
 # If you have the choice, express your expectation in terms of the condition’s
 # class, instead of its message.
 
-#expect_message()
-#expect_no_error(1 / 2)
+# expect_message()
+# expect_no_error(1 / 2)
 
-#add a test that the result is the same as with composites for complete data
+# add a test that the result is the same as with composites for complete data
 
-#based on:
-#devtools::test_coverage_active_file()
-#cover message2
-#i.e., add an example where composite is the same as component in name
-#(df will fail here)
+# based on:
+# devtools::test_coverage_active_file()
+# cover message2
+# i.e., add an example where composite is the same as component in name
+# (df will fail here)
