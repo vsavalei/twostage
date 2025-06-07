@@ -97,19 +97,17 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
   }
 
   if (!missing(which_col)) { # use assignment vector if provided
-
     # if which_col is not a vector of length of colnames(data), throw error
     if (length(which_col) != length(colnames(data))) {
-      stop("'which_col' must have length ", length(colnames(data)),
-             " (number of columns in data), but has length ", length(which_col))
-      }
-
+      stop(
+        "'which_col' must have length ", length(colnames(data)),
+        " (number of columns in data), but has length ", length(which_col)
+      )
     }
 
     # if which_col has any values other than 1 to length(cnames), throw error
     if (any(!which_col %in% 1:length(cnames))) {
-      stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.
-         ")
+      stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.")
     }
 
     for (i in 1:length(colnames(data))) {
@@ -117,7 +115,6 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
       C[ind_i, i] <- 1
     }
   } else { # menu prompt for each component
-
     for (i in 1:length(colnames(data))) {
       prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
       ind_i <- utils::menu(cnames, title = prompt_message)
@@ -132,12 +129,13 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
   }
   cat("If this is not correct, start over! \n")
 
-  if (type == "2") { # rescale unit weights
+  if (type == 2) { # rescale unit weights (changed from "2" to 2)
     C <- C / rowSums(C)
   }
 
   return(C)
 }
+
 
 
 #' stage1

@@ -73,7 +73,7 @@ test_that("stage0 validates which_col input", {
   # Test error when which_col has wrong length
   expect_error(
     stage0(test_data, model, which_col = c(1), type = 1),
-    "must be of of length equal to number of columns"
+    "'which_col' must have length"
   )
 
   # Test error when which_col has invalid values
@@ -178,7 +178,7 @@ test_that("stage1 returns NULL when model fails to converge", {
   )
 
   # This might fail to converge or have issues
-  result <- stage1(test_data)
+  result <- suppressWarnings(stage1(test_data))
 
   # Function should handle the error gracefully
   # Either returns valid result or NULL
