@@ -24,18 +24,18 @@ the residual-based test statistic (for normal data)
 }
 \examples{
 
-#an example using the first 18 variables in the simulated dataset misdata_mcar20
-#reduce model size
+# an example using the first 18 variables in the simulated dataset misdata_mcar20
+# reduce model size
 library(lavaan)
-misdata1<-misdata_mcar20[,1:18]
+misdata1 <- misdata_mcar20[, 1:18]
 
 # composite sub-model
-mod1 <- '
+mod1 <- "
  F1 =~ C1 + C2 + C3
  F2 =~ C4 + C5 + C6
  F2 ~ F1
  F2 ~~ F2
- F1 ~~ F1'
+ F1 ~~ F1"
 #manual computation for C (stage0) to avoid user input
 cnames<-lavNames(mod1) #this is a lavaan function
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))

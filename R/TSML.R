@@ -1,4 +1,3 @@
-
 # TSML functions #################
 
 #' @import lavaan
@@ -6,16 +5,16 @@
 #' @importFrom stats pnorm cov2cor
 #' @importFrom methods show
 #'
-#namesohd (helper function): names rows/columns of the asy cov matrix from stage1
-namesohd<- function (cnames) {
-  name_grid_cov <- t(outer(cnames,cnames,function(x,y) paste0(x,"~~",y)))
+# namesohd (helper function): names rows/columns of the asy cov matrix from stage1
+namesohd <- function(cnames) {
+  name_grid_cov <- t(outer(cnames, cnames, function(x, y) paste0(x, "~~", y)))
   names_cov <- name_grid_cov[lower.tri(name_grid_cov, diag = TRUE)]
-  names_mean <- paste0(cnames,"~",1)
-  namesohd <- c(names_cov,names_mean)
+  names_mean <- paste0(cnames, "~", 1)
+  namesohd <- c(names_cov, names_mean)
   return(namesohd)
 }
 
-#write.sat (helper function): creates the saturated model syntax in lavaan
+# write.sat (helper function): creates the saturated model syntax in lavaan
 write.sat <- function(p, varnames) {
   if (length(varnames) != p) {
     stop("The length of 'varnames' must be equal to 'p'.")
@@ -37,7 +36,6 @@ write.sat <- function(p, varnames) {
   return(sat.mod)
 }
 
-
 #' stage0
 #'
 #' This is the prep stage of TSML (can also be used for PIM). This function uses
@@ -51,7 +49,7 @@ write.sat <- function(p, varnames) {
 #' @param data A data file with components (items) to be assigned to composites.
 #' It should not contain other variables (or else feed in only selected columns as data).
 #' @param model A lavaan model for the composites, used to extract composite names
-#' @param type  (optional) Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)
+#' @param type  Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)
 #' @param which_col (optional) A vector of length of names(data), with entries identifying the number of the composite
 #' (in the order they appear in the composites model) to which a component should be signed
 #' @return A matrix C with rownames set to composite names, and columnnames set to
@@ -65,77 +63,78 @@ write.sat <- function(p, varnames) {
 #' @examples
 #'
 #' # TPB Model for Composites (Full mediation)
-#' tpbmod<-'
+#' tpbmod <- "
 #' INTALL ~ ATTALL + PBCALL + NORMALL
-#' BEH ~ INTALL'
-#'\dontrun{
-#' #The menu cannot be used non-interactively
+#' BEH ~ INTALL"
+#' \dontrun{
+#' # The menu cannot be used non-interactively
 #' C <- stage0(tpbdata, tpbmod)
 #' }
-#' #Or, provide assignment non-interactively
-#' #The composites are in the order listed in lavNames(tpbmod)
-#' #The components are in the order of names(tpbdata)
+#' # Or, provide assignment non-interactively
+#' # The composites are in the order listed in lavNames(tpbmod)
+#' # The components are in the order of names(tpbdata)
 #  #Therefore, the correct assignment vector is:
-#'  which_col <- c(rep(4,3),rep(5,3),rep(2,1),rep(1,3),rep(3,11))
-#'  C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
+#' which_col <- c(rep(4, 3), rep(5, 3), rep(2, 1), rep(1, 3), rep(3, 11))
+#' C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
 #'
-#' #Your composites are made up of the following components:
-#' #INTALL :  INT1 INT2 INT3
+#' # Your composites are made up of the following components:
+#' # INTALL :  INT1 INT2 INT3
 #' # BEH :  BEH
-#' #ATTALL :  AT1CPU AT2CPU AT3CPU AT4CPU AT5CPU AT6CPU AT7CPP AT8CPP AT9CPP AT10CPP AT11CPP
-#' #PBCALL :  PBC1 PBC2 PBC3
-#' #NORMALL :  NORS1 NORS2 NORS3
-#' #If this is not correct, start over!
+#' # ATTALL :  AT1CPU AT2CPU AT3CPU AT4CPU AT5CPU AT6CPU AT7CPP AT8CPP AT9CPP AT10CPP AT11CPP
+#' # PBCALL :  PBC1 PBC2 PBC3
+#' # NORMALL :  NORS1 NORS2 NORS3
+#' # If this is not correct, start over!
 #'
-stage0<-function (data, model,which_col=NA,type=NA) {
-  cnames<-lavNames(model)
-  C <- matrix(0,nrow=length(cnames),ncol=length(colnames(data)))
-  colnames(C)<-colnames(data) #component names
-  rownames(C)<-cnames #composite names
+stage0 <- function(data, model, which_col = NA, type = NA) {
+  cnames <- lavNames(model)
+  C <- matrix(0, nrow = length(cnames), ncol = length(colnames(data)))
+  colnames(C) <- colnames(data) # component names
+  rownames(C) <- cnames # composite names
 
-  if(!(type %in% c(1, 2))){
-  prompt_type <- paste("Are your composites sums or averages of components?")
-  type <- utils::menu(c("Sums","Averages"), title = prompt_type)
+  if (!(type %in% c(1, 2))) {
+    prompt_type <- paste("Are your composites sums or averages of components?")
+    type <- utils::menu(c("Sums", "Averages"), title = prompt_type)
   }
 
-  if (!missing(which_col)) { #use assignment vector if provided
+  if (!missing(which_col)) { # use assignment vector if provided
 
-    #if which_col is not a vector of length of colnames(data), throw error
+    # if which_col is not a vector of length of colnames(data), throw error
     if (length(which_col) != length(colnames(data))) {
-      stop("Error: 'which_col' must be of of length equal to number of columns in the data.")
+      stop("'which_col' must have length ", length(colnames(data)),
+             " (number of columns in data), but has length ", length(which_col))
+      }
+
     }
 
-    #if which_col has any values other than 1 to length(cnames), throw error
+    # if which_col has any values other than 1 to length(cnames), throw error
     if (any(!which_col %in% 1:length(cnames))) {
       stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.
          ")
     }
 
-    for (i in 1:length(colnames(data))){
+    for (i in 1:length(colnames(data))) {
       ind_i <- which_col[i]
-      C[ind_i,i]<-1
+      C[ind_i, i] <- 1
     }
+  } else { # menu prompt for each component
 
-    } else { # menu prompt for each component
-
-  for (i in 1:length(colnames(data))){
-    prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
-    ind_i <- utils::menu(cnames, title = prompt_message)
-    C[ind_i,i]<-1
-  }
-
+    for (i in 1:length(colnames(data))) {
+      prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
+      ind_i <- utils::menu(cnames, title = prompt_message)
+      C[ind_i, i] <- 1
+    }
   }
 
   cat("Your composites are made up of the following components: \n")
-  for (j in 1:length(cnames)){
+  for (j in 1:length(cnames)) {
     cnamesj <- colnames(C)[C[j, ] == 1]
     cat(cnames[j], ": ", cnamesj, "\n")
   }
   cat("If this is not correct, start over! \n")
 
-  if(type=="2"){  #rescale unit weights
-    C<-C/rowSums(C)
-    }
+  if (type == "2") { # rescale unit weights
+    C <- C / rowSums(C)
+  }
 
   return(C)
 }
@@ -158,32 +157,35 @@ stage0<-function (data, model,which_col=NA,type=NA) {
 #'
 #' @examples
 #'
-#'out_s1<-stage1(misdata_mcar20)
+#' out_s1 <- stage1(misdata_mcar20)
 #'
-#'#as tpbdata has no missing data, running stage1 with expected information
-#'#will result in TSML matching regular ML
-#'out_s1<-stage1(tpbdata, runcommand="information='expected'")
+#' # as tpbdata has no missing data, running stage1 with expected information
+#' # will result in TSML matching regular ML
+#' out_s1 <- stage1(tpbdata, runcommand = "information='expected'")
 #'
-#'
-stage1 <- function (data,runcommand=NULL) {
+stage1 <- function(data, runcommand = NULL) {
   p <- ncol(data)
   N <- nrow(data)
-  pst <- p*(p+1)/2
+  pst <- p * (p + 1) / 2
 
-  #fit the saturated model in lavaan
-  S1.mod <- write.sat(p,varnames=colnames(data))
+  # fit the saturated model in lavaan
+  S1.mod <- write.sat(p, varnames = colnames(data))
 
-  S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ", runcommand, ")"))),silent=TRUE)
-  #fixed the line below, need to test
-  if(!inherits(S1, "try-error")) {
-    if(inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE){
-      shb <- fitted.values(S1)$cov    			#sigma-hat-beta
-      mhb <- fitted.values(S1)$mean         #mu-hat-beta
-      ohb <- vcov(S1)  #asy cov matrix
+  S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ", runcommand, ")"))), silent = TRUE)
+  # fixed the line below, need to test
+  if (!inherits(S1, "try-error")) {
+    if (inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE) {
+      shb <- fitted.values(S1)$cov # sigma-hat-beta
+      mhb <- fitted.values(S1)$mean # mu-hat-beta
+      ohb <- vcov(S1) # asy cov matrix
       N <- S1@Data@nobs[[1]]
-      S1.output <- list(shb,mhb,ohb,N)
-    } else {S1.output <- NULL } #end if converged loop
-  } else {S1.output <- NULL } #end try-error loop
+      S1.output <- list(shb, mhb, ohb, N)
+    } else {
+      S1.output <- NULL
+    } # end if converged loop
+  } else {
+    S1.output <- NULL
+  } # end try-error loop
   return(S1.output)
 }
 
@@ -205,19 +207,19 @@ stage1 <- function (data,runcommand=NULL) {
 #'
 #' @examples
 #'
-#' #an example using the first 18 variables in the simulated dataset misdata_mcar20
-#' #reduce model size
+#' # an example using the first 18 variables in the simulated dataset misdata_mcar20
+#' # reduce model size
 #'
-#'library(lavaan)
-#' misdata1<-misdata_mcar20[,1:18]
+#' library(lavaan)
+#' misdata1 <- misdata_mcar20[, 1:18]
 #'
 #' # composite sub-model
-#' mod1 <- '
+#' mod1 <- "
 #'  F1 =~ C1 + C2 + C3
 #'  F2 =~ C4 + C5 + C6
 #'  F2 ~ F1
 #'  F2 ~~ F2
-#'  F1 ~~ F1'
+#'  F1 ~~ F1"
 
 #' #manual computation for C (stage0) to avoid user input
 #' cnames<-lavNames(mod1) #this is a lavaan function
@@ -231,39 +233,41 @@ stage1 <- function (data,runcommand=NULL) {
 #' C[5,13:15]<-1
 #' C[6,16:18]<-1
 #'
-#'out_s1<-stage1(misdata1)
-#'out_s1a<-stage1a(out_s1,C)
+#' out_s1<-stage1(misdata1)
+#' out_s1a<-stage1a(out_s1,C)
 #'
-stage1a <- function (S1.output, C) {
-  if (is.null(S1.output)) {S1a.output <- NULL} else {
+stage1a <- function(S1.output, C) {
+  if (is.null(S1.output)) {
+    S1a.output <- NULL
+  } else {
     shb <- S1.output[[1]]
     mhb <- S1.output[[2]]
     ohb <- S1.output[[3]]
-    N <- S1.output[[4]] #not used here, passed on to stage2
+    N <- S1.output[[4]] # not used here, passed on to stage2
 
-    cnames<-rownames(C)
-    k <- nrow(C) #number of composites
-    p <-ncol(C) #number of components
-    pst <- p*(p+1)/2
-    kst <- k*(k+1)/2
+    cnames <- rownames(C)
+    k <- nrow(C) # number of composites
+    p <- ncol(C) # number of components
+    pst <- p * (p + 1) / 2
+    kst <- k * (k + 1) / 2
 
-    #Cbig, covs in original order, the means
+    # Cbig, covs in original order, the means
     Cb <- matrix(0, (kst + k), (pst + p))
-    Cb[(kst+1):(kst+k),(pst+1):(pst+p)] <- C
-    Cbpart1<-lav_matrix_duplication_ginv_pre(C%x%C) #new line 1
-    Cb[1:kst,1:pst] <-  lav_matrix_duplication_post(Cbpart1) #new line 2
+    Cb[(kst + 1):(kst + k), (pst + 1):(pst + p)] <- C
+    Cbpart1 <- lav_matrix_duplication_ginv_pre(C %x% C) # new line 1
+    Cb[1:kst, 1:pst] <- lav_matrix_duplication_post(Cbpart1) # new line 2
 
-    #saturated model parameters for the model based on the k composites:
-    mhd <- C %*% mhb  			#mu-hat-delta
-    rownames(mhd)<- cnames
-    shd <- C %*% shb %*% t(C) 	#sigma-hat-delta
-    rownames(shd)<-colnames(shd)<- cnames
-    #dh <- c(lav_matrix_vech(shd),mhd) 		  #delta-hat
-    ohd <- Cb %*% ohb %*% t(Cb) #ohm-hat-delta
-    rownames(ohd)<-colnames(ohd) <- namesohd(cnames)
-    #order in ohd: vectorized non-red Sigma, then mu
-  } #end of big non-null else
-  S1a.output <- list(shd, mhd,ohd, N)
+    # saturated model parameters for the model based on the k composites:
+    mhd <- C %*% mhb # mu-hat-delta
+    rownames(mhd) <- cnames
+    shd <- C %*% shb %*% t(C) # sigma-hat-delta
+    rownames(shd) <- colnames(shd) <- cnames
+    # dh <- c(lav_matrix_vech(shd),mhd) 		  #delta-hat
+    ohd <- Cb %*% ohb %*% t(Cb) # ohm-hat-delta
+    rownames(ohd) <- colnames(ohd) <- namesohd(cnames)
+    # order in ohd: vectorized non-red Sigma, then mu
+  } # end of big non-null else
+  S1a.output <- list(shd, mhd, ohd, N)
   return(S1a.output)
 }
 
@@ -283,18 +287,18 @@ stage1a <- function (S1.output, C) {
 #'
 #' @examples
 #'
-#' #an example using the first 18 variables in the simulated dataset misdata_mcar20
-#' #reduce model size
+#' # an example using the first 18 variables in the simulated dataset misdata_mcar20
+#' # reduce model size
 #' library(lavaan)
-#' misdata1<-misdata_mcar20[,1:18]
+#' misdata1 <- misdata_mcar20[, 1:18]
 #'
 #' # composite sub-model
-#' mod1 <- '
+#' mod1 <- "
 #'  F1 =~ C1 + C2 + C3
 #'  F2 =~ C4 + C5 + C6
 #'  F2 ~ F1
 #'  F2 ~~ F2
-#'  F1 ~~ F1'
+#'  F1 ~~ F1"
 
 #' #manual computation for C (stage0) to avoid user input
 #' cnames<-lavNames(mod1) #this is a lavaan function
@@ -308,75 +312,76 @@ stage1a <- function (S1.output, C) {
 #' C[5,13:15]<-1
 #' C[6,16:18]<-1
 #'
-#'out_s1 <- stage1(misdata1)
-#'out_s1a <- stage1a(out_s1,C)
-#'out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
+#' out_s1 <- stage1(misdata1)
+#' out_s1a <- stage1a(out_s1,C)
+#' out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 #'
 #'
-stage2 <- function (S1a.output, model,runcommand2=NULL) {
+stage2 <- function(S1a.output, model, runcommand2 = NULL) {
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
   ohd <- S1a.output[[3]]
   N <- S1a.output[[4]]
 
   S2 <- tryCatch(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
-                sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))),error=function (e)
-                {message("Error encountered: ", e$message)
-                  return(NA)})
-  #trying something new, below works b/c of tryCatch
-  #may need another subloop to catch cases where vcov has some diagonal NAs
-  if(lavInspect(S2,"converged")){
-    if(!is.null(suppressWarnings(lavInspect(S2, "vcov")))){ #may need to also check if any diags are NA
-    ddh <- lavInspect(S2, "delta") #model derivatives
-    bread <- lavInspect(S2, "vcov")*N
-    Hh <-   lavInspect(S2, "h1.information.expected")
-    meat <- Hh%*%ddh
+                sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))), error = function(e) {
+    message("Error encountered: ", e$message)
+    return(NA)
+  })
+  # trying something new, below works b/c of tryCatch
+  # may need another subloop to catch cases where vcov has some diagonal NAs
+  if (lavInspect(S2, "converged")) {
+    if (!is.null(suppressWarnings(lavInspect(S2, "vcov")))) { # may need to also check if any diags are NA
+      ddh <- lavInspect(S2, "delta") # model derivatives
+      bread <- lavInspect(S2, "vcov") * N
+      Hh <- lavInspect(S2, "h1.information.expected")
+      meat <- Hh %*% ddh
 
-    #reordering
-    new_order <- match(rownames(meat), rownames(ohd))
-    ohd.reordered <- ohd[new_order,new_order]
+      # reordering
+      new_order <- match(rownames(meat), rownames(ohd))
+      ohd.reordered <- ohd[new_order, new_order]
 
-    Ohtt <- bread %*% t(meat)%*%ohd.reordered%*%meat%*%bread  #ohm-hat-theta-tilde
+      Ohtt <- bread %*% t(meat) %*% ohd.reordered %*% meat %*% bread # ohm-hat-theta-tilde
 
-    #change back to avoid relying on internal lavaan function:
-    #S2@ParTable$se_ts <- sqrt(diag(Ohtt))
-    #se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+      # change back to avoid relying on internal lavaan function:
+      # S2@ParTable$se_ts <- sqrt(diag(Ohtt))
+      # se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
 
-    #set TS SEs to initially equal naive SEs, to match nonfree values and length
-    S2@ParTable$se_ts <-S2@ParTable$se
+      # set TS SEs to initially equal naive SEs, to match nonfree values and length
+      S2@ParTable$se_ts <- S2@ParTable$se
 
-    #update se_ts for free parameters
-    S2@ParTable$se_ts[S2@ParTable$free!=0] <- sqrt(diag(Ohtt)) #how to check order?
+      # update se_ts for free parameters
+      S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # how to check order?
 
-    ## This prior solution relied on an internal lavaan function to ensure correct
-    ## order, but RMD check doesn't like this
+      ## This prior solution relied on an internal lavaan function to ensure correct
+      ## order, but RMD check doesn't like this
 
-    #S2@ParTable$se_ts <- lavaan:::lav_model_vcov_se(lavmodel = S2@Model,
-    #            lavpartable = S2@ParTable, VCOV = Ohtt)
+      # S2@ParTable$se_ts <- lavaan:::lav_model_vcov_se(lavmodel = S2@Model,
+      #            lavpartable = S2@ParTable, VCOV = Ohtt)
 
-    #Note: lavInspect(S2,"vcov") will still give the "wrong" (naive) answer
-    #Ohtt <- str(S2@vcov$vcov) #also "naive"
-    #but I think we want to preserve the naive run
-    #we could try to save the vcov in another slot (careful not to break lavaan)
+      # Note: lavInspect(S2,"vcov") will still give the "wrong" (naive) answer
+      # Ohtt <- str(S2@vcov$vcov) #also "naive"
+      # but I think we want to preserve the naive run
+      # we could try to save the vcov in another slot (careful not to break lavaan)
 
-    #Normal-theory residual-based test statistic
-    et <- c(residuals(S2)$mean,lav_matrix_vech(residuals(S2)$cov)) #so swap
-    ahd <- solve(ohd.reordered)/N
-    #executive decision April 15, 2025: Replaced N-1 with N!
-    Tres <- (N)*t(et) %*% (ahd - (ahd%*%ddh) %*% solve(t(ddh)%*%ahd%*%ddh) %*% (t(ddh)%*%ahd)) %*% et
-    pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
+      # Normal-theory residual-based test statistic
+      et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
+      ahd <- solve(ohd.reordered) / N
+      # executive decision April 15, 2025: Replaced N-1 with N!
+      Tres <- (N) * t(et) %*% (ahd - (ahd %*% ddh) %*% solve(t(ddh) %*% ahd %*% ddh) %*% (t(ddh) %*% ahd)) %*% et
+      pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
-    #mauling lavaan -- is this safe?
-    #writing into S2@test was not (broke lavaan summary)
-    #blavaan directly overwrites @Fit@test slots
-    S2@Fit@test$twostage$test <- Tres
-    S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
-    S2@Fit@test$twostage$pval <- pval
-      } #end if vcov
-    } #end if
+      # mauling lavaan -- is this safe?
+      # writing into S2@test was not (broke lavaan summary)
+      # blavaan directly overwrites @Fit@test slots
+      S2@Fit@test$twostage$test <- Tres
+      S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
+      S2@Fit@test$twostage$pval <- pval
+    } # end if vcov
+  } # end if
 
- S2 <- as(S2, "twostage") #cannot direct assign class for S4 objects
- return(S2)
+  S2 <- as(S2, "twostage") # cannot direct assign class for S4 objects
+  return(S2)
 }
 
 
@@ -391,7 +396,8 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
 
 #' @param data Data file for the components (items)
 #' @param model The lavaan model for the composites
-#' @param C The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)
+#' @param C (optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)
+#' @param which_col (optional) A vector of length of names(data), with entries identifying the number of the composite, from which C will be created
 #' @param runcommand Additional arguments to pass to lavaan for stage1
 #' @param runcommand2 Additional arguments to pass to lavaan for stage2
 #'
@@ -402,20 +408,20 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
 #'
 #' @examples
 #'
-#' #Example 1: An example using the first 18 variables in the simulated
-#' #dataset misdata_mcar20 with 20% missing data on about half the variables
-#' #C1 - C6 are parcels formed using three variables each (in order)
+#' # Example 1: An example using the first 18 variables in the simulated
+#' # dataset misdata_mcar20 with 20% missing data on about half the variables
+#' # C1 - C6 are parcels formed using three variables each (in order)
 #'
 #' library(lavaan)
-#' misdata1<-misdata_mcar20[,1:18]
+#' misdata1 <- misdata_mcar20[, 1:18]
 #'
 #' # composite sub-model
-#' mod1 <- '
+#' mod1 <- "
 #'  F1 =~ C1 + C2 + C3
 #'  F2 =~ C4 + C5 + C6
 #'  F2 ~ F1
 #'  F2 ~~ F2
-#'  F1 ~~ F1'
+#'  F1 ~~ F1"
 
 #' #manual computation for C to avoid user input
 #' cnames<-lavNames(mod1) #this is a lavaan function
@@ -456,29 +462,32 @@ stage2 <- function (S1a.output, model,runcommand2=NULL) {
 #'
 #'
 #' @references
-#'Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
+#' Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
 
 
-twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL) {
-
-  #stage 0, if needed: relating components to composite via user input
+twostage <- function(data, model, C = NULL, which_col = NULL, runcommand = NULL, runcommand2 = NULL) {
+  # stage 0, if needed: relating components to composite via user input
   if (is.null(C)) {
-    # Define C using stage0 when C is NULL
-    C <- stage0(data = data, model = model)
+    C <- if (is.null(which_col)) {
+      stage0(data = data, model = model)
+    } else {
+      stage0(data = data, model = model, which_col = which_col)
+    }
   }
-  #stage 1: saturated model on components
-  s1 <- stage1(data = data,runcommand=runcommand)
-  #stage1a: saturated solution transformation to composites
-  s1a <-stage1a(S1.output=s1,C)
-  #stage2: model fit to composites
-  s2 <- stage2(S1a.output=s1a, model = model,runcommand2=runcommand2)
+  # stage 1: saturated model on components
+  s1 <- stage1(data = data, runcommand = runcommand)
+  # stage1a: saturated solution transformation to composites
+  s1a <- stage1a(S1.output = s1, C = C)
+  # stage2: model fit to composites
+  s2 <- stage2(S1a.output = s1a, model = model, runcommand2 = runcommand2)
 
   return(s2)
 }
 
+# move to methods
 
 #  rudimentary version of parameter estimates function
-#i want to toggle naive.se to be on for summary, but off for compare functions
+# i want to toggle naive.se to be on for summary, but off for compare functions
 #' Display Twostage Parameter Estimates and SEs
 #'
 #' @param object Object of class twostage
@@ -487,28 +496,27 @@ twostage <- function (data,model,C = NULL, runcommand = NULL, runcommand2 = NULL
 #' @returns Dataframe with TS estimates and SEs
 #' @export
 #'
-parameterEstimates_ts <- function(object,naive.se=TRUE) {
+parameterEstimates_ts <- function(object, naive.se = TRUE) {
+  if (!inherits(object, "twostage")) {
+    stop("This does not appear to be an object generated by twostage()!")
+  }
 
-            if (!inherits(object, "twostage")) {
-              stop("This does not appear to be an object generated by twostage()!")
-            }
+  # by default, estimates only (no ses or cis) when class isn't only lavaan
+  # therefore, se argument below is needed to get ses
+  est <- parameterEstimates(object, se = naive.se, ci = FALSE, remove.nonfree = T)
+  names(est)[names(est) == "se"] <- "se_naive"
+  names(est)[names(est) == "z"] <- "z_naive"
+  names(est)[names(est) == "pvalue"] <- "pvalue_naive"
 
-            #by default, estimates only (no ses or cis) when class isn't only lavaan
-            #therefore, se argument below is needed to get ses
-            est<-parameterEstimates(object,se=naive.se, ci=FALSE,remove.nonfree=T)
-            names(est)[names(est) == "se"] <- "se_naive"
-            names(est)[names(est) == "z"] <- "z_naive"
-            names(est)[names(est) == "pvalue"] <- "pvalue_naive"
+  se <- object@ParTable$se_ts[object@ParTable$free != 0] # remove nonfree
 
-            se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
+  if (!is.null(se)) {
+    z <- est[, "est"] / se
+    pvalue <- 2 * (1 - pnorm(abs(z))) # from lavaan
 
-            if(!is.null(se)) {
-            z <-  est[,"est"]/se
-            pvalue <- 2 * (1 - pnorm(abs(z))) #from lavaan
-
-            out<-cbind(est,se,z,pvalue)}
-
-            else {out <- est}
-            return(out)
+    out <- cbind(est, se, z, pvalue)
+  } else {
+    out <- est
+  }
+  return(out)
 }
-

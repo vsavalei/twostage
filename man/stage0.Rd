@@ -15,7 +15,7 @@ It should not contain other variables (or else feed in only selected columns as 
 \item{which_col}{(optional) A vector of length of names(data), with entries identifying the number of the composite
 (in the order they appear in the composites model) to which a component should be signed}
 
-\item{type}{(optional) Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)}
+\item{type}{Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)}
 }
 \value{
 A matrix C with rownames set to composite names, and columnnames set to
@@ -36,25 +36,25 @@ or average scores.
 \examples{
 
 # TPB Model for Composites (Full mediation)
-tpbmod<-'
+tpbmod <- "
 INTALL ~ ATTALL + PBCALL + NORMALL
-BEH ~ INTALL'
+BEH ~ INTALL"
 \dontrun{
-#The menu cannot be used non-interactively
+# The menu cannot be used non-interactively
 C <- stage0(tpbdata, tpbmod)
 }
-#Or, provide assignment non-interactively
-#The composites are in the order listed in lavNames(tpbmod)
-#The components are in the order of names(tpbdata)
- which_col <- c(rep(4,3),rep(5,3),rep(2,1),rep(1,3),rep(3,11))
- C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
+# Or, provide assignment non-interactively
+# The composites are in the order listed in lavNames(tpbmod)
+# The components are in the order of names(tpbdata)
+which_col <- c(rep(4, 3), rep(5, 3), rep(2, 1), rep(1, 3), rep(3, 11))
+C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
 
-#Your composites are made up of the following components:
-#INTALL :  INT1 INT2 INT3
+# Your composites are made up of the following components:
+# INTALL :  INT1 INT2 INT3
 # BEH :  BEH
-#ATTALL :  AT1CPU AT2CPU AT3CPU AT4CPU AT5CPU AT6CPU AT7CPP AT8CPP AT9CPP AT10CPP AT11CPP
-#PBCALL :  PBC1 PBC2 PBC3
-#NORMALL :  NORS1 NORS2 NORS3
-#If this is not correct, start over!
+# ATTALL :  AT1CPU AT2CPU AT3CPU AT4CPU AT5CPU AT6CPU AT7CPP AT8CPP AT9CPP AT10CPP AT11CPP
+# PBCALL :  PBC1 PBC2 PBC3
+# NORMALL :  NORS1 NORS2 NORS3
+# If this is not correct, start over!
 
 }

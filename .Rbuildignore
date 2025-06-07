@@ -10,3 +10,4 @@
 ^doc$
 ^Meta$
 ^scripts$
+^vignettes/to_do-list\.Rmd$

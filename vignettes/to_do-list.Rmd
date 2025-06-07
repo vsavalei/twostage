@@ -13,60 +13,57 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 ```
+
 <!-- build_rmd("vignettes/to_do-list.Rmd") -->
 
-## To Do list 
+## To Do list
 
+1)  (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this later, when fit indices are added. "Naive" standard errors are also saved. Reason to not invest time into this: I am hoping `sam()` in `lavaan` can be hijacked to run TS methods or that it will get implemented in somem other way directly in `lavaan`. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].
 
+2)  Create `fitmeasures_ts()` function?
 
-1) (to discuss with Bill) Provide `show()` and `summary()` for `twostage()` function that looks much like `lavaan output`, but with ML replaced with TSML, test statistic and p-value replaced with res test statistic and p-value, and standard errors replaced with two-stage standard errors? Update: TSML output is now an S4 object of class twostage, inheriting class lavaan. Summary just prints what is different (computed by TS), for now. We can revisit this when fit indices are added. "Naive" standard errors are also saved. Other packages that do a good job that integrate with `lavaan` without mimicking its summary: `manymome` [add more].  
+3)  The output of the PIM from `lavaan` is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, etc. This is similar to what `sam()` does, where `summary()` and `parameterestimates()` have the argument: `remove.step1 = TRUE`. (See: `getMethod("summary", "lavaan")`). So ideally we'd have something similar for PIM, though I am not sure how to best implement it, since PIM is fit using `lavaan`. We could just write functions such as `parameterestimates_pim()`... CRAZY IDEA: WHAT IF I CAN USE SAM to fit PIM? (I've tried before for TWOSTAGE, needed second order factor support, this has been added).
 
-21) Create `fitmeasures_ts()` function? Everything that looks awkward in the vignettes (here, complete data vignette accesses internal lavaan slots) should be a function. Or summary should spit out an object. 
+5)  Add GLS
 
-19) While the PIM model is run in `lavaan`, the output is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, etc. Potentially other functions can be modified, e.g., `parameterestimates_pim()`. Update: compare_est function has been added that allows for PIM and TS comparison on common parameters only. 
+6)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). 
 
-2)  Add GLS
+4) TS fit indices need missing data adjustments (vignette in progress).
 
-4)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). Think about fit indices. Write a vignette. 
+7)  Provide a way for the user to specify how components relate to composites using newly invented `lavaan` syntax (developed for CCA). Example of such syntax: 
+`model <- 'eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'` This should be translatable to a 5 x 2 matrix C, with rows labeled etas and columns labeled xs, and with 1s corresponding to those xs that belong to certain etas. We could look into how lavaan parses this syntax and stores the result. So, user can specify C, OR specify this syntax in the function input?
 
-20) Provide a way for the user to specify how components relate to composites using newly invented lavaan syntax (developed for CCA). Example of such syntax:
-`model <- '   eta1 <~ x1 + x2   eta2 <~ x3 + x4 + x5'`
-This should be translatable to a 5 x 2 matrix C, with rows labeled etas and columns labeled xs, and with 1s corresponding to those xs that belong to certain etas. We could look into how lavaan parses this syntax and stores the result. So, user can specify C, OR specify this syntax in the function input?
+8)  Write more tests. Claude has written stage0 and stage1 function tests (not seen by a human yet); have it do more.
 
-6)  Write many tests (currently, only one test is included, to pass the rmd check)
+9)  Update stage0 function to include None as an option. Make a good decision on how to handle observed variables in the model that are not composites. Update vignette.
 
-7) Update stage0 function to include None as an option. Make a good decision on how to handle  observed variables in the model that are not composites. Update vignette. 
+10) Currently, the baseline (null) and saturated PIM models are set up and fit separately, when using fitMeasures_pim() or when using individual component functions (as discussed in Approximate_fit vignette). This is redundant (the PIM syntax setup, anyway). But also, as lavaan fits the baseline and saturated models right away, possibly the same should be when a PIM model is fit. I don't know if it is possible to specify a custom baseline or H1 model into the `lavaan()` function (I doubt it though). If not, think of some other way to only create the PIM item syntax once?
 
-8) Currently, the baseline (null) and saturated PIM models are set up and fit separately, when using fitMeasures_pim() or when using individual component functions (as discussed in Approximate_fit vignette). This is redundant (the PIM syntax setup, anyway). But also, as lavaan fits the baseline and saturated models right away, possibly the same should be when a PIM model is fit. I don't know if it is possible to specify a custom baseline or H1 model into the `lavaan()` function (I doubt it though). If not, think of some other way to only create the PIM item syntax once? 
+11) Need an average model for PIM (currently sums only).
 
-9) Need an average model for PIM (currently sums only). 
+13) Make the PIM.uni syntax more compact (item covs currently are one per line)
 
-10) Functions for correct finite sample fit indices for TSML
+14) Verify that PIM FIML robust fit indices are computed correctly by `lavaan` (some weirdness here, see Approximate Fit vignette).
 
-11) Make the PIM.uni syntax more compact (item covs currently are one per line)
-
-12) Verify that PIM FIML robust fit indices are computed correctly by `lavaan` (some weirdness here, see Approximate Fit vignette).
-
-15)  Update how documentation is done for TSML and families of functions – join, use inherit
+15) Update how documentation is done for TSML and families of functions – join, use inherit
 
 16) Add missing data creation functions for simulations, try to make as generic as possible (old TSML functions from Mijke's project are model specific)
 
 
 Longer term/uncertain:
 
-1) What are useful/informative error/warning messages? For example: user cannot pass a different estimator via `runcommand`, data must be continuous. Obviously there are infinitely many ways the TSML method can break (categorical data, multilevel or interactions in stage 2, etc, etc). What are the most glaring ones? 
+1)  What are useful/informative error/warning messages? For example: user cannot pass a different estimator via `runcommand`, data must be continuous. Obviously there are infinitely many ways the TSML method can break (categorical data, multilevel or interactions in stage 2, etc, etc). What are the most glaring ones?
 
-5)  Reconsider if constructing a giant 0-1 C is the best way to store info on composites vs components. This matrix is needed for computations in TSML and GLS, but not in PIM (even for the computations, there may be a more efficient way to do them.) E.g., maybe it should be a list.
+2)  Reconsider if constructing a giant 0-1 C is the best way to store info on composites vs components. This matrix is needed for computations in TSML and GLS, but not in PIM (even for the computations, there may be a more efficient way to do them.) E.g., maybe it should be a list.
 
-4) Arbitrary fixed weights for PIM and for TS?
+3)  Arbitrary fixed weights for PIM and for TS?
 
-2) Implement confirmatory composite analysis (CCA; Schuberth, Henseler, and Ogasawara (2021), Henseler (2021). Currently, Yves has provided a preliminary implementation of this approach in lavaan, but it has limitations, such as it cannot handle missing data on items that correspond to exogenous formative latent variables! It also restricts some covariances among items so that constraints imposed by CCA cannot be relaxed to obtain a PIM (these are nested models; see Siegel, Savalei, and Rhemtulla (2025; submitted to PM).
+4)  Implement confirmatory composite analysis (CCA; Schuberth, Henseler, and Ogasawara (2021), Henseler (2021). Currently, Yves has provided a preliminary implementation of this approach in lavaan, but it has limitations, such as it cannot handle missing data on items that correspond to exogenous formative latent variables! It also restricts some covariances among items so that constraints imposed by CCA cannot be relaxed to obtain a PIM (these are nested models; see Siegel, Savalei, and Rhemtulla (2025; submitted to PM).
 
-3) Rename package into something reflecting items to composites? item2stage? items2comps?
+5)  Rename package into something reflecting items to composites? item2stage? items2comps?
 
 Research:
 
 1)  Add TSML to lavaan, extend current CCA implementation so that constraints can be relaxed, yielding PIM
 
-2) Comparison of TSML to SAM -- Yves added support for second-level CFA, so in principle TSML-like approach can be run via SAM (untested)
-
+2)  Comparison of TSML to PIM done via SAM? Yves added support for second-level CFA, and a PIM model can be fit using `sam()` rather than `sem()`.\footnote{However, an April `lavaan` update broke this -- I emailed Yves -- I am not sure if it will et fixed, or if the original version was right and not just a freaky coincidence.} I do wonder if SAM makes sense theoretically, though. In PIM, residuals of items belonging to composite A have correlations with composite B (and others). This structure cannot be incorporated via SAM. If it's omitted, one can in principle argue it is fine. However, working on our factor scores paper with Mijke convinced me that because factor scores are indeterminate, correlations among latent variables cannot be consistently estimated unless we make assumptions that latent variables are orthogonal to all the variables in the model for which there are no explicit correlations... So, if SAM estimated PIM under this assumption, but it isn't true, there would be bias in the estimates. This is a testable proposition (if Yves "fixes" SAM so that I can play with it again). 

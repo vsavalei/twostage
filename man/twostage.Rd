@@ -4,14 +4,23 @@
 \alias{twostage}
 \title{twostage}
 \usage{
-twostage(data, model, C = NULL, runcommand = NULL, runcommand2 = NULL)
+twostage(
+  data,
+  model,
+  C = NULL,
+  which_col = NULL,
+  runcommand = NULL,
+  runcommand2 = NULL
+)
 }
 \arguments{
 \item{data}{Data file for the components (items)}
 
 \item{model}{The lavaan model for the composites}
 
-\item{C}{The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)}
+\item{C}{(optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)}
+
+\item{which_col}{(optional) A vector of length of names(data), with entries identifying the number of the composite, from which C will be created}
 
 \item{runcommand}{Additional arguments to pass to lavaan for stage1}
 
@@ -28,20 +37,20 @@ the residual-based test statistic (for normal data).
 }
 \examples{
 
-#Example 1: An example using the first 18 variables in the simulated
-#dataset misdata_mcar20 with 20\% missing data on about half the variables
-#C1 - C6 are parcels formed using three variables each (in order)
+# Example 1: An example using the first 18 variables in the simulated
+# dataset misdata_mcar20 with 20\% missing data on about half the variables
+# C1 - C6 are parcels formed using three variables each (in order)
 
 library(lavaan)
-misdata1<-misdata_mcar20[,1:18]
+misdata1 <- misdata_mcar20[, 1:18]
 
 # composite sub-model
-mod1 <- '
+mod1 <- "
  F1 =~ C1 + C2 + C3
  F2 =~ C4 + C5 + C6
  F2 ~ F1
  F2 ~~ F2
- F1 ~~ F1'
+ F1 ~~ F1"
 #manual computation for C to avoid user input
 cnames<-lavNames(mod1) #this is a lavaan function
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata1)))
