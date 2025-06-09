@@ -1,24 +1,26 @@
 # Functions to create a lavaan model syntax for PIM (Pseudo-Indicator Model)
-# TODO: Fix the code construction so that message2 is not necessary
+# With Observed Composites
+# test_active_file("tests/testthat/test-PIM.R")
 # TODO: ADD VARIANCES OR MARKER APPROACH FOR EXOGENEOUS LATENT VARS
 
 
-# grab names of "latent" variables or components (i.e., not in dataset) from the model
+# grab names of "latent" variables or components (i.e., not in dataset)
+# from the model
 composites <- function(C) {
+  # no input validation, trust caller
   component_names <- colnames(C) # observed variables' names
   model_names <- rownames(C) # composite model variable names
   composites <- setdiff(model_names, component_names) # only var names that aren't in data
   common_elements <- intersect(model_names, component_names) # model var names that are also in the data
 
-  # Commented out; I am not sure we need this message anymore given automatic
-  # correlations among all exogenous vars regardless of type
-  # if (length(common_elements) > 0) {
-  #   message2 <- paste("Note: The following variables are treated as observed variables:",
-  #                     paste(common_elements, collapse = ", "),
-  #                     "\nThe generated PIM syntax may need to be manually modified to allow",
-  #                     "\ntheir correlation with other exogeneous latent variables that represent composites")
-  #   message(message2)
-  # }
+  if (length(common_elements) > 0) {
+    message2 <- paste("The following observed variables will be in the model directly and not as part of any composite:", paste(common_elements, collapse = ", "))
+    message(message2)
+  }
+  if (length(composites) == 0) {
+    warning("No composite variables detected. All model variables correspond to observed variables. ", "Are you sure this is intended?", call. = FALSE)
+  }
+
   return(composites)
 }
 
@@ -35,8 +37,13 @@ composites <- function(C) {
 PIM.uni <- function(C) {
   PIM.uni <- NULL
   cnames <- composites(C) # model var names that aren't in the data
+
+  if (length(cnames) == 0) {
+    return("")
+  }
+
   C1 <- C[rownames(C) %in% cnames, ] # submatrix with rows that will be set up as "latent" composites
-  for (j in 1:length(cnames)) {
+  for (j in seq_along(cnames)) {
     cnamesj <- colnames(C1)[C1[j, ] == 1]
     compj <- rownames(C1)[j]
     if (length(cnamesj) != 1) {
@@ -61,6 +68,7 @@ PIM.uni <- function(C) {
   return(PIM.uni)
 }
 
+# RENAME -- very confusing
 # additional syntax needed to fit the PIM model using lavaan rather than sem command
 # explicit (residual) variances and intercepts
 PIM.uni.lav <- function(C) {
@@ -68,7 +76,7 @@ PIM.uni.lav <- function(C) {
   varnames <- rownames(C) # model var names, broader than cnames
   # here, we do this for all rows of C, including obv variables that will be treated as such
   # C1 <- C[rownames(C) %in% cnames, ] #submatrix with rows that will be set up as "latent" composites
-  for (j in 1:length(varnames)) {
+  for (j in seq_along(varnames)) {
     varnamesj <- colnames(C)[C[j, ] == 1]
     compj <- rownames(C)[j]
 
@@ -88,20 +96,24 @@ PIM.uni.lav <- function(C) {
   return(PIM.uni.lav)
 }
 
-# creates the second part of the PIM model syntax
 PIM.multi <- function(C) {
   allbut1 <- NULL # a vector
-  allbut1.string <- NULL # sum of all components listed in allbut1
   cnames <- rownames(C)
-  for (j in 1:length(cnames)) { # creates a vector of all components (but 1st in each)
+
+  for (j in seq_along(cnames)) { # Use seq_along for safety
     cnamesj <- colnames(C)[C[j, ] == 1]
-    # if(length(cnamesj)==1){next} #used to skip composites with one component
-    allbut1j.strong <- paste(sprintf("%s", cnamesj[-1]), collapse = " + ")
-    allbut1j <- cnamesj[-1]
-    allbut1 <- c(allbut1, allbut1j)
+    if (length(cnamesj) > 1) { # Only add if there are multiple components
+      allbut1j <- cnamesj[-1]
+      allbut1 <- c(allbut1, allbut1j)
+    }
   }
 
-  combs <- utils::combn(allbut1, 2, simplify = FALSE) # combs of 2 at a time
+  # Check if allbut1 is empty or has fewer than 2 elements
+  if (length(allbut1) < 2) {
+    return(NULL) # or return("") depending on how it's used downstream
+  }
+
+  combs <- utils::combn(allbut1, 2, simplify = FALSE) # Now safe
   texts <- sapply(combs, function(x) paste(x, collapse = " ~~ "))
   PIM.multi1 <- paste(texts, collapse = "\n")
 
@@ -289,6 +301,22 @@ compmodel_base <- function(compmodel, exog_cov = TRUE) {
 #' PIM_model_base <- PIM_syntax_base(C = C, compmodel = compmodel)
 #'
 PIM_syntax_base <- function(C, compmodel, exog_cov = TRUE) {
+  # Input validation
+  if (!is.matrix(C)) {
+    stop("C must be a matrix", call. = FALSE)
+  }
+
+  if (is.null(rownames(C)) || is.null(colnames(C))) {
+    stop("C must have both row names (model variables) and column names (observed variables)",
+      call. = FALSE
+    )
+  }
+
+  if (!is.character(compmodel) || length(compmodel) != 1) {
+    stop("compmodel must be a single character string", call. = FALSE)
+  }
+
+  # building syntax through smaller functions
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
   PIMulav <- PIM.uni.lav(C)
