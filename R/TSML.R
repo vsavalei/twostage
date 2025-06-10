@@ -106,16 +106,16 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
     }
 
     # if which_col has any values other than 1 to length(cnames), throw error
-    if (any(!which_col %in% 1:length(cnames))) {
+    if (any(!which_col %in% seq_len(length(cnames)))) {
       stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.")
     }
 
-    for (i in 1:length(colnames(data))) {
+    for (i in seq_along(colnames(data))) {
       ind_i <- which_col[i]
       C[ind_i, i] <- 1
     }
   } else { # menu prompt for each component
-    for (i in 1:length(colnames(data))) {
+    for (i in seq_along(colnames(data))) {
       prompt_message <- paste("Please select the composite for variable", colnames(data)[i], ":")
       ind_i <- utils::menu(cnames, title = prompt_message)
       C[ind_i, i] <- 1
@@ -123,7 +123,7 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
   }
 
   cat("Your composites are made up of the following components: \n")
-  for (j in 1:length(cnames)) {
+  for (j in seq_along(cnames)) {
     cnamesj <- colnames(C)[C[j, ] == 1]
     cat(cnames[j], ": ", cnamesj, "\n")
   }

@@ -13,9 +13,7 @@ knitr::opts_chunk$set(
   comment = "#>"
 )
 
-#Use devtools::build_rmd("vignettes/Complete_data.Rmd") to just test one vignette
-
-#To build all vignettes properly, run devtools::build_vignettes(), not build_rmd above. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
+#To build all vignettes properly, run devtools::build_vignettes(), not devtools::build_rmd("vignettes/Complete_data.Rmd"). This command ensures all vignettes are compiled correctly and links are processed within the package context.
 ```
 
 It is instructive to see how the item-level models and approaches can yield the same results as when the model is fit directly to the composites, when there is no missing data. 
@@ -89,24 +87,16 @@ The summary output shows the TS parameter estimates, the "naive" standard errors
 
 ```{r TSML2}
 summary(fit_ts) 
+
 ```
 
 Because the data are complete and we have matched the type of information with what is used by default with complete data, the corrections in the "TSML" standard error formula "cancel out", and the "naive" and "TSML" standard errors are identical to all stored decimal places.  
 
-Estimates and standard errors from `fit_comp` and `fit_ts` are also identical to six decimal places. Below is their comparison side by side (rounded to three decimal places):  
+Estimates and standard errors from `fit_comp` and `fit_ts` are also essentially identical. Below is their comparison side by side:  
 
 ```{r comp_vs_ts1}
 comp_table <- compare_est(fit_comp,fit_ts)
-#rounding to three decimal places
-as.data.frame(lapply(comp_table, function(x) {
-    if(is.numeric(x)) { round(x, 3) } else {x} }))
-```
-
-Here are the maximum differences:
-
-```{r comp_vs_ts2}
-max(abs(comp_table$est.fit_comp - comp_table$est.fit_ts)) 
-max(abs(comp_table$se.fit_comp - comp_table$se.fit_ts)) 
+comp_table
 ```
 
 The naive chi-square is identical to the chi-square from `fit_comp`: 
@@ -118,15 +108,16 @@ lavaan::fitmeasures(fit_ts)[c("chisq","df","pvalue")]
 The residual-based TSML chi-square produces a slightly different value from the naive chi-square:
 
 ```{r comp_vs_ts4}
-chisq_ts <- fit_ts@Fit@test$twostage$test
-df <- fit_ts@Fit@test$twostage$df
-pvalue_ts <- fit_ts@Fit@test$twostage$pval
-print(c(chisq_ts,df,pvalue_ts))
+summary_ts <- summary(fit_ts) 
+
+summary_ts$Tres
+summary_ts$df
+summary_ts$pval
 ```
 
 Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original papers on the residual-based chi-square with item-level missing data, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
 
-<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. No idea what's going on. 
+<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. 
 
 Instead, it will be closer to the chi-square from the GLS method: 
 
@@ -162,7 +153,6 @@ comp_table <- compare_est(fit_comp,fit_pim)[,c("est.fit_comp","se.fit_comp","est
 max(abs(comp_table$est.fit_comp - comp_table$est.fit_pim)) 
 max(abs(comp_table$se.fit_comp - comp_table$se.fit_pim)) 
 ```
-<!--I wonder what the differences in the 6th decimal place are due to!-->
 
 As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_ts`.  
 
@@ -175,4 +165,13 @@ afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
 
-Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR), as well as information criteria (e.g., AIC) are different for PIMs. Some of these can be recomputed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup; see [Approximate_fit vignette](../doc/Approximate_fit.html).
+Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR) are different for PIMs. CFI can be recomputed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup. SRMR can be recomputed comparing only the residuals for the variables in the composite model. Both of these modifications have been proposed in [Rose, Wagner, Mayer, and Nagengast (2019)](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). See [Approximate_fit vignette](../doc/Approximate_fit.html) for more detail. Here, we just show how to obtain them: 
+
+```{r afi2}
+fitm_pim <- fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
+fitm_pim[c("cfi","srmr")]
+
+afi_comp <- lavaan::fitmeasures(fit_comp)[c("cfi","srmr")]
+afi_comp
+```
+They are identical to the corresponding CFI and SRMR run in the complete data case. Lastly, information criteria (e.g., AIC, BIC) will be different for PIM but these do not require corrections. These indices are used for model comparison and do not have interpretable values in isolation. As long as all models being compared are fit using the same methodology (e.g., PIM, twostage, complete data, etc), they can be used to select among models. 

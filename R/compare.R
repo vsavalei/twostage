@@ -18,8 +18,7 @@
 #'
 
 
-compare_est<- function (...) {
-
+compare_est <- function(...) {
   fitList <- list(...)
   fit_names <- sapply(substitute(list(...))[-1], deparse)
   names(fitList) <- fit_names
@@ -28,8 +27,10 @@ compare_est<- function (...) {
   notLavaan <- !sapply(fitList, inherits, what = "lavaan")
   if (any(notLavaan)) {
     fitNames <- sapply(as.list(substitute(list(...)))[-1], deparse)
-    stop(paste("The following arguments are not fitted lavaan objects:\n",
-               paste(fitNames[notLavaan], collapse = "\t")))
+    stop(paste(
+      "The following arguments are not fitted lavaan objects:\n",
+      paste(fitNames[notLavaan], collapse = "\t")
+    ))
   }
 
   # Create a sublist with only lavaan objects
@@ -38,13 +39,14 @@ compare_est<- function (...) {
   # Create a sublist with only twostage objects
   tsList <- Filter(function(x) "twostage" %in% class(x), fitList)
 
-  #compute the parameter estimates table for each lavaan object
+  # compute the parameter estimates table for each lavaan object
   lavResults <- lapply(lavList, parameterEstimates,
-                       ci=FALSE,remove.nonfree=TRUE)
+    ci = FALSE, remove.nonfree = TRUE
+  )
 
-  #compute the parameter estimates table for each twostage object
-  #naive.se must be false or else additional columns will break the naming
-  tsResults <- lapply(tsList, parameterEstimates_ts,naive.se=FALSE)
+  # compute the parameter estimates table for each twostage object
+  # naive.se must be false or else additional columns will break the naming
+  tsResults <- lapply(tsList, parameterEstimates_ts, naive.se = FALSE)
 
   Results <- c(lavResults, tsResults)
 
@@ -53,14 +55,23 @@ compare_est<- function (...) {
     df <- Results[[name]]
 
     names(df) <- ifelse(names(df) %in% c("rhs", "lhs", "op"),
-                        names(df),
-                        paste0(names(df), ".", name))
+      names(df),
+      paste0(names(df), ".", name)
+    )
     return(df)
   })
 
 
-  #creating a single data frame
-  Results_merged <- Reduce(function(x, y) merge(x, y, by = c("lhs","op","rhs")), Results)
+  # creating a single data frame
+  Results_merged <- Reduce(function(x, y) merge(x, y, by = c("lhs", "op", "rhs")), Results)
 
-  return(Results_merged)
+  # rounding to three decimal places, make a print method eventually
+  Results_merged_rounded <- as.data.frame(lapply(Results_merged, function(x) {
+    if (is.numeric(x)) {
+      round(x, 3)
+    } else {
+      x
+    }
+  }))
+  return(Results_merged_rounded)
 }

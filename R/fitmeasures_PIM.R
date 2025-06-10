@@ -176,11 +176,12 @@ fitMeasures_pim <- function(C, compmodel, fit_pim, data = data, exog_cov = TRUE)
   # step 3: get custom fit measures from lavaan (could take awhile)
   fits_pim <- fitMeasures(fit_pim, baseline.model = fit_pim_base)
   # step 4: create H1 model syntax
-  compmodel_sat <- PIM_syntax_sat(C = C, compmodel = compmodel)
+  compmodel_sat <- suppressMessages(PIM_syntax_sat(C = C, compmodel = compmodel))
   # step 5: fit the saturated (H1) model:
   fit_pim_sat <- lavaan::lavaan(compmodel_sat, data = data)
   srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)
   fits_pim["srmr_mplus"] <- srmr$srmr_mplus
+  fits_pim["srmr"] <- srmr$srmr_mplus # assume a mean structure
   fits_pim["srmr_mplus_nomean"] <- srmr$srmr_mplus_nomean
 
   # names to keep
@@ -189,7 +190,7 @@ fitMeasures_pim <- function(C, compmodel, fit_pim, data = data, exog_cov = TRUE)
     "npar", "fmin", "chisq", "df", "pvalue",
     "baseline.chisq", "baseline.df", "baseline.pvalue",
     "cfi", "tli", "nnfi", "rfi", "nfi", "pnfi", "ifi", "rni", "logl", "unrestricted.logl", "aic", "bic", "ntotal", "bic2", "rmsea", "rmsea.ci.lower",
-    "rmsea.ci.upper", "rmsea.ci.level", "rmsea.pvalue", "rmsea.close.h0", "rmsea.notclose.pvalue", "rmsea.notclose.h0", "srmr_mplus", "srmr_mplus_nomean"
+    "rmsea.ci.upper", "rmsea.ci.level", "rmsea.pvalue", "rmsea.close.h0", "rmsea.notclose.pvalue", "rmsea.notclose.h0", "srmr", "srmr_mplus", "srmr_mplus_nomean"
   )
 
   fits_names_robust <- c(

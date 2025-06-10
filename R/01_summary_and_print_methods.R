@@ -1,10 +1,3 @@
-# Note: I have tried using the simpler summary.twostage and print.
-# approaches (S3) but could not get them to work
-# The readme file would not generate the correct summary
-# Id like to return to the simpler approach and figure out how to make it work
-
-
-
 #' Summary method for twostage objects
 #'
 #' Provides a summary for objects of class "twostage".
@@ -41,30 +34,27 @@ setMethod(
     class(summary_list) <- "SummaryTwostage"
 
     # Show the summary
-    show(summary_list)
+    # show(summary_list)
 
-    invisible(summary_list)
+    summary_list
   }
 )
 
-
-
-
-#' Show method for 'SummaryTwostage' objects
+#' Print method for SummaryTwostage objects
 #'
-#' @param object An object of class 'SummaryTwostage'
+#' @param x An object of class 'SummaryTwostage'
+#' @param ... Additional arguments (currently not used)
 #' @export
-
-setMethod("show", "SummaryTwostage", function(object) {
+print.SummaryTwostage <- function(x, ...) {
   # Create a rounded table of estimates for display
-  TS_table_round <- as.data.frame(lapply(object$TS_table, function(column) {
+  TS_table_round <- as.data.frame(lapply(x$TS_table, function(column) {
     if (is.numeric(column)) round(column, 3) else column
   }))
 
   # Test statistic values
-  Tres <- object$Tres
-  df <- object$df
-  pval <- object$pval
+  Tres <- x$Tres
+  df <- x$df
+  pval <- x$pval
 
   if (!is.null(Tres)) {
     test.output <- paste(
@@ -86,4 +76,4 @@ setMethod("show", "SummaryTwostage", function(object) {
   print(TS_table_round, quote = FALSE, row.names = FALSE)
   cat("----------------------------\n")
   cat(test.output, "\n")
-})
+}

@@ -15,6 +15,7 @@ pkgdown::build_site()
 <!-- badges: start -->
 
 [![R-CMD-check](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/vsavalei/twostage/actions/workflows/R-CMD-check.yaml)
+
 <!-- badges: end -->
 
 The goal of the `twostage` package is to provide helpful automation to
@@ -37,39 +38,34 @@ the item level. When data are complete, these methods/models will return
 identical (or highly similar, depending on information matrix settings)
 results compared to the approach where composites are computed directly,
 and a model is fit to them (see vignette TBA). The composites are always
-sums or averages of the items; the weights are all equal and are fixed
-rather than estimated.
+sums or averages of the items; the weights are all equal (for now) and
+are fixed rather than estimated.
 
-In the future, the package may also include confirmatory composite
-analysis (CCA; Henseler, YEAR), which is similar to PIM in that it
-models composites as latent variables, but it 1) finds optimally
-weighted composites (for prediction), and 2) does not allow indicators
-to influence other variables directly (but only through the composite).
-This approach will *not* return identical results to composite models
-with complete data, and is thus qualitatively different. CCA is
-currently being implemented in the development version of `lavaan`, but
-not in a way that would allow missing data on the indicators of
-exogenous composites. Including it in `twostage` would enable a study of
-its performance with missing data.
+These methods can be contrasted with confirmatory composite analysis
+(CCA) of [Henseler
+(2021)](https://www.guilford.com/books/Composite-Based-Structural-Equation-Modeling/J%C3%B6rg-Henseler/9781462545605),
+which 1) finds optimally weighted composites (for prediction), and 2)
+does not allow indicators to influence other variables directly (but
+only through the composite). This approach will *not* return identical
+results to composite models with complete data. CCA is currently being
+implemented in `lavaan` (but with some limitations for missing data
+treatment).
 
 ## Installation
 
-You can install the development version of twostage from
-[GitHub](https://github.com/) with:
+To install twostage from [GitHub](https://github.com/):
 
 ``` r
 install.packages("pak")
 pak::pak("vsavalei/twostage")
 ```
 
-You can load it in the usual way:
+Load it in the usual way:
 
 ``` r
 library(twostage) 
 #> This package is written by a newbie. You've been warned.
 ```
-
-<!-- too large? hard to illustrate PIM -->
 
 ## Example
 
@@ -77,8 +73,7 @@ This example uses a simulated dataset `misdata_mcar20`, which contains
 27 items, $`Y_1`$ to $`Y_{27}`$, where about half have 20% missing data.
 The model is for composites $`C_1`$ to $`C_9`$, which are parcels of
 three items each, in order; for example, $`C_1 = Y_1 + Y_2 + Y_3`$, and
-so on. These composites are never explicitly computed under any of the
-three methods.
+so on. These composites are never explicitly computed.
 
 The composite model is a 3-factor model, with three indicators each,
 defined via `lavaan` syntax as follows:
@@ -95,26 +90,20 @@ F3 ~~ F3
 '
 ```
 
-Unlike with traditional CFA/SEM models, for true latent variables (*not*
-composites), the user must set their metric and variances explicitly in
-the composite model syntax. Above, the first loading of each true latent
-variable (F1, F2, F3) is set to 1, and their variances are free. This is
-because the PIM model will be fit via the `lavaan` function, which
-assumes nothing. \[Eventually, we will add automated syntax to fix
-this?\] The `PIM_syntax` automation function *will* correlate all
-exogenous variables in the model by default, so it is not necessary to
-specify, e.g., `F1 ~~ F2` in the composite model syntax (though it
-doesn’t hurt). In general, the user should aim to specify the composites
-model as explicitly and thoroughly as possible.
+For now, for true latent variables (*not* composites), the user should
+set their metric and variances explicitly in the composite model syntax.
+Above, the first loading of each true latent variable (F1, F2, F3) is
+set to 1, and their variances are free. This is because the PIM model
+will be fit via the `lavaan` function, which assumes nothing. The
+`PIM_syntax` automation function *will* correlate all exogenous
+variables in the model by default, so it is not necessary to specify,
+e.g., `F1 ~~ F2` in the composite model syntax (though it doesn’t hurt).
+In general, the user should aim to specify the composite model as
+explicitly and thoroughly as possible.
 
 To fit this composite model using the item-level methods in this
-package, the specification of a $`27 \times 9`$ matrix $`C`$ assigning
-components to composites is first required. The columns are labeled with
-component names: $`Y_1`$ to $`Y_{27}`$, and the rows are labeled with
-composite names: $`C_1`$ to $`C_9`$. The \[i,j\]th element of $`C`$ is
-nonzero (for sums, it is 1) if component $`j`$ belongs to composite
-$`i`$, and zero otherwise. To create this matrix using an interactive
-interface, use:
+package, the assignment of components to composites needs to be
+specified. To do this via an interactive interface, use:
 
     C <- stage0(data=misdata_mcar20,model=mod)
 
@@ -135,11 +124,18 @@ model. The following message will confirm the assignment:
     C9 :  Y25 Y26 Y27 
     If this is not correct, start over! 
 
-Once the $`C`$ matrix is created with the help of the `stage0` function
-(or manually), the composite-level model can be fit using the methods
-included in the package.
+The created matrix $`C`$ has columns labeled with component names:
+$`Y_1`$ to $`Y_{27}`$, and rows labeled with composite names: $`C_1`$ to
+$`C_9`$. The ijth element of $`C`$ is nonzero (for sums, it is 1) if
+component $`j`$ belongs to composite $`i`$, and zero otherwise.
 
-To fit the composite-level model using TSML:
+In this file, we create this matrix manually as follows:
+
+Once the $`C`$ matrix is created with the help of the `stage0` function
+or manually, the composite model can be fit using the methods included
+in the package.
+
+To fit the composite model using TSML:
 
 ``` r
 fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
@@ -185,16 +181,16 @@ summary(fit_ts)
 
 The output shows TSML parameter estimates from Stage 2, “naive” standard
 errors, and TSML standard errors, which are generally larger, reflecting
-greater uncertainty due to missing data in Stage 1. The residual-based
-test statistic is also printed. This output assumes normality. For
-technical details on the standard errors and the residual-based test
-statistic computation, see [Savalei and Bentler (
+greater uncertainty due to missing data in Stage 1. The (normal theory)
+residual-based test statistic is also printed. For technical details on
+the standard errors and the residual-based test statistic computation,
+see [Savalei and Bentler (
 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
 and [Savalei and Rhemtulla
 (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
 
-To fit the composite model using PIM, the package automates the creation
-of the `lavaan` PIM syntax:
+To fit the composite model using PIM, first create the `lavaan` PIM
+syntax:
 
 ``` r
 modpim <- PIM_syntax(compmodel = mod, C = C)
@@ -205,11 +201,11 @@ modpim <- PIM_syntax(compmodel = mod, C = C)
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
 contains the definition of each composite $`C_i`$, $`i=1,\ldots,9`$, as
 a single-indicator latent variable, and a special structure on the
-items. For details, see [Rose, Wagner, Mayer, and Nagengast
+components. For details, see [Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
 It is recommend to always check the part of the generated syntax
-pertaining to the composites (at the bottom). The default in
-`PIM_syntax` is to covary exogenous variables (whether observed
+pertaining to the composites (clearly marked at the bottom). The default
+in `PIM_syntax` is to covary exogenous variables (whether observed
 variables, latent variables, or composites); to undo this default, use
 `exog_cov=FALSE`.
 
@@ -219,7 +215,7 @@ the items, use FIML:
 ``` r
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 fit_pim
-#> lavaan 0.6-20.2307 ended normally after 260 iterations
+#> lavaan 0.6-20.2318 ended normally after 260 iterations
 #> 
 #>   Estimator                                         ML
 #>   Optimization method                           NLMINB
@@ -235,65 +231,32 @@ fit_pim
 #>   P-value (Chi-square)                           0.444
 ```
 
-Always confirm that the degrees of freedom are what you would expect for
-your composite model (if data had been complete and the composites had
-been formed directly). In this example,`fit_pm` returns the same df as
-`fit_ts`: 24. While the `sem` function produces identical output in this
-case, it is best to use the `lavaan()` function to fit PIMs to avoid any
-unintended defaults, given the nonstandard setup of this model.
+While the `sem` function would work in this case, it is best to use the
+`lavaan()` function to fit PIMs to avoid any unintended defaults, given
+the nonstandard setup of this model. (And until we learn more about it).
+
+Because the PIM setup adds items to the composites model in a saturated
+way, always confirm that the degrees of freedom are what you would
+expect for your composite model (i.e., if data had been complete and the
+composite model had been fit directly). In this example, the composite
+model is a 3-factor CFA with nine indicators, so it should have
+$`9(10)/2 - (9+9+3)=24`$ degrees of freedom, where the parameters are
+free factor loadings, residual variances, and factor variances and
+covariances. When fit correctly,`fit_pm` should also return the same df
+as `fit_ts`.
 
 To inspect parameter estimates, use `summary(fit_pim)` or the
 `parameterEstimates` function of `lavaan`. As the interest is in the
 composite model, the user has to ignore a lot of extraneous output
-pertaining to the item parameters. In the output shown below, we have
-removed all rows referring to “Y” variables (i.e., items).
+pertaining to the item parameters (here, all rows referring to “Y”
+variables).
 
-``` r
-ests <- lavaan::parameterEstimates(fit_pim,remove.nonfree=TRUE)
-ests_comp <- ests[!grepl("Y", ests[, "lhs"]) & !grepl("Y", ests[, "rhs"]), ]
-ests_comp
-#>     lhs op rhs    est    se      z pvalue ci.lower ci.upper
-#> 5    C1 ~1      0.263 0.141  1.866  0.062   -0.013    0.538
-#> 7    C1 ~~  C1  3.028 0.428  7.069  0.000    2.189    3.868
-#> 12   C2 ~1     -0.120 0.152 -0.789  0.430   -0.417    0.178
-#> 14   C2 ~~  C2  3.590 0.505  7.106  0.000    2.600    4.580
-#> 19   C3 ~1      0.115 0.148  0.774  0.439   -0.176    0.405
-#> 21   C3 ~~  C3  2.833 0.574  4.934  0.000    1.708    3.958
-#> 26   C4 ~1      0.079 0.155  0.507  0.612   -0.225    0.383
-#> 28   C4 ~~  C4  3.620 0.473  7.658  0.000    2.693    4.546
-#> 33   C5 ~1      0.049 0.158  0.307  0.759   -0.261    0.358
-#> 35   C5 ~~  C5  3.393 0.497  6.828  0.000    2.419    4.367
-#> 40   C6 ~1     -0.031 0.152 -0.203  0.839   -0.328    0.267
-#> 42   C6 ~~  C6  2.997 0.471  6.366  0.000    2.074    3.920
-#> 47   C7 ~1     -0.119 0.144 -0.823  0.410   -0.402    0.164
-#> 49   C7 ~~  C7  2.791 0.438  6.375  0.000    1.933    3.650
-#> 54   C8 ~1      0.110 0.140  0.784  0.433   -0.165    0.385
-#> 56   C8 ~~  C8  3.171 0.375  8.457  0.000    2.436    3.906
-#> 61   C9 ~1      0.038 0.153  0.248  0.804   -0.263    0.339
-#> 63   C9 ~~  C9  3.189 0.512  6.227  0.000    2.185    4.192
-#> 416  F1 =~  C2  1.089 0.415  2.626  0.009    0.276    1.901
-#> 417  F1 =~  C3  1.386 0.543  2.554  0.011    0.322    2.449
-#> 419  F2 =~  C5  1.248 0.440  2.838  0.005    0.386    2.111
-#> 420  F2 =~  C6  1.269 0.422  3.008  0.003    0.442    2.096
-#> 422  F3 =~  C8  0.511 0.242  2.113  0.035    0.037    0.985
-#> 423  F3 =~  C9  1.173 0.414  2.831  0.005    0.361    1.986
-#> 424  F1 ~~  F1  0.665 0.355  1.876  0.061   -0.030    1.360
-#> 425  F2 ~~  F2  0.642 0.342  1.881  0.060   -0.027    1.312
-#> 426  F3 ~~  F3  0.779 0.393  1.984  0.047    0.010    1.548
-#> 427  F1 ~~  F2  0.339 0.163  2.074  0.038    0.019    0.659
-#> 428  F1 ~~  F3  0.312 0.171  1.823  0.068   -0.023    0.647
-#> 429  F2 ~~  F3  0.606 0.231  2.621  0.009    0.153    1.060
-```
-
-To compare estimates of common parameters in TS and PIM, the user can
-use the `compare_est` function available in `twostage`:
+To compare estimates of common parameters in TS and PIM, which are those
+in the composite model only, we can use the `compare_est` function:
 
 ``` r
 comp_table <- compare_est(fit_pim,fit_ts)
-
-#rounding numeric columns to three decimal places
-as.data.frame(lapply(comp_table, function(x) {
-  if(is.numeric(x)) { round(x, 3) } else {x} }))
+comp_table
 #>    lhs op rhs est.fit_pim se.fit_pim z.fit_pim pvalue.fit_pim est.fit_ts
 #> 1   C1 ~~  C1       3.028      0.428     7.069          0.000      3.019
 #> 2   C1 ~1           0.263      0.141     1.866          0.062      0.260
@@ -359,20 +322,53 @@ as.data.frame(lapply(comp_table, function(x) {
 ```
 
 The TS and PIM estimates and standard errors are quite similar.
-Technically, the TS estimates are less efficient than FIML estimates,
-which the PIM setup supposedly provides. However, this has not been
-evaluated in any simulations. When data are complete, both TS and PIM
-produce equivalent output to the complete data run on the
-manually-formed composites (see the Complete_data vignette).
+Technically, the TS estimates are less efficient than FIML (PIM)
+estimates. When data are complete, both TS and PIM produce equivalent
+output to the complete data run on the manually-formed composites (see
+the Complete_data vignette).
 
-Approximate fit assessment of PIM models is a bit more complicated and
-requires special setup. The gist of the issue is that we want to assess
-the fit of the composite model, not the fit of the entire model. Some
-functions to automate this are described in the Approximate_fit
-vignette. Additionally, with missing data, both TS and PIM methods will
-require minor corrections to fit indices in order for them to mimic
-their would-be complete data values; eventually, the Approximate_fit
-vignette will show this as well.
+Approximate fit assessment of PIM models requires special setup, as
+discussed in [Rose, Wagner, Mayer, and Nagengast
+(2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores).
+The gist of the issue is that we want to assess the fit of the composite
+model, not the fit of the entire model with items added in a saturated
+way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get
+corrected fit measures, use:
+
+``` r
+fitm_pim <- fitMeasures_pim(C, compmodel=mod, fit_pim=fit_pim, 
+                data = misdata_mcar20)
+```
+
+We can compare the PIM and TS fit indices:
+
+``` r
+indices<-c("rmsea","rmsea.robust","cfi","cfi.robust","tli","tli.robust","srmr")
+fitm_pim[indices]
+#>        rmsea rmsea.robust          cfi   cfi.robust          tli   tli.robust 
+#>        0.008        0.024        0.978        0.996        0.967        0.994 
+#>         srmr 
+#>        0.131
+
+lavaan::fitMeasures(fit_ts,indices)
+#> rmsea   cfi   tli  srmr 
+#> 0.044 0.913 0.869 0.047
+```
+
+When `estimator ="FIML"`, as in PIM, corrections are necessary to fit
+indices in order for them to mimic their would-be complete data values
+[Zhang and Savalei
+(2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445).
+Thus, we compare the RMSEA from `fit_ts` to `rmsea.robust` from
+`fit_pim`. Similarly, we should compare the CFI from `fit_ts` to the
+`cfi_robust` in `fit_pim`, but this CFI is custom-computed using a
+different baseline model, so it is not clear if these corrections are
+right. No corrections are necessary to SRMR, so these can be compared
+directly. See the [Approximate_fit
+vignette](../doc/Approximate_fit.html) for more detail. Lastly, TSML
+indices require small-sample corrections (these are less consequential
+than PIM corrections, as they go away asymptotically), but these have
+not yet been implemented.
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->

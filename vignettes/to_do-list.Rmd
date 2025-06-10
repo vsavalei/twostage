@@ -24,6 +24,17 @@ knitr::opts_chunk$set(
 
 3)  The output of the PIM from `lavaan` is not ideal. Write a set of functions that creates a different summary, suppressing the model for components, etc. This is similar to what `sam()` does, where `summary()` and `parameterestimates()` have the argument: `remove.step1 = TRUE`. (See: `getMethod("summary", "lavaan")`). So ideally we'd have something similar for PIM, though I am not sure how to best implement it, since PIM is fit using `lavaan`. We could just write functions such as `parameterestimates_pim()`... CRAZY IDEA: WHAT IF I CAN USE SAM to fit PIM? (I've tried before for TWOSTAGE, needed second order factor support, this has been added).
 
+21) `compare_est` should round to 3 decimal places in display
+
+22) fix this from readme file: "For true latent variables (*not* composites), the user should set their metric and variances explicitly in the composite model syntax. Above, the first loading of each true latent variable (F1, F2, F3) is set to 1, and their variances are free. This is because the PIM model will be fit via the `lavaan` function, which assumes nothing."
+
+```
+> fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
+The following observed variables will be in the model directly and not as part of any composite: BEH
+The following observed variables will be in the model directly and not as part of any composite: BEH
+```
+Messages should be suppressed.
+
 5)  Add GLS
 
 6)  Add robust TSML for nonnormal data OR verify this already works (by passing `MLR` to `lavaan` in Stage 1 and 2). 
