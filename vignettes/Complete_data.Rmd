@@ -79,15 +79,15 @@ To match the complete data analysis when using TSML, we have to specify expected
 
 ```{r TSML1}
 fit_ts <- twostage(data = tpbdata, model = tpbmod, C = C,
-runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
-fixed.x=FALSE,sample.cov.rescale=FALSE")
+runcommand = "information='expected'", runcommand2 = "sample.cov.rescale=FALSE")
 ```
 
 The summary output shows the TS parameter estimates, the "naive" standard errors from Stage 2, which assume the input summary statistics into Stage 2 were obtained from complete data, and the TSML standard errors, which adjust for the uncertainty due to missing data: 
 
 ```{r TSML2}
 summary(fit_ts) 
-
+#to see the lavaan summary from the naive run in stage 2, run:
+#local({class(fit_ts) <- "lavaan"; summary(fit_ts)})
 ```
 
 Because the data are complete and we have matched the type of information with what is used by default with complete data, the corrections in the "TSML" standard error formula "cancel out", and the "naive" and "TSML" standard errors are identical to all stored decimal places.  

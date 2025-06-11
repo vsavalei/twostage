@@ -20,7 +20,8 @@ twostage(
 
 \item{C}{(optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)}
 
-\item{which_col}{(optional) A vector of length of names(data), with entries identifying the number of the composite, from which C will be created}
+\item{which_col}{(optional) A vector of length of names(data), with entries
+identifying the number of the composite, from which C will be created (assumes sums)}
 
 \item{runcommand}{Additional arguments to pass to lavaan for stage1}
 
@@ -65,6 +66,11 @@ C[6,16:18]<-1
 
 out_ts <- twostage(data = misdata1, model = mod1,C = C)
 
+#alternative specification (faster but more error-prone)
+#each number indicates which component each composite belongs to
+#in the same order as lavNames(mod1)
+which_col <- c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6)
+out_ts <- twostage(data = misdata1, model = mod1,which_col = which_col)
 
 #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
 #TPB Model for Composites (Full mediation)
@@ -84,8 +90,8 @@ C[4,c("PBC1","PBC2","PBC3")]<-1
 C[5,c("NORS1","NORS2","NORS3")]<-1
 
 out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
-runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
-fixed.x=FALSE,sample.cov.rescale=FALSE")
+runcommand = "information='expected'", runcommand2 = "
+sample.cov.rescale=FALSE")
 #The naive and TS standard errors should be identical
 
 

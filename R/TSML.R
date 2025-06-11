@@ -162,6 +162,47 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
 #' out_s1 <- stage1(tpbdata, runcommand = "information='expected'")
 #'
 stage1 <- function(data, runcommand = NULL) {
+
+  # Validate runcommand argument
+  if (!is.null(runcommand)) {
+    if (!is.character(runcommand) || length(runcommand) != 1) {
+      stop("'runcommand' must be a single character string or NULL", call. = FALSE)
+    }
+
+    # Check for potentially problematic specifications
+    invalid_patterns <- list(
+      data = "data\\s*=",
+      model = "model\\s*="
+    )
+
+    # Check for non-allowed estimators (anything except MLR)
+    if (grepl("estimator\\s*=", runcommand, ignore.case = TRUE)) {
+      if (!grepl("estimator\\s*=\\s*['\"]?MLR['\"]?", runcommand, ignore.case = TRUE)) {
+        invalid_patterns$estimator <- "estimator\\s*="
+      }
+    }
+
+    # Check for non-allowed missing data methods (anything except FIML)
+    if (grepl("missing\\s*=", runcommand, ignore.case = TRUE)) {
+      if (!grepl("missing\\s*=\\s*['\"]?FIML['\"]?", runcommand, ignore.case = TRUE)) {
+        invalid_patterns$missing <- "missing\\s*="
+      }
+    }
+
+    conflicts <- character(0)
+    for (name in names(invalid_patterns)) {
+      if (grepl(invalid_patterns[[name]], runcommand, ignore.case = TRUE)) {
+        conflicts <- c(conflicts, name)
+      }
+    }
+
+    if (length(conflicts) > 0) {
+      warning("'runcommand' contains conflicting lavaan arguments: ",
+              paste(conflicts, collapse = ", "), ". ",
+              "This may cause unexpected behavior.", call. = FALSE)
+    }
+  }
+
   p <- ncol(data)
   N <- nrow(data)
   pst <- p * (p + 1) / 2
@@ -169,7 +210,8 @@ stage1 <- function(data, runcommand = NULL) {
   # fit the saturated model in lavaan
   S1.mod <- write.sat(p, varnames = colnames(data))
 
-  S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ", runcommand, ")"))), silent = TRUE)
+  S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ",
+                                    runcommand, ")"))), silent = TRUE)
   # fixed the line below, need to test
   if (!inherits(S1, "try-error")) {
     if (inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE) {
@@ -235,6 +277,12 @@ stage1 <- function(data, runcommand = NULL) {
 #' out_s1a<-stage1a(out_s1,C)
 #'
 stage1a <- function(S1.output, C) {
+
+  # Input validation
+  if (!is.matrix(C)) {
+    stop("C must be a matrix", call. = FALSE)
+  }
+
   if (is.null(S1.output)) {
     S1a.output <- NULL
   } else {
@@ -279,7 +327,7 @@ stage1a <- function(S1.output, C) {
 #' @param S1a.output Output from stage1a, a list with four objects (shd, mhd, ohd, N)
 #' @param model The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
-#'
+#' @param lavaan_function Which lavaan function to use to fit the model
 #' @return An object of class `twostage`, inheriting class `lavaan`
 #' @export
 #'
@@ -315,21 +363,58 @@ stage1a <- function(S1.output, C) {
 #' out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 #'
 #'
-stage2 <- function(S1a.output, model, runcommand2 = NULL) {
+stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") {
+
+  # Validate runcommand2 argument
+  if (!is.null(runcommand2)) {
+    if (!is.character(runcommand2) || length(runcommand2) != 1) {
+      stop("'runcommand2' must be a single character string or NULL", call. = FALSE)
+    }
+
+    # Check for potentially problematic specifications
+    invalid_patterns <- list(
+      data = "data\\s*=",
+      model = "model\\s*=",
+      sample.cov = "sample\\.cov\\s*=",
+      sample.mean = "sample\\.mean\\s*=",
+      sample.nobs = "sample\\.nobs\\s*=",
+      meanstructure = "meanstructure\\s*=",
+      fixed.x = "fixed.x\\s*="
+    )
+
+    conflicts <- character(0)
+    for (name in names(invalid_patterns)) {
+      if (grepl(invalid_patterns[[name]], runcommand2, ignore.case = TRUE)) {
+        conflicts <- c(conflicts, name)
+      }
+    }
+
+    if (length(conflicts) > 0) {
+      stop("'runcommand2' contains conflicting lavaan arguments: ",
+           paste(conflicts, collapse = ", "), ". ",
+           "These arguments are set by the stage2 function.", call. = FALSE)
+    }
+  }
+
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
   ohd <- S1a.output[[3]]
   N <- S1a.output[[4]]
 
-  S2 <- tryCatch(eval(parse(text = paste("sem(model, sample.cov = shd, sample.mean = mhd,
-                sample.nobs = N, meanstructure=TRUE, ", runcommand2, ")"))), error = function(e) {
-    message("Error encountered: ", e$message)
-    return(NA)
-  })
+
+ lavaan_call_string <- paste0(lavaan_function,
+        "(model, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
+        fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")")
+
+ S2 <- tryCatch(eval(parse(text = lavaan_call_string)), error = function(e) {
+  message("lavaan error encountered in stage2: ", e$message)
+  return(NA)
+})
+
   # trying something new, below works b/c of tryCatch
   # may need another subloop to catch cases where vcov has some diagonal NAs
   if (lavInspect(S2, "converged")) {
-    if (!is.null(suppressWarnings(lavInspect(S2, "vcov")))) { # may need to also check if any diags are NA
+    if (!is.null(suppressWarnings(lavInspect(S2, "vcov")))) {
       ddh <- lavInspect(S2, "delta") # model derivatives
       bread <- lavInspect(S2, "vcov") * N
       Hh <- lavInspect(S2, "h1.information.expected")
@@ -341,15 +426,11 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 
       Ohtt <- bread %*% t(meat) %*% ohd.reordered %*% meat %*% bread # ohm-hat-theta-tilde
 
-      # change back to avoid relying on internal lavaan function:
-      # S2@ParTable$se_ts <- sqrt(diag(Ohtt))
-      # se <- object@ParTable$se_ts[object@ParTable$free!=0] #remove nonfree
-
       # set TS SEs to initially equal naive SEs, to match nonfree values and length
       S2@ParTable$se_ts <- S2@ParTable$se
 
       # update se_ts for free parameters
-      S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # how to check order?
+      S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # TODO: check order?
 
       ## This prior solution relied on an internal lavaan function to ensure correct
       ## order, but RMD check doesn't like this
@@ -359,8 +440,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 
       # Note: lavInspect(S2,"vcov") will still give the "wrong" (naive) answer
       # Ohtt <- str(S2@vcov$vcov) #also "naive"
-      # but I think we want to preserve the naive run
-      # we could try to save the vcov in another slot (careful not to break lavaan)
+      # I think we want to preserve the naive run
 
       # Normal-theory residual-based test statistic
       et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
@@ -370,7 +450,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
       pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
       # mauling lavaan -- is this safe?
-      # writing into S2@test was not (broke lavaan summary)
+      # writing into S2@test was not safe (broke lavaan summary)
       # blavaan directly overwrites @Fit@test slots
       S2@Fit@test$twostage$test <- Tres
       S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
@@ -378,7 +458,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
     } # end if vcov
   } # end if
 
-  S2 <- as(S2, "twostage") # cannot direct assign class for S4 objects
+  S2 <- as(S2, "twostage")
   return(S2)
 }
 
@@ -395,7 +475,8 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 #' @param data Data file for the components (items)
 #' @param model The lavaan model for the composites
 #' @param C (optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)
-#' @param which_col (optional) A vector of length of names(data), with entries identifying the number of the composite, from which C will be created
+#' @param which_col (optional) A vector of length of names(data), with entries
+#' identifying the number of the composite, from which C will be created (assumes sums)
 #' @param runcommand Additional arguments to pass to lavaan for stage1
 #' @param runcommand2 Additional arguments to pass to lavaan for stage2
 #'
@@ -435,6 +516,11 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 #'
 #' out_ts <- twostage(data = misdata1, model = mod1,C = C)
 #'
+#' #alternative specification (faster but more error-prone)
+#' #each number indicates which component each composite belongs to
+#' #in the same order as lavNames(mod1)
+#' which_col <- c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6)
+#' out_ts <- twostage(data = misdata1, model = mod1,which_col = which_col)
 #'
 #' #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
 #' #TPB Model for Composites (Full mediation)
@@ -454,8 +540,8 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 #' C[5,c("NORS1","NORS2","NORS3")]<-1
 #'
 #' out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
-#' runcommand = "information='expected'", runcommand2 = "meanstructure=TRUE,
-#' fixed.x=FALSE,sample.cov.rescale=FALSE")
+#' runcommand = "information='expected'", runcommand2 = "
+#' sample.cov.rescale=FALSE")
 #' #The naive and TS standard errors should be identical
 #'
 #'
@@ -463,13 +549,25 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL) {
 #' Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
 
 
-twostage <- function(data, model, C = NULL, which_col = NULL, runcommand = NULL, runcommand2 = NULL) {
+twostage <- function(data, model, C = NULL, which_col = NULL,
+                     runcommand = NULL, runcommand2 = NULL) {
+
+  # Validate model argument
+  if (missing(model) || is.null(model)) {
+    stop("'model' argument is required and cannot be NULL", call. = FALSE)
+  }
+
+  if (!is.character(model) || length(model) != 1) {
+    stop("'model' must be a single character string containing lavaan syntax",
+         call. = FALSE)
+  }
+
   # stage 0, if needed: relating components to composite via user input
   if (is.null(C)) {
     C <- if (is.null(which_col)) {
       stage0(data = data, model = model)
     } else {
-      stage0(data = data, model = model, which_col = which_col)
+      stage0(data = data, model = model, which_col = which_col,type=1)
     }
   }
   # stage 1: saturated model on components
@@ -481,6 +579,7 @@ twostage <- function(data, model, C = NULL, which_col = NULL, runcommand = NULL,
 
   return(s2)
 }
+
 
 # move to methods
 

@@ -4,7 +4,7 @@
 \alias{stage2}
 \title{stage2}
 \usage{
-stage2(S1a.output, model, runcommand2 = NULL)
+stage2(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem")
 }
 \arguments{
 \item{S1a.output}{Output from stage1a, a list with four objects (shd, mhd, ohd, N)}
@@ -12,6 +12,8 @@ stage2(S1a.output, model, runcommand2 = NULL)
 \item{model}{The lavaan model for the composites}
 
 \item{runcommand2}{Additional arguments to pass to lavaan}
+
+\item{lavaan_function}{Which lavaan function to use to fit the model}
 }
 \value{
 An object of class \code{twostage}, inheriting class \code{lavaan}

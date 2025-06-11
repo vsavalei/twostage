@@ -268,3 +268,87 @@ test_that("stage0 and stage1 work together correctly", {
   expect_equal(ncol(C), ncol(test_data)) # C should have same number of columns as data
   expect_equal(ncol(s1_result[[1]]), ncol(test_data)) # covariance matrix should match
 })
+
+# Test stage1 runcommand validation
+test_that("stage1 validates runcommand argument correctly", {
+  test_data <- tpbdata[1:20, 1:4]
+
+  # Test valid runcommand
+  expect_no_error(stage1(test_data, runcommand = "information='expected'"))
+
+  # Test NULL runcommand
+  expect_no_error(stage1(test_data, runcommand = NULL))
+
+  # Test invalid type - not character
+  expect_error(
+    stage1(test_data, runcommand = 123),
+    "'runcommand' must be a single character string or NULL"
+  )
+
+  # Test invalid type - multiple strings
+  expect_error(
+    stage1(test_data, runcommand = c("information='expected'", "test=TRUE")),
+    "'runcommand' must be a single character string or NULL"
+  )
+})
+
+
+test_that("stage1 warns about conflicting lavaan arguments", {
+  test_data <- tpbdata[1:20, 1:4]
+
+  # Test invalid estimator (not MLR)
+  expect_warning(
+    stage1(test_data, runcommand = "estimator='GLS'"),
+    "conflicting lavaan arguments: estimator"
+  )
+
+  # Test invalid missing method (not FIML)
+  expect_warning(
+    stage1(test_data, runcommand = "missing='listwise'"),
+    "conflicting lavaan arguments: missing"
+  )
+
+  # Test data conflict
+  expect_warning(
+    stage1(test_data, runcommand = "data=mydata"),
+    "conflicting lavaan arguments: data"
+  )
+
+  # Test model conflict
+  expect_warning(
+    stage1(test_data, runcommand = "model=mymodel"),
+    "conflicting lavaan arguments: model"
+  )
+
+  # Test multiple conflicts
+  expect_warning(
+    stage1(test_data, runcommand = "estimator='GLS', missing='listwise'"),
+    "conflicting lavaan arguments: estimator, missing"
+  )
+
+  # Test case insensitive matching for invalid estimator
+  expect_warning(
+    stage1(test_data, runcommand = "ESTIMATOR='gls'"),
+    "conflicting lavaan arguments: estimator"
+  )
+
+  # Test allowed estimator MLR - no warning
+  expect_no_warning(
+    stage1(test_data, runcommand = "estimator='MLR'")
+  )
+
+  # Test allowed missing method FIML - no warning
+  expect_no_warning(
+    stage1(test_data, runcommand = "missing='FIML'")
+  )
+
+  # Test case insensitive for allowed values
+  expect_no_warning(
+    stage1(test_data, runcommand = "estimator='mlr', missing='fiml'")
+  )
+
+  # Test no warning for other valid arguments
+  expect_no_warning(
+    stage1(test_data, runcommand = "information='expected', std.lv=TRUE")
+  )
+})
