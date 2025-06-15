@@ -86,8 +86,6 @@ The summary output shows the TS parameter estimates, the "naive" standard errors
 
 ```{r TSML2}
 summary(fit_ts) 
-#to see the lavaan summary from the naive run in stage 2, run:
-#local({class(fit_ts) <- "lavaan"; summary(fit_ts)})
 ```
 
 Because the data are complete and we have matched the type of information with what is used by default with complete data, the corrections in the "TSML" standard error formula "cancel out", and the "naive" and "TSML" standard errors are identical to all stored decimal places.  
@@ -109,25 +107,27 @@ The residual-based TSML chi-square produces a slightly different value from the 
 
 ```{r comp_vs_ts4}
 summary_ts <- summary(fit_ts) 
-
-summary_ts$Tres
-summary_ts$df
-summary_ts$pval
+unlist(summary_ts[c("Tres", "df", "pval")])
 ```
 
 Because it is computed as a quadratic form, and does not use the ML fit function equation, it will be highly similar, but not numerically identical to the "naive" ML chi-square even when the data are complete. (Note: In the original papers on the residual-based chi-square with item-level missing data, $N-1$ was used as a sample size multiplier, but $N$ is used in the `twostage` code for consistency with `lavaan` defaults for all other statistics.)
 
-<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, yet it matches TS with N-1, not N. 
-
+<!-- commented out GLS because it looks like the GLS chi-square is N*2*fmin, but it matches ts if we multiply it by N/(N-1)...  
 Instead, it will be closer to the chi-square from the GLS method: 
 
-```{r gls}
+```{r gls, eval=FALSE}
 fit_comp_gls<-lavaan::sem(tpbmod,data=tpbdatac,fixed.x=FALSE,
                           meanstructure=TRUE,estimator="GLS") 
-lavaan::fitmeasures(fit_comp_gls)[c("chisq","df","pvalue")] 
+lavaan::fitmeasures(fit_comp_gls)[c("fmin","chisq","df","pvalue")] 
+N <- lavInspect(fit_comp_gls, "nobs")
+#GLS chi-square:
+gls_chisq <- 0.03215490*2*108 #fmin*2*N
+#TS res-based chi-square:
+ts_chisq <- gls_chisq*108/(108-1) #gls_chisq *N/(N-1), almost
 
 ```
 When the model is correct, both GLS and ML are asymptotically fully efficient, and they are also asymptotically equivalent. --> 
+
 
 ### PIM
 
@@ -150,11 +150,8 @@ The parameter estimates and standard errors for the relevant parameters are esse
 
 ```{r PIM3}
 comp_table <- compare_est(fit_comp,fit_pim)[,c("est.fit_comp","se.fit_comp","est.fit_pim","se.fit_pim")]
-max(abs(comp_table$est.fit_comp - comp_table$est.fit_pim)) 
-max(abs(comp_table$se.fit_comp - comp_table$se.fit_pim)) 
+comp_table
 ```
-
-As a sidenote, we could have also matched the standard errors for all three approaches by using observed information, by specifying ```information='observed'``` for `fit_comp` and `fit_pim` runs, and omitting `runcommand="information='expected'"` for `fit_ts`.  
 
 Lastly, fit measures from the model fit directly to the composites (`fit_comp`) and the "naive" fit measures from Stage 2 of TSML (`fit_ts`) are the same. (This will not be the case with incomplete data). The PIM fit measures (`fit_pim`) that are expected to be the same, such as chi-square and RMSEA, are the same as TSML. 
 
@@ -165,7 +162,7 @@ afi_pim <- lavaan::fitmeasures(fit_pim)
 round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 ```
 
-Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR) are different for PIMs. CFI can be recomputed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup. SRMR can be recomputed comparing only the residuals for the variables in the composite model. Both of these modifications have been proposed in [Rose, Wagner, Mayer, and Nagengast (2019)](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). See [Approximate_fit vignette](../doc/Approximate_fit.html) for more detail. Here, we just show how to obtain them: 
+Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR) are different for PIM, and the default printed values are not optimal. Instead, CFI should be computed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup. SRMR should be computed comparing only the residuals for the variables in the composite model. Both of these modifications have been proposed in [Rose, Wagner, Mayer, and Nagengast (2019)](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). See [Approximate_fit vignette](../doc/Approximate_fit.html) for more detail. Here, we just show how to obtain these adjusted CFI and SRMR values: 
 
 ```{r afi2}
 fitm_pim <- fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
@@ -174,4 +171,4 @@ fitm_pim[c("cfi","srmr")]
 afi_comp <- lavaan::fitmeasures(fit_comp)[c("cfi","srmr")]
 afi_comp
 ```
-They are identical to the corresponding CFI and SRMR run in the complete data case. Lastly, information criteria (e.g., AIC, BIC) will be different for PIM but these do not require corrections. These indices are used for model comparison and do not have interpretable values in isolation. As long as all models being compared are fit using the same methodology (e.g., PIM, twostage, complete data, etc), they can be used to select among models. 
+They are identical to the corresponding CFI and SRMR run for the complete data run `fit_comp`. We note that information criteria (e.g., AIC, BIC) will be different for PIM but these do not require corrections. These indices are used for model comparison and do not have interpretable values in isolation. As long as all models being compared are fit using the same methodology (e.g., PIM, twostage, complete data, etc), information indices can be used to select among models. 

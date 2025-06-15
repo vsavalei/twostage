@@ -2,9 +2,12 @@
 % Please edit documentation in R/TSML.R
 \name{parameterEstimates_ts}
 \alias{parameterEstimates_ts}
+\alias{parameterestimates_ts}
 \title{Display Twostage Parameter Estimates and SEs}
 \usage{
 parameterEstimates_ts(object, naive.se = TRUE)
+
+parameterestimates_ts(object, naive.se = TRUE)
 }
 \arguments{
 \item{object}{Object of class twostage}

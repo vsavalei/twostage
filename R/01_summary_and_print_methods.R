@@ -18,9 +18,13 @@ setMethod(
     TS_table <- parameterEstimates_ts(object, naive.se = TRUE)
 
     # create a sentence with test statistic results to print
-    Tres <- object@Fit@test$twostage$test
-    df <- object@Fit@test$twostage$df
-    pval <- object@Fit@test$twostage$pval
+    Tres <- object@twostage$test
+    df <- object@twostage$df
+    pval <- object@twostage$pval
+    colnames(Tres) <- "Tres"
+    colnames(pval) <- "pval"
+    df <- as.matrix(df)
+    colnames(df) <- "df"
 
     # summary list
     summary_list <- list(
@@ -32,9 +36,6 @@ setMethod(
 
     # Assign the class for method dispatch
     class(summary_list) <- "SummaryTwostage"
-
-    # Show the summary
-    # show(summary_list)
 
     summary_list
   }

@@ -4,7 +4,7 @@ output: github_document
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<!-- Render `README.Rmd` regularly tokeep `README.md` up-to-date, via `devtools::build_readme()` -->
+<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
 
 ```{=html}
 <!-- To view better, run: 
@@ -127,6 +127,8 @@ To fit the composite model using TSML:
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
 summary(fit_ts)
+#to see the stage 2 summary output from lavaan with "naive" SEs:
+#selectMethod("summary", "lavaan")(fit_ts)
 ```
 
 The output shows TSML parameter estimates from Stage 2, "naive" standard errors, and TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The (normal theory) residual-based test statistic is also printed. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).

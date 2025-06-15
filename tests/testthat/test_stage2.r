@@ -1,4 +1,4 @@
-#tests for stage2
+# tests for stage2
 # Test stage2 function comprehensively
 test_that("stage2 validates runcommand2 argument correctly", {
   # Create test data for stage2 input
@@ -126,12 +126,12 @@ test_that("stage2 returns correct output structure", {
   expect_true("est" %in% names(params))
 
   # Should have TSML standard errors
-  expect_true("se_ts" %in% names(result@ParTable))
+  expect_true("se_ts" %in% names(result@twostage))
 
   # Should have TSML test statistic
-  expect_true(!is.null(result@Fit@test$twostage$test))
-  expect_true(!is.null(result@Fit@test$twostage$df))
-  expect_true(!is.null(result@Fit@test$twostage$pval))
+  expect_true(!is.null(result@twostage$test))
+  expect_true(!is.null(result@twostage$df))
+  expect_true(!is.null(result@twostage$pval))
 })
 
 test_that("stage2 handles different model types", {
@@ -214,14 +214,14 @@ test_that("stage2 computes TSML statistics correctly", {
   result <- stage2(s1a_result, model, runcommand2 = "sample.cov.rescale=FALSE")
 
   # TSML chi-square should be non-negative
-  expect_true(result@Fit@test$twostage$test >= 0)
+  expect_true(result@twostage$test >= 0)
 
   # p-value should be between 0 and 1
-  expect_true(result@Fit@test$twostage$pval >= 0)
-  expect_true(result@Fit@test$twostage$pval <= 1)
+  expect_true(result@twostage$pval >= 0)
+  expect_true(result@twostage$pval <= 1)
 
   # Should have same df as regular lavaan fit
-  expect_true(result@Fit@test$twostage$df >= 0)
+  expect_true(result@twostage$df >= 0)
 
   # TSML SEs should be positive
   ts_ses <- result@ParTable$se_ts[result@ParTable$free != 0]

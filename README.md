@@ -1,7 +1,7 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-<!-- Render `README.Rmd` regularly tokeep `README.md` up-to-date, via `devtools::build_readme()` -->
+<!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
 
 <!-- To view better, run: 
 detach("package:twostage", unload = TRUE)
@@ -177,6 +177,8 @@ summary(fit_ts)
 #>   C9 ~1      0.032    0.146   0.219        0.826 0.154  0.208  0.835
 #> ----------------------------
 #> The residual-based TSML chi-square is 24.952 against 24 degrees of freedom, with a p-value of 0.408
+#to see the stage 2 summary output from lavaan with "naive" SEs:
+#selectMethod("summary", "lavaan")(fit_ts)
 ```
 
 The output shows TSML parameter estimates from Stage 2, “naive” standard

@@ -162,7 +162,6 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
 #' out_s1 <- stage1(tpbdata, runcommand = "information='expected'")
 #'
 stage1 <- function(data, runcommand = NULL) {
-
   # Validate runcommand argument
   if (!is.null(runcommand)) {
     if (!is.character(runcommand) || length(runcommand) != 1) {
@@ -198,8 +197,10 @@ stage1 <- function(data, runcommand = NULL) {
 
     if (length(conflicts) > 0) {
       warning("'runcommand' contains conflicting lavaan arguments: ",
-              paste(conflicts, collapse = ", "), ". ",
-              "This may cause unexpected behavior.", call. = FALSE)
+        paste(conflicts, collapse = ", "), ". ",
+        "This may cause unexpected behavior.",
+        call. = FALSE
+      )
     }
   }
 
@@ -210,8 +211,10 @@ stage1 <- function(data, runcommand = NULL) {
   # fit the saturated model in lavaan
   S1.mod <- write.sat(p, varnames = colnames(data))
 
-  S1 <- try(eval(parse(text = paste("sem(S1.mod, data = data, missing = 'ml', ",
-                                    runcommand, ")"))), silent = TRUE)
+  S1 <- try(eval(parse(text = paste(
+    "sem(S1.mod, data = data, missing = 'ml', ",
+    runcommand, ")"
+  ))), silent = TRUE)
   # fixed the line below, need to test
   if (!inherits(S1, "try-error")) {
     if (inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE) {
@@ -277,7 +280,6 @@ stage1 <- function(data, runcommand = NULL) {
 #' out_s1a<-stage1a(out_s1,C)
 #'
 stage1a <- function(S1.output, C) {
-
   # Input validation
   if (!is.matrix(C)) {
     stop("C must be a matrix", call. = FALSE)
@@ -363,8 +365,7 @@ stage1a <- function(S1.output, C) {
 #' out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
 #'
 #'
-stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") {
-
+stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem") {
   # Validate runcommand2 argument
   if (!is.null(runcommand2)) {
     if (!is.character(runcommand2) || length(runcommand2) != 1) {
@@ -391,8 +392,10 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") 
 
     if (length(conflicts) > 0) {
       stop("'runcommand2' contains conflicting lavaan arguments: ",
-           paste(conflicts, collapse = ", "), ". ",
-           "These arguments are set by the stage2 function.", call. = FALSE)
+        paste(conflicts, collapse = ", "), ". ",
+        "These arguments are set by the stage2 function.",
+        call. = FALSE
+      )
     }
   }
 
@@ -402,14 +405,16 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") 
   N <- S1a.output[[4]]
 
 
- lavaan_call_string <- paste0(lavaan_function,
-        "(model, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
-        fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")")
+  lavaan_call_string <- paste0(
+    lavaan_function,
+    "(model, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
+        fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")"
+  )
 
- S2 <- tryCatch(eval(parse(text = lavaan_call_string)), error = function(e) {
-  message("lavaan error encountered in stage2: ", e$message)
-  return(NA)
-})
+  S2 <- tryCatch(eval(parse(text = lavaan_call_string)), error = function(e) {
+    message("lavaan error encountered in stage2: ", e$message)
+    return(NA)
+  })
 
   # trying something new, below works b/c of tryCatch
   # may need another subloop to catch cases where vcov has some diagonal NAs
@@ -426,21 +431,22 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") 
 
       Ohtt <- bread %*% t(meat) %*% ohd.reordered %*% meat %*% bread # ohm-hat-theta-tilde
 
+      S2 <- as(S2, "twostage") # change class to superclass twostage
+      S2@twostage <- list() # initialize the slot
+
+      # new code:
+      # update se_ts for free parameters
       # set TS SEs to initially equal naive SEs, to match nonfree values and length
-      S2@ParTable$se_ts <- S2@ParTable$se
+      S2@twostage$se_ts <- S2@ParTable$se
+      # set ses for free parameters to new TS SEs (TODO: double-check order?)
+      S2@twostage$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt))
+
+      # comment out old se code, move to summary?
+      # set TS SEs to initially equal naive SEs, to match nonfree values and length
+      # S2@ParTable$se_ts <- S2@ParTable$se
 
       # update se_ts for free parameters
-      S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # TODO: check order?
-
-      ## This prior solution relied on an internal lavaan function to ensure correct
-      ## order, but RMD check doesn't like this
-
-      # S2@ParTable$se_ts <- lavaan:::lav_model_vcov_se(lavmodel = S2@Model,
-      #            lavpartable = S2@ParTable, VCOV = Ohtt)
-
-      # Note: lavInspect(S2,"vcov") will still give the "wrong" (naive) answer
-      # Ohtt <- str(S2@vcov$vcov) #also "naive"
-      # I think we want to preserve the naive run
+      # S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # TODO: check order?
 
       # Normal-theory residual-based test statistic
       et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
@@ -449,16 +455,23 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") 
       Tres <- (N) * t(et) %*% (ahd - (ahd %*% ddh) %*% solve(t(ddh) %*% ahd %*% ddh) %*% (t(ddh) %*% ahd)) %*% et
       pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
+      # new test statistic code:
+      S2@twostage$test <- Tres
+      S2@twostage$df <- S2@Fit@test$standard$df
+      S2@twostage$pval <- pval
+
+      # commenting out old test statistic code
       # mauling lavaan -- is this safe?
       # writing into S2@test was not safe (broke lavaan summary)
       # blavaan directly overwrites @Fit@test slots
-      S2@Fit@test$twostage$test <- Tres
-      S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
-      S2@Fit@test$twostage$pval <- pval
+      # S2@Fit@test$twostage$test <- Tres
+      # S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
+      # S2@Fit@test$twostage$pval <- pval
+      #
     } # end if vcov
   } # end if
 
-  S2 <- as(S2, "twostage")
+
   return(S2)
 }
 
@@ -551,7 +564,6 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL,lavaan_function="sem") 
 
 twostage <- function(data, model, C = NULL, which_col = NULL,
                      runcommand = NULL, runcommand2 = NULL) {
-
   # Validate model argument
   if (missing(model) || is.null(model)) {
     stop("'model' argument is required and cannot be NULL", call. = FALSE)
@@ -559,7 +571,8 @@ twostage <- function(data, model, C = NULL, which_col = NULL,
 
   if (!is.character(model) || length(model) != 1) {
     stop("'model' must be a single character string containing lavaan syntax",
-         call. = FALSE)
+      call. = FALSE
+    )
   }
 
   # stage 0, if needed: relating components to composite via user input
@@ -567,7 +580,7 @@ twostage <- function(data, model, C = NULL, which_col = NULL,
     C <- if (is.null(which_col)) {
       stage0(data = data, model = model)
     } else {
-      stage0(data = data, model = model, which_col = which_col,type=1)
+      stage0(data = data, model = model, which_col = which_col, type = 1)
     }
   }
   # stage 1: saturated model on components
@@ -605,7 +618,8 @@ parameterEstimates_ts <- function(object, naive.se = TRUE) {
   names(est)[names(est) == "z"] <- "z_naive"
   names(est)[names(est) == "pvalue"] <- "pvalue_naive"
 
-  se <- object@ParTable$se_ts[object@ParTable$free != 0] # remove nonfree
+  se <- object@twostage$se_ts[object@ParTable$free != 0]
+  # remove nonfree
 
   if (!is.null(se)) {
     z <- est[, "est"] / se
@@ -617,3 +631,8 @@ parameterEstimates_ts <- function(object, naive.se = TRUE) {
   }
   return(out)
 }
+
+# because I can never remember whether upper or lower case...
+#' @rdname parameterEstimates_ts
+#' @export
+parameterestimates_ts <- parameterEstimates_ts
