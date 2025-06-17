@@ -1,6 +1,6 @@
 Package: twostage
 Title: Fit structural equation models to composites formed from items 
-Version: 0.0.0.9000
+Version: 0.0.0.9001
 Authors@R: 
     person("Victoria", "Savalei", , "v.savalei@ubc.ca", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0001-8530-3251"))
