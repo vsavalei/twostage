@@ -53,10 +53,10 @@ C[4,10:12]<-1
 C[5,13:15]<-1
 C[6,16:18]<-1
 
-pim_mod1 <- PIM_syntax(C, mod1)
+pim_mod1 <- PIM_syntax(mod1,C)
 fit_pim <- lavaan::lavaan(pim_mod1, data=misdata1)
 
-fitMeasures_pim(C, compmodel = mod1, fit_pim = fit_pim,
+fitMeasures_pim(C = C, compmodel = mod1, fit_pim = fit_pim,
 data = misdata1, exog_cov = TRUE)
 
 }

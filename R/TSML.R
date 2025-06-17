@@ -14,13 +14,20 @@ namesohd <- function(cnames) {
   return(namesohd)
 }
 
-# write.sat (helper function): creates the saturated model syntax in lavaan
-write.sat <- function(p, varnames) {
-  if (length(varnames) != p) {
-    stop("The length of 'varnames' must be equal to 'p'.")
+# write_sat (helper function for both PIM and TS):
+# creates the saturated model syntax in lavaan
+write_sat <- function(model = NULL, varnames = NULL) {
+  # Get variable names from either source
+  if (!is.null(model)) {
+    varnames <- lavNames(model)
+  } else if (is.null(varnames)) {
+    stop("Must provide either 'model' or 'varnames'")
   }
 
+  p <- length(varnames)
   sat.mod <- ""
+
+  # Variance and covariance terms
   for (i in 1:p) {
     linestart <- paste(varnames[i], " ~~ ", varnames[i], sep = "")
     if (p - i > 0) {
@@ -33,6 +40,12 @@ write.sat <- function(p, varnames) {
     }
     sat.mod <- paste(sat.mod, linestart, linemid, " \n ", sep = "")
   }
+
+  # Add means for all variables
+  for (i in 1:p) {
+    sat.mod <- paste(sat.mod, varnames[i], " ~ 1 \n ", sep = "")
+  }
+
   return(sat.mod)
 }
 
@@ -48,7 +61,7 @@ write.sat <- function(p, varnames) {
 #'
 #' @param data A data file with components (items) to be assigned to composites.
 #' It should not contain other variables (or else feed in only selected columns as data).
-#' @param model A lavaan model for the composites, used to extract composite names
+#' @param compmodel A lavaan model for the composites, used to extract composite names
 #' @param type  Types of composites: 1 for sums, 2 for averages (or leave blank to input interactively)
 #' @param which_col (optional) A vector of length of names(data), with entries identifying the number of the composite
 #' (in the order they appear in the composites model) to which a component should be signed
@@ -73,7 +86,7 @@ write.sat <- function(p, varnames) {
 #' # Or, provide assignment non-interactively
 #' # The composites are in the order listed in lavNames(tpbmod)
 #' # The components are in the order of names(tpbdata)
-#  #Therefore, the correct assignment vector is:
+#  # Therefore, the correct assignment vector is:
 #' which_col <- c(rep(4, 3), rep(5, 3), rep(2, 1), rep(1, 3), rep(3, 11))
 #' C <- stage0(tpbdata, tpbmod, which_col = which_col, type = 1)
 #'
@@ -85,8 +98,8 @@ write.sat <- function(p, varnames) {
 #' # NORMALL :  NORS1 NORS2 NORS3
 #' # If this is not correct, start over!
 #'
-stage0 <- function(data, model, which_col = NA, type = NA) {
-  cnames <- lavNames(model)
+stage0 <- function(data, compmodel, which_col = NA, type = NA) {
+  cnames <- lavNames(compmodel)
   C <- matrix(0, nrow = length(cnames), ncol = length(colnames(data)))
   colnames(C) <- colnames(data) # component names
   rownames(C) <- cnames # composite names
@@ -107,7 +120,8 @@ stage0 <- function(data, model, which_col = NA, type = NA) {
 
     # if which_col has any values other than 1 to length(cnames), throw error
     if (any(!which_col %in% seq_len(length(cnames)))) {
-      stop("Error: Values in 'which_col' must be integers between 1 and the number of variables in model.")
+      stop("Error: Values in 'which_col' must be integers between 1
+           and the number of variables in compmodel.")
     }
 
     for (i in seq_along(colnames(data))) {
@@ -209,7 +223,7 @@ stage1 <- function(data, runcommand = NULL) {
   pst <- p * (p + 1) / 2
 
   # fit the saturated model in lavaan
-  S1.mod <- write.sat(p, varnames = colnames(data))
+  S1.mod <- write_sat(varnames = colnames(data))
 
   S1 <- try(eval(parse(text = paste(
     "sem(S1.mod, data = data, missing = 'ml', ",
@@ -256,7 +270,7 @@ stage1 <- function(data, runcommand = NULL) {
 #' library(lavaan)
 #' misdata1 <- misdata_mcar20[, 1:18]
 #'
-#' # composite sub-model
+#' # composite model
 #' mod1 <- "
 #'  F1 =~ C1 + C2 + C3
 #'  F2 =~ C4 + C5 + C6
@@ -280,10 +294,8 @@ stage1 <- function(data, runcommand = NULL) {
 #' out_s1a<-stage1a(out_s1,C)
 #'
 stage1a <- function(S1.output, C) {
-  # Input validation
-  if (!is.matrix(C)) {
-    stop("C must be a matrix", call. = FALSE)
-  }
+  #input validation
+  validate_C_matrix(C)
 
   if (is.null(S1.output)) {
     S1a.output <- NULL
@@ -327,7 +339,7 @@ stage1a <- function(S1.output, C) {
 #' the residual-based test statistic (for normal data)
 #'
 #' @param S1a.output Output from stage1a, a list with four objects (shd, mhd, ohd, N)
-#' @param model The lavaan model for the composites
+#' @param compmodel The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
 #' @param lavaan_function Which lavaan function to use to fit the model
 #' @return An object of class `twostage`, inheriting class `lavaan`
@@ -362,17 +374,23 @@ stage1a <- function(S1.output, C) {
 #'
 #' out_s1 <- stage1(misdata1)
 #' out_s1a <- stage1a(out_s1,C)
-#' out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
+#' out_s2 <- stage2(out_s1a, compmodel = mod1, runcommand2="mimic='EQS'")
 #'
 #'
-stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem") {
-  # Validate runcommand2 argument
+stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
+                   lavaan_function = c("sem", "lavaan", "cfa", "growth", "sam")) {
+
+   #Validate compmodel
+   validate_compmodel(compmodel)
+
+   # Validate runcommand2 argument
   if (!is.null(runcommand2)) {
     if (!is.character(runcommand2) || length(runcommand2) != 1) {
       stop("'runcommand2' must be a single character string or NULL", call. = FALSE)
     }
 
-    # Check for potentially problematic specifications
+    # Check for potentially problematic specifications: user cannot supply these
+    # As they are automatically supplied from stage1
     invalid_patterns <- list(
       data = "data\\s*=",
       model = "model\\s*=",
@@ -399,15 +417,23 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
     }
   }
 
+  # Validate estimator if specified in runcommand2
+  if (!is.null(runcommand2) && grepl("estimator\\s*=", runcommand2, ignore.case = TRUE)) {
+    if (!grepl("estimator\\s*=\\s*['\"]?ML['\"]?", runcommand2, ignore.case = TRUE)) {
+      stop("stage2 only supports estimator='ML'", call. = FALSE)
+    }
+  }
+
   shd <- S1a.output[[1]]
   mhd <- S1a.output[[2]]
   ohd <- S1a.output[[3]]
   N <- S1a.output[[4]]
 
+  lavaan_function <- match.arg(lavaan_function)
 
   lavaan_call_string <- paste0(
     lavaan_function,
-    "(model, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
+    "(model = compmodel, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
         fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")"
   )
 
@@ -468,7 +494,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 #  This function runs stage0, stage1, stage1a, stage2 in sequence.
 
 #' @param data Data file for the components (items)
-#' @param model The lavaan model for the composites
+#' @param compmodel The lavaan model for the composites
 #' @param C (optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)
 #' @param which_col (optional) A vector of length of names(data), with entries
 #' identifying the number of the composite, from which C will be created (assumes sums)
@@ -489,7 +515,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 #' library(lavaan)
 #' misdata1 <- misdata_mcar20[, 1:18]
 #'
-#' # composite sub-model
+#' # composite model
 #' mod1 <- "
 #'  F1 =~ C1 + C2 + C3
 #'  F2 =~ C4 + C5 + C6
@@ -509,13 +535,13 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 #' C[5,13:15]<-1
 #' C[6,16:18]<-1
 #'
-#' out_ts <- twostage(data = misdata1, model = mod1,C = C)
+#' out_ts <- twostage(data = misdata1, compmodel = mod1,C = C)
 #'
 #' #alternative specification (faster but more error-prone)
 #' #each number indicates which component each composite belongs to
 #' #in the same order as lavNames(mod1)
 #' which_col <- c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6)
-#' out_ts <- twostage(data = misdata1, model = mod1,which_col = which_col)
+#' out_ts <- twostage(data = misdata1, compmodel = mod1,which_col = which_col)
 #'
 #' #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
 #' #TPB Model for Composites (Full mediation)
@@ -534,7 +560,7 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 #' C[4,c("PBC1","PBC2","PBC3")]<-1
 #' C[5,c("NORS1","NORS2","NORS3")]<-1
 #'
-#' out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
+#' out_ts <- twostage(data = tpbdata, compmodel = tpbmod,C = C,
 #' runcommand = "information='expected'", runcommand2 = "
 #' sample.cov.rescale=FALSE")
 #' #The naive and TS standard errors should be identical
@@ -544,33 +570,28 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 #' Savalei, V., & Rhemtulla, M. (2017). Normal theory two-stage ML estimator when data are missing at the item level. Journal of Educational and Behavioral Statistics, 42(1), 1-27. https://doi.org/10.3102/1076998617694880
 
 
-twostage <- function(data, model, C = NULL, which_col = NULL,
+twostage <- function(data, compmodel, C = NULL, which_col = NULL,
                      runcommand = NULL, runcommand2 = NULL) {
-  # Validate model argument
-  if (missing(model) || is.null(model)) {
-    stop("'model' argument is required and cannot be NULL", call. = FALSE)
-  }
-
-  if (!is.character(model) || length(model) != 1) {
-    stop("'model' must be a single character string containing lavaan syntax",
-      call. = FALSE
-    )
-  }
 
   # stage 0, if needed: relating components to composite via user input
   if (is.null(C)) {
     C <- if (is.null(which_col)) {
-      stage0(data = data, model = model)
+      stage0(data = data, compmodel = compmodel)
     } else {
-      stage0(data = data, model = model, which_col = which_col, type = 1)
+      stage0(data = data, compmodel = compmodel, which_col = which_col, type = 1)
     }
   }
+
+  # Validate inputs
+  validate_compmodel(compmodel)
+  validate_C_matrix(C, data, compmodel)
+
   # stage 1: saturated model on components
   s1 <- stage1(data = data, runcommand = runcommand)
   # stage1a: saturated solution transformation to composites
   s1a <- stage1a(S1.output = s1, C = C)
-  # stage2: model fit to composites
-  s2 <- stage2(S1a.output = s1a, model = model, runcommand2 = runcommand2)
+  # stage2: compmodel fit to composites
+  s2 <- stage2(S1a.output = s1a, compmodel = compmodel, runcommand2 = runcommand2)
 
   return(s2)
 }

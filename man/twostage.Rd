@@ -6,7 +6,7 @@
 \usage{
 twostage(
   data,
-  model,
+  compmodel,
   C = NULL,
   which_col = NULL,
   runcommand = NULL,
@@ -16,7 +16,7 @@ twostage(
 \arguments{
 \item{data}{Data file for the components (items)}
 
-\item{model}{The lavaan model for the composites}
+\item{compmodel}{The lavaan model for the composites}
 
 \item{C}{(optional) The matrix of component-composite assignments and weights (if NULL, user input will be requested to construct it)}
 
@@ -45,7 +45,7 @@ the residual-based test statistic (for normal data).
 library(lavaan)
 misdata1 <- misdata_mcar20[, 1:18]
 
-# composite sub-model
+# composite model
 mod1 <- "
  F1 =~ C1 + C2 + C3
  F2 =~ C4 + C5 + C6
@@ -64,13 +64,13 @@ C[4,10:12]<-1
 C[5,13:15]<-1
 C[6,16:18]<-1
 
-out_ts <- twostage(data = misdata1, model = mod1,C = C)
+out_ts <- twostage(data = misdata1, compmodel = mod1,C = C)
 
 #alternative specification (faster but more error-prone)
 #each number indicates which component each composite belongs to
 #in the same order as lavNames(mod1)
 which_col <- c(1,1,1,2,2,2,3,3,3,4,4,4,5,5,5,6,6,6)
-out_ts <- twostage(data = misdata1, model = mod1,which_col = which_col)
+out_ts <- twostage(data = misdata1, compmodel = mod1,which_col = which_col)
 
 #Example2: TSML on a complete dataset tpbdata, with lavaan options set to match complete data ML
 #TPB Model for Composites (Full mediation)
@@ -89,7 +89,7 @@ C[3,grep("AT", names(tpbdata))]<-1
 C[4,c("PBC1","PBC2","PBC3")]<-1
 C[5,c("NORS1","NORS2","NORS3")]<-1
 
-out_ts <- twostage(data = tpbdata, model = tpbmod,C = C,
+out_ts <- twostage(data = tpbdata, compmodel = tpbmod,C = C,
 runcommand = "information='expected'", runcommand2 = "
 sample.cov.rescale=FALSE")
 #The naive and TS standard errors should be identical

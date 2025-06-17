@@ -3,8 +3,10 @@ title: "Complete data"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{Complete_data}
-  %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
+  %\VignetteEngine{knitr::rmarkdown}
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r, include = FALSE}
@@ -78,7 +80,7 @@ C
 To match the complete data analysis when using TSML, we have to specify expected rather than observed information for Stage 1 (via `runcommand`), and skip the default rescaling of the input covariance matrix in Stage 2 (via `runcommand2`).   
 
 ```{r TSML1}
-fit_ts <- twostage(data = tpbdata, model = tpbmod, C = C,
+fit_ts <- twostage(data = tpbdata, compmodel = tpbmod, C = C,
 runcommand = "information='expected'", runcommand2 = "sample.cov.rescale=FALSE")
 ```
 
@@ -133,7 +135,7 @@ When the model is correct, both GLS and ML are asymptotically fully efficient, a
 
 The PIM model syntax sets up each composite as a special latent variable, with the structure on the observed variables such that the latent variable turns out to be equal to the observed composite. The composites model is then embedded within the larger PIM model. We obtain the `lavaan` syntax for PIM as follows: 
 ```{r PIM1}
-tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
+tpbpim <- PIM_syntax(compmodel=tpbmod,C=C)
 #cat(tpbpim)
 ```
 

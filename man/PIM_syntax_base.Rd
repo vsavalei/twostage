@@ -4,13 +4,13 @@
 \alias{PIM_syntax_base}
 \title{Baseline (Null) Model Syntax for the PIM}
 \usage{
-PIM_syntax_base(C, compmodel, exog_cov = TRUE)
+PIM_syntax_base(compmodel, C = NULL, exog_cov = TRUE)
 }
 \arguments{
+\item{compmodel}{A string with lavaan model for composites}
+
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
 components}
-
-\item{compmodel}{A string with lavaan model for composites}
 
 \item{exog_cov}{Should the exogenous variables (latent or observed) in the compmodel remain correlated in the baseline (null) model?}
 }
@@ -31,6 +31,6 @@ C[3, 7] <- 1
 rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
-PIM_model_base <- PIM_syntax_base(C = C, compmodel = compmodel)
+PIM_model_base <- PIM_syntax_base(compmodel = compmodel,C =C)
 
 }

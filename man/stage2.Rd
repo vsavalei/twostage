@@ -4,12 +4,17 @@
 \alias{stage2}
 \title{stage2}
 \usage{
-stage2(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem")
+stage2(
+  S1a.output,
+  compmodel,
+  runcommand2 = NULL,
+  lavaan_function = c("sem", "lavaan", "cfa", "growth", "sam")
+)
 }
 \arguments{
 \item{S1a.output}{Output from stage1a, a list with four objects (shd, mhd, ohd, N)}
 
-\item{model}{The lavaan model for the composites}
+\item{compmodel}{The lavaan model for the composites}
 
 \item{runcommand2}{Additional arguments to pass to lavaan}
 
@@ -52,7 +57,7 @@ C[6,16:18]<-1
 
 out_s1 <- stage1(misdata1)
 out_s1a <- stage1a(out_s1,C)
-out_s2 <- stage2(out_s1a, model = mod1, runcommand2="mimic='EQS'")
+out_s2 <- stage2(out_s1a, compmodel = mod1, runcommand2="mimic='EQS'")
 
 
 }

@@ -76,7 +76,7 @@ C[5,c("NORS1","NORS2","NORS3")]<-1
 We create PIM syntax and fit the PIM model to the raw items in `tpbdata` (without declaring missing data in this case, as there is none):
 
 ```{r}
-tpbpim <- PIM_syntax(C=C,compmodel=tpbmod)
+tpbpim <- PIM_syntax(compmodel=tpbmod,C=C)
 fit_pim <- lavaan::lavaan(tpbpim, data=tpbdata)
 fitm_pim <- lavaan::fitMeasures(fit_pim)[c("npar","chisq","df","baseline.chisq",
                                    "baseline.df","cfi","tli","rmsea","srmr_mplus",
@@ -90,7 +90,7 @@ We can see that while the model chi-square, model df, and the RMSEA agree betwee
 To get the right CFI/TLI, we need a new baseline model that only un-correlates variables in the composite model, while leaving the rest of the PIM structure intact. The function `PIM_syntax_base` will create a PIM model where the model for composites is now a null model, which un-correlates all the variables (except possibly for exogenous predictors), while estimating their means and variances.
 
 ```{r base1}
-tpbpim_base <- PIM_syntax_base(C=C, compmodel=tpbmod, exog_cov=TRUE)
+tpbpim_base <- PIM_syntax_base(compmodel=tpbmod, C=C, exog_cov=TRUE)
 #cat(tpbpim_base)
 ```
 
@@ -183,7 +183,7 @@ With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount o
 We will use the example from the README file. Here, the composite model is a 3-factor model with 9 composite indicators, and the data are 27 raw items in the `misdata_mcar20` file. Below we set up the composite model and the C matrix, and we fit the composite model using PIM:
 
 ```{r}
-mod <- '
+mod1 <- '
 F1 =~ 1*C1 + C2 + C3
 F2 =~ 1*C4 + C5 + C6
 F3 =~ 1*C7 + C8 + C9
@@ -195,7 +195,7 @@ F3 ~~ F3
 #F1 ~~ 0*F2
 
 '
-cnames<-lavaan::lavNames(mod) 
+cnames<-lavaan::lavNames(mod1) 
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata_mcar20)))
 colnames(C)<-colnames(misdata_mcar20)
 
@@ -210,7 +210,7 @@ C[7,19:21]<-1
 C[8,22:24]<-1
 C[9,25:27]<-1
 
-modpim <- PIM_syntax(compmodel = mod, C = C)
+modpim <- PIM_syntax(compmodel = mod1, C = C)
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 
 fitm_pim <- lavaan::fitMeasures(fit_pim)
@@ -220,11 +220,11 @@ round(fitm_pim[c("cfi","cfi.robust","tli","tli.robust","rmsea","rmsea.robust","s
 Let's see if changing the baseline model works and still produces a robust CFI (if it does, we will trust `lavaan` on this and won't verify it (for now)):
 
 ```{r}
-mod_base <- PIM_syntax_base(C=C,compmodel=mod)
+mod_base <- PIM_syntax_base(C=C,compmodel=mod1)
 #cat(mod_base) #always check! 
 fit_pim_base <- lavaan::lavaan(mod_base, data=misdata_mcar20,missing="FIML")
 
-comp_names <- lavaan::lavNames(mod) 
+comp_names <- lavaan::lavNames(mod1) 
 Sigma <- lavaan::lavInspect(fit_pim_base,"cov.all")
 round(Sigma[comp_names,comp_names],3) #looks good, uncorrelated C1-C9
 
@@ -244,10 +244,10 @@ This is a bit suspect since the missing data correction would typically be expec
 For completeness, let's get the correct SRMR.
 
 ```{r}
-pim_sat <- PIM_syntax_sat(C=C,compmodel=mod)
+pim_sat <- PIM_syntax_sat(compmodel=mod1,C=C)
 fit_pim_sat <- lavaan::lavaan(pim_sat, data=misdata_mcar20)
 
-srmr <- srmr_mplus_pim(fit_pim,fit_pim_sat,mod)
+srmr <- srmr_mplus_pim(fit_pim,fit_pim_sat,mod1)
 srmr
 ```
 
@@ -264,6 +264,6 @@ As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with 
 When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> These small sample adjustments basically amount to subtracting more than just df to get the noncentrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. **I need to work this out**
 
 ```{r}
-fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
 #summary(fit_ts)
 ```

@@ -4,13 +4,13 @@
 \alias{PIM_syntax_sat}
 \title{Title}
 \usage{
-PIM_syntax_sat(C, compmodel)
+PIM_syntax_sat(compmodel, C = NULL)
 }
 \arguments{
+\item{compmodel}{Composite model lavaan syntax}
+
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
 components}
-
-\item{compmodel}{Composite model lavaan syntax}
 }
 \value{
 A string with the full PIM baseline model lavaan syntax

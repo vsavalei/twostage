@@ -20,7 +20,7 @@ A list of SRMR values, without means and with means
 Title
 }
 \examples{
-# make a nonboring example, here H0 is saturated
+# make a non-boring example, here H0 is saturated
 library(lavaan)
 misdata_1to7 <- misdata_mcar20[, 1:7] # first 7 vars, for illustration
 # C1 is the sum of Y1, Y2, and Y3
@@ -33,8 +33,8 @@ C[3, 7] <- 1
 rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
-PIM_model <- PIM_syntax(C = C, compmodel = compmodel)
-PIM_model_sat <- PIM_syntax_sat(C = C, compmodel = compmodel)
+PIM_model <- PIM_syntax(compmodel = compmodel, C = C)
+PIM_model_sat <- PIM_syntax_sat(compmodel = compmodel,C = C)
 fit_pim <- lavaan(PIM_model, data = misdata_1to7)
 fit_pim_sat <- lavaan(PIM_model_sat, data = misdata_1to7)
 srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)

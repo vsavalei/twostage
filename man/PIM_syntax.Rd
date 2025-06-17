@@ -4,13 +4,13 @@
 \alias{PIM_syntax}
 \title{Creates lavaan syntax for a Pseudo-Indicator Model}
 \usage{
-PIM_syntax(C, compmodel, exog_cov = TRUE)
+PIM_syntax(compmodel, C = NULL, exog_cov = TRUE)
 }
 \arguments{
+\item{compmodel}{A string with the lavaan model for composites}
+
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
 components}
-
-\item{compmodel}{A string with the lavaan model for composites}
 
 \item{exog_cov}{Should exogenous variables in the composite model be correlated?}
 }
@@ -37,7 +37,7 @@ C[3, 7] <- 1
 rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
-PIM_syntax(C, compmodel)
+PIM_syntax(compmodel, C)
 
 }
 \references{

@@ -4,13 +4,13 @@
 \alias{stage0}
 \title{stage0}
 \usage{
-stage0(data, model, which_col = NA, type = NA)
+stage0(data, compmodel, which_col = NA, type = NA)
 }
 \arguments{
 \item{data}{A data file with components (items) to be assigned to composites.
 It should not contain other variables (or else feed in only selected columns as data).}
 
-\item{model}{A lavaan model for the composites, used to extract composite names}
+\item{compmodel}{A lavaan model for the composites, used to extract composite names}
 
 \item{which_col}{(optional) A vector of length of names(data), with entries identifying the number of the composite
 (in the order they appear in the composites model) to which a component should be signed}

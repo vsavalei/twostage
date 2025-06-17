@@ -30,7 +30,7 @@ of components to the corresponding quantities for the composites
 library(lavaan)
 misdata1 <- misdata_mcar20[, 1:18]
 
-# composite sub-model
+# composite model
 mod1 <- "
  F1 =~ C1 + C2 + C3
  F2 =~ C4 + C5 + C6

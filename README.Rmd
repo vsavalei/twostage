@@ -67,7 +67,7 @@ The composite model is a 3-factor model, with three indicators each, defined via
 
 ```{r}
 #composite model
-mod <- '
+mod1 <- '
 F1 =~ 1*C1 + C2 + C3
 F2 =~ 1*C4 + C5 + C6
 F3 =~ 1*C7 + C8 + C9
@@ -82,7 +82,7 @@ For now, for true latent variables (*not* composites), the user should set their
 To fit this composite model using the item-level methods in this package, the assignment of components to composites needs to be specified. To do this via an interactive interface, use:
 
 ```         
-C <- stage0(data=misdata_mcar20,model=mod)
+C <- stage0(data=misdata_mcar20,model=mod1)
 ```
 This function will first ask the user whether the composites are sums or averages, and then it will ask the user to assign each component to one of the variable names (assumed to be composites) that appear in the model. The following message will confirm the assignment:
 
@@ -104,7 +104,7 @@ The created matrix $C$ has columns labeled with component names: $Y_1$ to $Y_{27
 In this file, we create this matrix manually as follows: 
 
 ```{r, include = FALSE}
-cnames<-lavaan::lavNames(mod) 
+cnames<-lavaan::lavNames(mod1) 
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata_mcar20)))
 colnames(C)<-colnames(misdata_mcar20)
 
@@ -125,9 +125,9 @@ Once the $C$ matrix is created with the help of the `stage0` function or manuall
 To fit the composite model using TSML:
 
 ```{r}
-fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
 summary(fit_ts)
-#to see the stage 2 summary output from lavaan with "naive" SEs:
+#to see the unadjusted stage 2 summary with "naive" SEs and chi-square:
 #selectMethod("summary", "lavaan")(fit_ts)
 ```
 
@@ -136,7 +136,7 @@ The output shows TSML parameter estimates from Stage 2, "naive" standard errors,
 To fit the composite model using PIM, first create the `lavaan` PIM syntax:
 
 ```{r}
-modpim <- PIM_syntax(compmodel = mod, C = C)
+modpim <- PIM_syntax(compmodel = mod1, C = C)
 
 ```
 
@@ -166,7 +166,7 @@ The TS and PIM estimates and standard errors are quite similar. Technically, the
 Approximate fit assessment of PIM models requires special setup, as discussed in [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). The gist of the issue is that we want to assess the fit of the composite model, not the fit of the entire model with items added in a saturated way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get corrected fit measures, use: 
 
 ```{r allfit}
-fitm_pim <- fitMeasures_pim(C, compmodel=mod, fit_pim=fit_pim, 
+fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim, 
                 data = misdata_mcar20)
 ```
 We can compare the PIM and TS fit indices:

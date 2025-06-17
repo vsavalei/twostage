@@ -203,7 +203,7 @@ comp_exog_covs_syntax <- function(compmodel) {
 #' rownames(C) <- c("C1", "C2", "C3")
 #' colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 #' compmodel <- "C1 ~ C2 + C3"
-#' PIM_syntax(C, compmodel)
+#' PIM_syntax(compmodel, C)
 #'
 #' @references Rose, N., Wagner, W., Mayer, A., & Nagengast, B. (2019).
 #' Model-based manifest and latent composite scores in structural equation
@@ -211,7 +211,16 @@ comp_exog_covs_syntax <- function(compmodel) {
 #' https://doi.org/10.1525/collabra.143
 #'
 
-PIM_syntax <- function(C, compmodel, exog_cov = TRUE) {
+PIM_syntax <- function(compmodel, C = NULL, exog_cov = TRUE) {
+
+  if (is.null(C)) {
+    stop("No C matrix provided; use stage0 function to create it from data and compmodel.")
+  }
+
+  #validate inputs
+  validate_C_matrix(C)
+  validate_compmodel(compmodel)
+
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
   PIMulav <- PIM.uni.lav(C)
@@ -298,23 +307,13 @@ compmodel_base <- function(compmodel, exog_cov = TRUE) {
 #' rownames(C) <- c("C1", "C2", "C3")
 #' colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 #' compmodel <- "C1 ~ C2 + C3"
-#' PIM_model_base <- PIM_syntax_base(C = C, compmodel = compmodel)
+#' PIM_model_base <- PIM_syntax_base(compmodel = compmodel,C =C)
 #'
-PIM_syntax_base <- function(C, compmodel, exog_cov = TRUE) {
-  # Input validation
-  if (!is.matrix(C)) {
-    stop("C must be a matrix", call. = FALSE)
-  }
+PIM_syntax_base <- function(compmodel, C=NULL, exog_cov = TRUE) {
 
-  if (is.null(rownames(C)) || is.null(colnames(C))) {
-    stop("C must have both row names (model variables) and column names (observed variables)",
-      call. = FALSE
-    )
-  }
-
-  if (!is.character(compmodel) || length(compmodel) != 1) {
-    stop("compmodel must be a single character string", call. = FALSE)
-  }
+  #validate inputs
+  validate_C_matrix(C)
+  validate_compmodel(compmodel)
 
   # building syntax through smaller functions
   PIMu <- PIM.uni(C)
@@ -333,36 +332,6 @@ PIM_syntax_base <- function(C, compmodel, exog_cov = TRUE) {
   ), collapse = "\n")
   return(out)
 }
-
-
-
-#' H1 (Saturated) Model Syntax for the Composites Model
-#'
-#' @param compmodel Composite model syntax for which to create a saturated model
-
-#' @returns H1 (Saturated) model lavaan syntax
-#' @export
-#'
-#' @examples
-#' compmodel <- "C1 ~ C2 + C3"
-#' satmodel <- compmodel_sat(compmodel)
-#'
-compmodel_sat <- function(compmodel) {
-  comp_names <- lavNames(compmodel)
-  # Create the text object
-  part1 <- paste(sapply(comp_names, function(x) paste(x, "~~", x)),
-    collapse = " \n "
-  ) # all vars
-  part2 <- paste(sapply(comp_names, function(x) paste(x, "~", 1)),
-    collapse = " \n "
-  ) # all means
-  pairs <- utils::combn(comp_names, 2, FUN = function(x) paste(x, collapse = " ~~ "))
-  part3 <- paste(pairs, collapse = " \n ") # all covs
-
-  compmodel_sat <- paste(c(part1, part2, part3), collapse = "\n")
-  return(compmodel_sat)
-}
-
 
 # fit saturated model for composites
 # rewrite this whole function file so that all PIM functions
@@ -389,8 +358,8 @@ compmodel_sat <- function(compmodel) {
 #' compmodel <- "C1 ~ C2 + C3"
 #' PIM_model_sat <- PIM_syntax_sat(C = C, compmodel = compmodel)
 #'
-PIM_syntax_sat <- function(C, compmodel) {
-  compmodel_sat <- compmodel_sat(compmodel)
+PIM_syntax_sat <- function(compmodel, C = NULL) {
+  compmodel_sat <- write_sat(model=compmodel)
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
   PIMulav <- PIM.uni.lav(C)

@@ -66,6 +66,7 @@ test_that("stage0 creates correct C matrix for averages", {
   expect_equal(as.numeric(C_avgs[2, 1:3]), c(0, 0, 0)) # C2 doesn't get Y1-Y3
 })
 
+
 test_that("stage0 validates which_col input", {
   model <- "C1 ~ C2"
   test_data <- data.frame(Y1 = rnorm(10), Y2 = rnorm(10))
@@ -79,12 +80,12 @@ test_that("stage0 validates which_col input", {
   # Test error when which_col has invalid values
   expect_error(
     stage0(test_data, model, which_col = c(1, 3), type = 1),
-    "must be integers between 1 and the number of variables in model"
+    "Values in 'which_col' must be integers between 1"
   )
 
   expect_error(
     stage0(test_data, model, which_col = c(0, 1), type = 1),
-    "must be integers between 1 and the number of variables in model"
+    "Values in 'which_col' must be integers between 1"
   )
 })
 
