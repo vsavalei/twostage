@@ -3,6 +3,7 @@ setClass("twostage",
   slots = list(twostage = "list")
 )
 
+# no need, make S3?
 setClass("SummaryTwostage",
   slots = list(
     TS_table = "data.frame",

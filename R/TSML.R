@@ -1,9 +1,9 @@
 # TSML functions #################
 
 #' @import lavaan
-#' @importFrom methods as
 #' @importFrom stats pnorm cov2cor
 #' @importFrom methods show
+#' @importFrom methods new
 #'
 # namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd <- function(cnames) {
@@ -431,27 +431,18 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
 
       Ohtt <- bread %*% t(meat) %*% ohd.reordered %*% meat %*% bread # ohm-hat-theta-tilde
 
-      S2 <- as(S2, "twostage") # change class to superclass twostage
-      S2@twostage <- list() # initialize the slot
+      S2 <- new("twostage", S2, twostage = list()) # change class to twostage
 
-      # new code:
       # update se_ts for free parameters
       # set TS SEs to initially equal naive SEs, to match nonfree values and length
       S2@twostage$se_ts <- S2@ParTable$se
       # set ses for free parameters to new TS SEs (TODO: double-check order?)
       S2@twostage$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt))
 
-      # comment out old se code, move to summary?
-      # set TS SEs to initially equal naive SEs, to match nonfree values and length
-      # S2@ParTable$se_ts <- S2@ParTable$se
-
-      # update se_ts for free parameters
-      # S2@ParTable$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt)) # TODO: check order?
-
       # Normal-theory residual-based test statistic
       et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
       ahd <- solve(ohd.reordered) / N
-      # executive decision April 15, 2025: Replaced N-1 with N!
+      # Using N instead of N-1 to be consistent with lavaan
       Tres <- (N) * t(et) %*% (ahd - (ahd %*% ddh) %*% solve(t(ddh) %*% ahd %*% ddh) %*% (t(ddh) %*% ahd)) %*% et
       pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
@@ -459,15 +450,6 @@ stage2 <- function(S1a.output, model, runcommand2 = NULL, lavaan_function = "sem
       S2@twostage$test <- Tres
       S2@twostage$df <- S2@Fit@test$standard$df
       S2@twostage$pval <- pval
-
-      # commenting out old test statistic code
-      # mauling lavaan -- is this safe?
-      # writing into S2@test was not safe (broke lavaan summary)
-      # blavaan directly overwrites @Fit@test slots
-      # S2@Fit@test$twostage$test <- Tres
-      # S2@Fit@test$twostage$df <- S2@Fit@test$standard$df
-      # S2@Fit@test$twostage$pval <- pval
-      #
     } # end if vcov
   } # end if
 
