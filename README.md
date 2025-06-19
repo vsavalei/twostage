@@ -64,7 +64,8 @@ Load it in the usual way:
 
 ``` r
 library(twostage) 
-#> This package is written by a newbie. You've been warned.
+#> This is twostage, early development version 0.0.0.9000.
+#> Please report any bugs or uninformative error messages.
 ```
 
 ## Example
@@ -80,7 +81,7 @@ defined via `lavaan` syntax as follows:
 
 ``` r
 #composite model
-mod <- '
+mod1 <- '
 F1 =~ 1*C1 + C2 + C3
 F2 =~ 1*C4 + C5 + C6
 F3 =~ 1*C7 + C8 + C9
@@ -105,7 +106,7 @@ To fit this composite model using the item-level methods in this
 package, the assignment of components to composites needs to be
 specified. To do this via an interactive interface, use:
 
-    C <- stage0(data=misdata_mcar20,model=mod)
+    C <- stage0(data=misdata_mcar20,model=mod1)
 
 This function will first ask the user whether the composites are sums or
 averages, and then it will ask the user to assign each component to one
@@ -138,7 +139,28 @@ in the package.
 To fit the composite model using TSML:
 
 ``` r
-fit_ts <- twostage(data = misdata_mcar20, model = mod, C = C)
+fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
+fit_ts
+#> Stage 1: lavaan 0.6-20.2318 ended normally after 39 iterations
+#> Stage 2: lavaan 0.6-20.2318 ended normally after 63 iterations
+#> 
+#>   Estimator                                         TS
+#>   Optimization method                           NLMINB
+#>   Number of model parameters                        30
+#> 
+#>   Number of observations                           200
+#> 
+#> Model Test User Model:
+#>                                                       
+#>   Residual-based TS statistic                     24.952
+#>   Degrees of freedom                                24
+#>   P-value (Chi-square)                           0.408
+```
+
+The summary (for now) is custom to `twostage` and does not look like
+`lavaan`:
+
+``` r
 summary(fit_ts)
 #> Summary of Two-Stage Analysis 
 #> ----------------------------
@@ -177,13 +199,12 @@ summary(fit_ts)
 #>   C9 ~1      0.032    0.146   0.219        0.826 0.154  0.208  0.835
 #> ----------------------------
 #> The residual-based TSML chi-square is 24.952 against 24 degrees of freedom, with a p-value of 0.408
-#to see the stage 2 summary output from lavaan with "naive" SEs:
-#selectMethod("summary", "lavaan")(fit_ts)
+#to see the unadjusted stage 2 summary from lavaan: #selectMethod("summary", "lavaan")(fit_ts)
 ```
 
-The output shows TSML parameter estimates from Stage 2, “naive” standard
-errors, and TSML standard errors, which are generally larger, reflecting
-greater uncertainty due to missing data in Stage 1. The (normal theory)
+It shows TSML parameter estimates from Stage 2, “naive” standard errors,
+and TSML standard errors, which are generally larger, reflecting greater
+uncertainty due to missing data in Stage 1. The (normal theory)
 residual-based test statistic is also printed. For technical details on
 the standard errors and the residual-based test statistic computation,
 see [Savalei and Bentler (
@@ -195,7 +216,7 @@ To fit the composite model using PIM, first create the `lavaan` PIM
 syntax:
 
 ``` r
-modpim <- PIM_syntax(compmodel = mod, C = C)
+modpim <- PIM_syntax(compmodel = mod1, C = C)
 #> The following exogeneous variables in the composites model will be  correlated by default:F1, F2, F3. 
 #> If you do not want this, modify the composite model syntax manually or set exog_cov=FALSE.
 ```
@@ -338,7 +359,7 @@ way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get
 corrected fit measures, use:
 
 ``` r
-fitm_pim <- fitMeasures_pim(C, compmodel=mod, fit_pim=fit_pim, 
+fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim, 
                 data = misdata_mcar20)
 ```
 
@@ -352,9 +373,11 @@ fitm_pim[indices]
 #>         srmr 
 #>        0.131
 
-lavaan::fitMeasures(fit_ts,indices)
-#> rmsea   cfi   tli  srmr 
-#> 0.044 0.913 0.869 0.047
+fitMeasures(fit_ts,indices)
+#>         rmsea           cfi           tli          srmr  chisq_TS_res 
+#>         0.044         0.913         0.869         0.047        24.952 
+#> pvalue_TS_res 
+#>         0.408
 ```
 
 When `estimator ="FIML"`, as in PIM, corrections are necessary to fit

@@ -189,11 +189,9 @@ test_that("stage2 handles edge cases", {
 })
 
 test_that("stage2 handles NULL stage1a input", {
-  # Test with NULL input (simulating stage1 failure)
   expect_error(
     stage2(NULL, "C1 ~ C2"),
-    # Should get an error when trying to access NULL elements
-    NA
+    "stage1a output is NULL"
   )
 })
 

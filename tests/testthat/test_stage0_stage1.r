@@ -113,9 +113,9 @@ test_that("stage1 returns correct structure with complete data", {
   # Run stage1
   result <- stage1(test_data)
 
-  # Check that result is a list with 4 elements
+  # Check that result is a list with 5 elements
   expect_type(result, "list")
-  expect_length(result, 4)
+  expect_length(result, 5)
 
   # Check that elements are correct types and dimensions
   shb <- result[[1]] # covariance matrix
@@ -158,7 +158,7 @@ test_that("stage1 handles missing data correctly", {
 
   # Should still return a valid result
   expect_type(result, "list")
-  expect_length(result, 4)
+  expect_length(result, 5)
 
   # Check that covariance matrix is positive definite
   shb <- result[[1]]
@@ -185,7 +185,7 @@ test_that("stage1 returns NULL when model fails to converge", {
   # Either returns valid result or NULL
   if (!is.null(result)) {
     expect_type(result, "list")
-    expect_length(result, 4)
+    expect_length(result, 5)
   } else {
     expect_null(result)
   }
@@ -199,7 +199,7 @@ test_that("stage1 passes additional arguments to lavaan", {
 
   # Should still return valid result
   expect_type(result, "list")
-  expect_length(result, 4)
+  expect_length(result, 5)
 
   # Check basic properties
   expect_true(is.matrix(result[[1]]))
@@ -219,7 +219,7 @@ test_that("stage1 handles edge cases", {
 
   # Should work with minimum data
   expect_type(result, "list")
-  expect_length(result, 4)
+  expect_length(result, 5)
   expect_equal(dim(result[[1]]), c(3, 3))
   expect_length(result[[2]], 3)
 })

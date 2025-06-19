@@ -126,12 +126,16 @@ To fit the composite model using TSML:
 
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
-summary(fit_ts)
-#to see the unadjusted stage 2 summary with "naive" SEs and chi-square:
-#selectMethod("summary", "lavaan")(fit_ts)
+fit_ts
 ```
 
-The output shows TSML parameter estimates from Stage 2, "naive" standard errors, and TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The (normal theory) residual-based test statistic is also printed. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
+The summary (for now) is custom to `twostage` and does not look like `lavaan`: 
+```{r}
+summary(fit_ts)
+#to see the unadjusted stage 2 summary from lavaan: #selectMethod("summary", "lavaan")(fit_ts)
+```
+
+It shows TSML parameter estimates from Stage 2, "naive" standard errors, and TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The (normal theory) residual-based test statistic is also printed. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
 
 To fit the composite model using PIM, first create the `lavaan` PIM syntax:
 
@@ -175,7 +179,7 @@ We can compare the PIM and TS fit indices:
 indices<-c("rmsea","rmsea.robust","cfi","cfi.robust","tli","tli.robust","srmr")
 fitm_pim[indices]
 
-lavaan::fitMeasures(fit_ts,indices)
+fitMeasures(fit_ts,indices)
 ```
 
 When `estimator ="FIML"`, as in PIM, corrections are necessary to fit indices in order for them to mimic their would-be complete data values [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445). Thus, we compare the RMSEA from `fit_ts` to `rmsea.robust` from `fit_pim`. Similarly, we should compare the CFI from `fit_ts` to the `cfi_robust` in ` fit_pim`, but this CFI is custom-computed using a different baseline model, so it is not clear if these corrections are right. No corrections are necessary to SRMR, so these can be compared directly. See the [Approximate_fit vignette](../doc/Approximate_fit.html) for more detail. Lastly, TSML indices require small-sample corrections (these are less consequential than PIM corrections, as they go away asymptotically), but these have not yet been implemented. 

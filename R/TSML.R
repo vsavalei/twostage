@@ -4,7 +4,10 @@
 #' @importFrom stats pnorm cov2cor
 #' @importFrom methods show
 #' @importFrom methods new
-#'
+#' @importFrom lavaan fitMeasures
+#' @importFrom methods callNextMethod
+#' @importFrom utils capture.output
+
 # namesohd (helper function): names rows/columns of the asy cov matrix from stage1
 namesohd <- function(cnames) {
   name_grid_cov <- t(outer(cnames, cnames, function(x, y) paste0(x, "~~", y)))
@@ -236,7 +239,14 @@ stage1 <- function(data, runcommand = NULL) {
       mhb <- fitted.values(S1)$mean # mu-hat-beta
       ohb <- vcov(S1) # asy cov matrix
       N <- S1@Data@nobs[[1]]
-      S1.output <- list(shb, mhb, ohb, N)
+
+      # Add convergence info to output
+      stage1_info <- list(
+        converged = lavInspect(S1, "converged"),
+        iterations = lavInspect(S1, "iterations")
+      )
+
+      S1.output <- list(shb, mhb, ohb, N, stage1_info)
     } else {
       S1.output <- NULL
     } # end if converged loop
@@ -294,7 +304,11 @@ stage1 <- function(data, runcommand = NULL) {
 #' out_s1a<-stage1a(out_s1,C)
 #'
 stage1a <- function(S1.output, C) {
-  #input validation
+  if (is.null(S1.output)) {
+    stop("stage1 output is NULL")
+  }
+
+  # input validation
   validate_C_matrix(C)
 
   if (is.null(S1.output)) {
@@ -304,6 +318,7 @@ stage1a <- function(S1.output, C) {
     mhb <- S1.output[[2]]
     ohb <- S1.output[[3]]
     N <- S1.output[[4]] # not used here, passed on to stage2
+    stage1_info <- S1.output[[5]] # not used here, passed on to stage2
 
     cnames <- rownames(C)
     k <- nrow(C) # number of composites
@@ -327,7 +342,7 @@ stage1a <- function(S1.output, C) {
     rownames(ohd) <- colnames(ohd) <- namesohd(cnames)
     # order in ohd: vectorized non-red Sigma, then mu
   } # end of big non-null else
-  S1a.output <- list(shd, mhd, ohd, N)
+  S1a.output <- list(shd, mhd, ohd, N, stage1_info)
   return(S1a.output)
 }
 
@@ -379,11 +394,14 @@ stage1a <- function(S1.output, C) {
 #'
 stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
                    lavaan_function = c("sem", "lavaan", "cfa", "growth", "sam")) {
+  if (is.null(S1a.output)) {
+    stop("stage1a output is NULL")
+  }
 
-   #Validate compmodel
-   validate_compmodel(compmodel)
+  # Validate compmodel
+  validate_compmodel(compmodel)
 
-   # Validate runcommand2 argument
+  # Validate runcommand2 argument
   if (!is.null(runcommand2)) {
     if (!is.character(runcommand2) || length(runcommand2) != 1) {
       stop("'runcommand2' must be a single character string or NULL", call. = FALSE)
@@ -479,6 +497,9 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
     } # end if vcov
   } # end if
 
+  # conv and iter info from Stage 1, for show:
+  stage1_info <- S1a.output[[5]]
+  S2@twostage$stage1_info <- stage1_info
 
   return(S2)
 }
@@ -572,7 +593,6 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
 
 twostage <- function(data, compmodel, C = NULL, which_col = NULL,
                      runcommand = NULL, runcommand2 = NULL) {
-
   # stage 0, if needed: relating components to composite via user input
   if (is.null(C)) {
     C <- if (is.null(which_col)) {
