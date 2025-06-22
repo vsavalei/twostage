@@ -1,10 +1,9 @@
 ## fit measures for PIM
-
 # simplification of lav_fit_srmr_mplus, available in lav_fit_srmr.R
 # modified to have dependence on two lavaan objects and the compmodel
-# the harmelss dependence on G partially left, for (hopefully) a future generalization
+# the dependence on G partially left, for (hopefully) a future generalization
 
-#' Title
+#' SRMR for PIM
 #'
 #' @param lavobject  Estimated PIM (H0)
 #' @param lavobject_sat Estimated saturated PIM (H1)
@@ -28,7 +27,7 @@
 #' colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 #' compmodel <- "C1 ~ C2 + C3"
 #' PIM_model <- PIM_syntax(compmodel = compmodel, C = C)
-#' PIM_model_sat <- PIM_syntax_sat(compmodel = compmodel,C = C)
+#' PIM_model_sat <- PIM_syntax_sat(compmodel = compmodel, C = C)
 #' fit_pim <- lavaan(PIM_model, data = misdata_1to7)
 #' fit_pim_sat <- lavaan(PIM_model_sat, data = misdata_1to7)
 #' srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)
@@ -49,9 +48,6 @@ srmr_mplus_pim <- function(lavobject, lavobject_sat, compmodel) {
     # comp data
     # S <- lavobject@SampleStats@cov[[g]] #but I need names!
     # M <- lavobject@SampleStats@mean[[g]]
-
-    # Is lavNames(lavobject) guaranteed to retrieve them in the right order?
-    # Because I need to a subset of them, this is really important.
     # Relying on lavInspect for now (lost generalization to MG from here on)
 
     # saturated H1 model, based on lavobject_sat
@@ -125,8 +121,7 @@ srmr_mplus_pim <- function(lavobject, lavobject_sat, compmodel) {
 #'   components
 #' @param compmodel The lavaan model for the composites
 #' @param fit_pim A lavaan object for the fitted PIM model
-#' @param data Data file for the components (items)
-#' @param exog_cov Should exogenous variables in the baseline model for composites be correlated?
+#' @param exog_cov_base Should exogenous variables in the baseline composites model be correlated?
 #'
 #' @returns a fitMeasures vector of lavaan, truncated to include only indices that can be interpreted (are already correct or have been adjusted)
 #' @export
@@ -162,22 +157,28 @@ srmr_mplus_pim <- function(lavobject, lavobject_sat, compmodel) {
 #' pim_mod1 <- PIM_syntax(mod1,C)
 #' fit_pim <- lavaan::lavaan(pim_mod1, data=misdata1)
 #'
-#' fitMeasures_pim(C = C, compmodel = mod1, fit_pim = fit_pim,
-#' data = misdata1, exog_cov = TRUE)
+#' fitMeasures_pim(C = C, compmodel = mod1, fit_pim = fit_pim)
 #'
-fitMeasures_pim <- function(C, compmodel, fit_pim, data = data, exog_cov = TRUE) {
+fitMeasures_pim <- function(C, compmodel, fit_pim, exog_cov_base = TRUE) {
   # step1: create baseline model syntax
   compmodel_base <- PIM_syntax_base(
     C = C, compmodel = compmodel,
-    exog_cov = exog_cov
+    exog_cov = exog_cov_base
   )
-  # step 2: fit the baseline model
+
+  # step 2: Extract data from fitted object
+  data <- lavInspect(fit_pim, "data")
+
+  # step 3: fit the baseline model
   fit_pim_base <- lavaan(compmodel_base, data = data)
-  # step 3: get custom fit measures from lavaan (could take awhile)
+
+  # step 4: get custom fit measures from lavaan (could take awhile)
   fits_pim <- fitMeasures(fit_pim, baseline.model = fit_pim_base)
-  # step 4: create H1 model syntax
+
+  # step 54: create H1 model syntax
   compmodel_sat <- suppressMessages(PIM_syntax_sat(C = C, compmodel = compmodel))
-  # step 5: fit the saturated (H1) model:
+
+  # step 6: fit the saturated (H1) model:
   fit_pim_sat <- lavaan::lavaan(compmodel_sat, data = data)
   srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)
   fits_pim["srmr_mplus"] <- srmr$srmr_mplus

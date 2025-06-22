@@ -74,27 +74,38 @@ PIM.uni <- function(C) {
 PIM.uni.lav <- function(C) {
   PIM.uni.lav <- NULL
   varnames <- rownames(C) # model var names, broader than cnames
-  # here, we do this for all rows of C, including obv variables that will be treated as such
-  # C1 <- C[rownames(C) %in% cnames, ] #submatrix with rows that will be set up as "latent" composites
+
   for (j in seq_along(varnames)) {
     varnamesj <- colnames(C)[C[j, ] == 1]
     compj <- rownames(C)[j]
 
     if (length(varnamesj) == 1) {
-      varnamesjj <- varnamesj
+      # Check if this is an observed variable (composite name = component name)
+      if (compj %in% colnames(C)) {
+        # Observed variable: add free parameters
+        varnamesjj <- varnamesj
+      } else {
+        # True single-component composite: no additional parameters
+        varnamesjj <- character(0)
+      }
     } else {
       varnamesjj <- varnamesj[-1]
     }
 
-    # freely estimated variance for each indicator but the first
-    varsj <- paste(paste(varnamesjj, "~~", varnamesjj), collapse = "\n")
-    # freely estimated intercept for each indicator but the first
-    intsj <- paste(paste(varnamesjj, "~", 1), collapse = " \n ")
+    # Only create syntax if there are variables to process
+    if (length(varnamesjj) > 0) {
+      # freely estimated variance for each indicator but the first
+      varsj <- paste(paste(varnamesjj, "~~", varnamesjj), collapse = "\n")
+      # freely estimated intercept for each indicator but the first
+      intsj <- paste(paste(varnamesjj, "~", 1), collapse = " \n ")
 
-    PIM.uni.lav <- paste(c(PIM.uni.lav, varsj, intsj), collapse = "\n")
+      PIM.uni.lav <- paste(c(PIM.uni.lav, varsj, intsj), collapse = "\n")
+    }
   }
   return(PIM.uni.lav)
 }
+
+
 
 PIM.multi <- function(C) {
   allbut1 <- NULL # a vector
@@ -128,9 +139,9 @@ PIM.multi <- function(C) {
 
 ## Explicitly correlates exogenous variables in a model for composites
 ## This includes observed and latent variables
-## In the PIM.uni.lavaan, we already free variances of composites, so this
+## In the PIM.uni.lav, we already free variances of composites, so this
 ## will double up the syntax if applied indiscriminately.
-## In the PIM.uni.lavaan, however, we do not have info about the model and
+## In the PIM.uni.lav, however, we do not have info about the model and
 ## names of true latent vars. Maybe combine these two functions later.
 ## Problem with message4: if user adds orthogonal covs to compmodel, it will still
 ## get printed. However, that message is no longer accurate, because user specification
@@ -212,12 +223,11 @@ comp_exog_covs_syntax <- function(compmodel) {
 #'
 
 PIM_syntax <- function(compmodel, C = NULL, exog_cov = TRUE) {
-
   if (is.null(C)) {
     stop("No C matrix provided; use stage0 function to create it from data and compmodel.")
   }
 
-  #validate inputs
+  # validate inputs
   validate_C_matrix(C)
   validate_compmodel(compmodel)
 
@@ -307,11 +317,10 @@ compmodel_base <- function(compmodel, exog_cov = TRUE) {
 #' rownames(C) <- c("C1", "C2", "C3")
 #' colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 #' compmodel <- "C1 ~ C2 + C3"
-#' PIM_model_base <- PIM_syntax_base(compmodel = compmodel,C =C)
+#' PIM_model_base <- PIM_syntax_base(compmodel = compmodel, C = C)
 #'
-PIM_syntax_base <- function(compmodel, C=NULL, exog_cov = TRUE) {
-
-  #validate inputs
+PIM_syntax_base <- function(compmodel, C = NULL, exog_cov = TRUE) {
+  # validate inputs
   validate_C_matrix(C)
   validate_compmodel(compmodel)
 
@@ -359,7 +368,7 @@ PIM_syntax_base <- function(compmodel, C=NULL, exog_cov = TRUE) {
 #' PIM_model_sat <- PIM_syntax_sat(C = C, compmodel = compmodel)
 #'
 PIM_syntax_sat <- function(compmodel, C = NULL) {
-  compmodel_sat <- write_sat(model=compmodel)
+  compmodel_sat <- write_sat(model = compmodel)
   PIMu <- PIM.uni(C)
   PIMm <- PIM.multi(C)
   PIMulav <- PIM.uni.lav(C)

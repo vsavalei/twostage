@@ -4,7 +4,7 @@
 \alias{fitMeasures_pim}
 \title{PIM fit measures based on correct baseline and saturated models}
 \usage{
-fitMeasures_pim(C, compmodel, fit_pim, data = data, exog_cov = TRUE)
+fitMeasures_pim(C, compmodel, fit_pim, exog_cov_base = TRUE)
 }
 \arguments{
 \item{C}{A matrix of 0s and 1s, where rows are composites and columns are
@@ -14,9 +14,7 @@ components}
 
 \item{fit_pim}{A lavaan object for the fitted PIM model}
 
-\item{data}{Data file for the components (items)}
-
-\item{exog_cov}{Should exogenous variables in the baseline model for composites be correlated?}
+\item{exog_cov_base}{Should exogenous variables in the baseline composites model be correlated?}
 }
 \value{
 a fitMeasures vector of lavaan, truncated to include only indices that can be interpreted (are already correct or have been adjusted)
@@ -56,7 +54,6 @@ C[6,16:18]<-1
 pim_mod1 <- PIM_syntax(mod1,C)
 fit_pim <- lavaan::lavaan(pim_mod1, data=misdata1)
 
-fitMeasures_pim(C = C, compmodel = mod1, fit_pim = fit_pim,
-data = misdata1, exog_cov = TRUE)
+fitMeasures_pim(C = C, compmodel = mod1, fit_pim = fit_pim)
 
 }

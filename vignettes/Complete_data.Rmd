@@ -167,7 +167,7 @@ round(cbind(afi_comp,afi_ts_naive,afi_pim),3)
 Indices depending on the baseline model (e.g., CFI) and those depending on the residuals (e.g., SRMR) are different for PIM, and the default printed values are not optimal. Instead, CFI should be computed using a different baseline model for a better evaluation of the fit of just the composite model in the PIM setup. SRMR should be computed comparing only the residuals for the variables in the composite model. Both of these modifications have been proposed in [Rose, Wagner, Mayer, and Nagengast (2019)](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). See [Approximate_fit vignette](../doc/Approximate_fit.html) for more detail. Here, we just show how to obtain these adjusted CFI and SRMR values: 
 
 ```{r afi2}
-fitm_pim <- fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
+fitm_pim <- fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim)
 fitm_pim[c("cfi","srmr")]
 
 afi_comp <- lavaan::fitmeasures(fit_comp)[c("cfi","srmr")]

@@ -31,6 +31,6 @@ C[3, 7] <- 1
 rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
-PIM_model_base <- PIM_syntax_base(compmodel = compmodel,C =C)
+PIM_model_base <- PIM_syntax_base(compmodel = compmodel, C = C)
 
 }

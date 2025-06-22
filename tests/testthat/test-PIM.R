@@ -28,7 +28,7 @@ test_that("PIM_syntax generates valid lavaan syntax", {
   setup <- setup_test_data()
 
   # Test basic syntax generation
-  pim_syntax <- PIM_syntax(setup$compmodel,setup$C)
+  pim_syntax <- PIM_syntax(setup$compmodel, setup$C)
 
   # Should return a character string
   expect_type(pim_syntax, "character")
@@ -50,8 +50,9 @@ test_that("PIM_syntax handles exog_cov parameter correctly", {
 
   # Test with exogenous correlations (default)
   expect_message(
-    pim_syntax_with_cov <- PIM_syntax(setup$compmodel,setup$C,
-    exog_cov = TRUE),
+    pim_syntax_with_cov <- PIM_syntax(setup$compmodel, setup$C,
+      exog_cov = TRUE
+    ),
     "exogeneous variables.*will be.*correlated"
   )
 
@@ -68,14 +69,14 @@ test_that("PIM_syntax handles exog_cov parameter correctly", {
 test_that("PIM_syntax_base creates proper baseline model", {
   setup <- setup_test_data()
 
-  baseline_syntax <- PIM_syntax_base(setup$compmodel,setup$C)
+  baseline_syntax <- PIM_syntax_base(setup$compmodel, setup$C)
 
   expect_type(baseline_syntax, "character")
   expect_true(grepl("PIM setup", baseline_syntax))
   expect_true(grepl("Composite Model", baseline_syntax))
 
   # Should be different from regular PIM syntax
-  regular_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
+  regular_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
   expect_false(identical(baseline_syntax, regular_syntax))
 })
 
@@ -83,14 +84,14 @@ test_that("PIM_syntax_base creates proper baseline model", {
 test_that("PIM_syntax_sat creates saturated model", {
   setup <- setup_test_data()
 
-  saturated_syntax <- PIM_syntax_sat(setup$compmodel,setup$C)
+  saturated_syntax <- PIM_syntax_sat(setup$compmodel, setup$C)
 
   expect_type(saturated_syntax, "character")
   expect_true(grepl("~~", saturated_syntax)) # Should have covariances
 
   # Should be different from regular and baseline syntax
-  regular_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
-  baseline_syntax <- PIM_syntax_base(setup$compmodel,setup$C)
+  regular_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
+  baseline_syntax <- PIM_syntax_base(setup$compmodel, setup$C)
 
   expect_false(identical(saturated_syntax, regular_syntax))
   expect_false(identical(saturated_syntax, baseline_syntax))
@@ -116,7 +117,7 @@ test_that("PIM models can be fit and converge", {
   setup <- setup_test_data()
 
   # Generate and fit PIM model
-  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
+  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
   fit_pim <- lavaan::lavaan(pim_syntax, data = setup$data)
 
   # Should converge
@@ -136,8 +137,8 @@ test_that("PIM baseline model fits and has different fit from main model", {
   setup <- setup_test_data()
 
   # Fit main model and baseline model
-  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
-  baseline_syntax <- PIM_syntax_base(setup$compmodel,setup$C)
+  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
+  baseline_syntax <- PIM_syntax_base(setup$compmodel, setup$C)
 
   fit_pim <- lavaan::lavaan(pim_syntax, data = setup$data)
   fit_baseline <- lavaan::lavaan(baseline_syntax, data = setup$data)
@@ -162,7 +163,7 @@ test_that("PIM functions handle invalid inputs gracefully", {
 
   # Should still generate syntax (function doesn't validate names)
   expect_no_error(
-    wrong_syntax <- suppressMessages(PIM_syntax(setup$compmodel,C_wrong))
+    wrong_syntax <- suppressMessages(PIM_syntax(setup$compmodel, C_wrong))
   )
 
   # But lavaan should have issues fitting it - check for variable not found error
@@ -187,12 +188,12 @@ test_that("PIM functions work with single-indicator composites", {
 
   # Should handle single indicators
   expect_no_error(
-    single_syntax <- suppressMessages(suppressWarnings(PIM_syntax(single_model,C_single)))
+    single_syntax <- suppressMessages(suppressWarnings(PIM_syntax(single_model, C_single)))
   )
 
   # Should generate a warning about single indicators
   expect_warning(
-    single_syntax1 <- suppressMessages(PIM_syntax(single_model,C_single)),
+    single_syntax1 <- suppressMessages(PIM_syntax(single_model, C_single)),
     "No composite variables detected"
   )
 
@@ -207,8 +208,8 @@ test_that("srmr_mplus_pim calculates SRMR correctly", {
   setup <- setup_test_data()
 
   # Fit main and saturated models
-  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
-  sat_syntax <- PIM_syntax_sat(setup$compmodel,setup$C)
+  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
+  sat_syntax <- PIM_syntax_sat(setup$compmodel, setup$C)
 
   fit_pim <- lavaan::lavaan(pim_syntax, data = setup$data)
   fit_sat <- lavaan::lavaan(sat_syntax, data = setup$data)
@@ -233,15 +234,14 @@ test_that("fitMeasures_pim provides comprehensive fit measures", {
   setup <- setup_test_data()
 
   # Fit PIM model
-  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
+  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
   fit_pim <- lavaan::lavaan(pim_syntax, data = setup$data)
 
   # Get fit measures
   fit_measures <- fitMeasures_pim(
     C = setup$C,
     compmodel = setup$compmodel,
-    fit_pim = fit_pim,
-    data = setup$data
+    fit_pim = fit_pim
   )
 
   # Should return named numeric vector
@@ -269,7 +269,7 @@ test_that("PIM functions work with missing data", {
   data_missing[15:20, 4] <- NA
 
   # Should still work with FIML
-  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel,setup$C))
+  pim_syntax <- suppressMessages(PIM_syntax(setup$compmodel, setup$C))
 
   expect_no_error(
     fit_missing <- lavaan::lavaan(pim_syntax, data = data_missing, missing = "FIML")
@@ -287,7 +287,7 @@ test_that("df and fmin of a saturated PIM model are zero (original test)", {
   rownames(C) <- c("C1", "C2", "C3")
   colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
   compmodel <- "C1 ~ C2 + C3"
-  model1 <- suppressMessages(PIM_syntax(compmodel,C))
+  model1 <- suppressMessages(PIM_syntax(compmodel, C))
   data1 <- misdata_mcar20[, c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")]
   out <- lavaan::sem(model1, data = data1)
   df <- as.numeric(lavaan::fitmeasures(out)["df"])

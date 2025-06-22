@@ -2,7 +2,7 @@
 % Please edit documentation in R/fitmeasures_PIM.R
 \name{srmr_mplus_pim}
 \alias{srmr_mplus_pim}
-\title{Title}
+\title{SRMR for PIM}
 \usage{
 srmr_mplus_pim(lavobject, lavobject_sat, compmodel)
 }
@@ -17,7 +17,7 @@ srmr_mplus_pim(lavobject, lavobject_sat, compmodel)
 A list of SRMR values, without means and with means
 }
 \description{
-Title
+SRMR for PIM
 }
 \examples{
 # make a non-boring example, here H0 is saturated
@@ -34,7 +34,7 @@ rownames(C) <- c("C1", "C2", "C3")
 colnames(C) <- c("Y1", "Y2", "Y3", "Y4", "Y5", "Y6", "Y7")
 compmodel <- "C1 ~ C2 + C3"
 PIM_model <- PIM_syntax(compmodel = compmodel, C = C)
-PIM_model_sat <- PIM_syntax_sat(compmodel = compmodel,C = C)
+PIM_model_sat <- PIM_syntax_sat(compmodel = compmodel, C = C)
 fit_pim <- lavaan(PIM_model, data = misdata_1to7)
 fit_pim_sat <- lavaan(PIM_model_sat, data = misdata_1to7)
 srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)

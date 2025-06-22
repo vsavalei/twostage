@@ -25,7 +25,7 @@ knitr::opts_chunk$set(
 
 There are two separate issues with default approximate fit indices printed for TSML and PIM. The more major issue, which is only applicable to PIM, is that incremental fit indices (those depending on the baseline or null model, such as CFI and TLI), as well as indices depending on model residuals, such as SRMR, are based on the model for the raw items, not for the composites. They will be based on different variables than those from TSML or from a model fit directly to composites (if they had been available, e.g., with complete data), and they are not comparable across these methods.
 
-We assume that the researcher's interest is in the assessment of the composite model fit. That is, if the data had been complete, the researcher would have just computed the composites from the data and fit the model directly. Therefore, fit indices based on the raw items are not what the researcher wants to know. For example, the default CFI printed when fitting the PIM is evaluating the fit of PIM against the default baseline model in `lavaan`, which will un-correlate all items. A better null model would un-correlate the variables in the composite model, while leaving the composite construction and item structure intact (which involves a lot of correlations). This will match what the baseline model is when the composite model is fit directly to the composites with complete data. Similarly, the default SRMR printed with PIM is comparing observed correlations among the items to model-implied correlations among the items. To match what would happen with complete data when the composite model is fit directly, we would want to compare the observed correlations among *composites* (and any other observed variables in the composite model) to the model-implied correlations among composites (and any other observed variables). The correct SRMR for PIM will therefore compare saturated and structured estimates of the relationships among variables in the composite, while keeping the PIM item structure intact in both models.
+We assume that the researcher's interest is in the assessment of the composite model fit. That is, if the data had been complete, the researcher would have just computed the composites from the data and fit the model directly. Therefore, fit indices based on the raw items are not what the researcher wants to know. For example, the default CFI printed when fitting the PIM is evaluating the fit of PIM against the default baseline model in `lavaan`, which will un-correlate all items. A better null model would un-correlate the variables in the composite model, while leaving the composite construction and item structure intact (which involves a lot of correlations). This will match what the baseline model is when the composite model is fit directly to the composites with complete data. Similarly, the default SRMR printed with PIM is comparing observed correlations among the items to model-implied correlations among the items. To match what would happen with complete data when the composite model is fit directly, we would want to compare the observed correlations among *composites* (and any other observed variables in the composite model) to the model-implied correlations among composites (and any other observed variables). The correct SRMR for PIM will therefore compare saturated and structured estimates of the relationships among variables in the composite, while keeping the PIM item structure intact in both models. These correction ideas were also proposed in the original article on PIM by Rose et al. (2019). Here we show how to obtain them. 
 
 ## Example 1. Complete Data
 
@@ -59,7 +59,7 @@ round(fitm_comp,3)
 
 We want to obtain fit indices that are identical or highly similar to these values, but from PIM and TSML runs on the raw items. The chi-square difference test between the proposed and the baseline model should also be replicated.
 
-We omit showing the creation of the construction of the `C` matrix (see complete data vignette or source file for this document):
+We omit showing the creation of the construction of the `C` matrix (see complete data vignette or source file for this document).
 
 ```{r tpbdatac, include=FALSE, echo=FALSE, warning=FALSE}
 cnames<-lavaan::lavNames(tpbmod)
@@ -169,14 +169,14 @@ Both SRMR without the means and one with the means match the corresponding value
 
 As shown in the complete data vignette, the TSML fit indices will already match the complete data fit indices because all output from Stage 2 is already based on just the variables in the composite model.
 
-Finally, a very awkward initial function will obtain all fit measures for PIM at once, only printing those that have been adjusted or that do not need an adjustment: 
+Finally, the following function will obtain all fit measures for PIM at once, only printing those that have been adjusted or that do not need an adjustment: 
 
 ```{r allfit}
-fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, data = tpbdata, exog_cov = TRUE)
+fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, exog_cov_base = TRUE)
 ```
+Better function with fewer arguments will be written later. 
 
-
-## Example 2. Inomplete Data
+## Example 2. Incomplete Data
 
 With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount of model misfit, relative to what it would have been had the data been complete [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). As PIM is a model that uses FIML in a clever way to treat item-level missing data, the PIM RMSEA and CFI/TLI (computed using the corrected baseline model, as shown above) will be biased downward. However, *lavaan* now automatically adjusts for this bias and prints robust versions of CFI/TLI/RMSEA with FIML.
 
@@ -261,9 +261,9 @@ As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with 
 
 ## Example 2. Incomplete Data
 
-When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> These small sample adjustments basically amount to subtracting more than just df to get the noncentrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. **I need to work this out**
-
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
-#summary(fit_ts)
+fitMeasures(fit_ts)
 ```
+When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> These small sample adjustments basically amount to subtracting more than just df to get the noncentrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. (This work is in progress).
+
