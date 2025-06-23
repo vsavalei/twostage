@@ -494,12 +494,13 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
       S2@twostage$test <- Tres
       S2@twostage$df <- S2@Fit@test$standard$df
       S2@twostage$pval <- pval
+
+      # conv and iter info from Stage 1, for show:
+      stage1_info <- S1a.output[[5]]
+      S2@twostage$stage1_info <- stage1_info
     } # end if vcov
   } # end if
 
-  # conv and iter info from Stage 1, for show:
-  stage1_info <- S1a.output[[5]]
-  S2@twostage$stage1_info <- stage1_info
 
   return(S2)
 }
