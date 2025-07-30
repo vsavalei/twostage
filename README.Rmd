@@ -127,15 +127,10 @@ To fit the composite model using TSML:
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
 fit_ts
+#summary(fit_ts)
 ```
-
-The summary (for now) is custom to `twostage` and does not look like `lavaan`: 
-```{r}
-summary(fit_ts)
-#to see the unadjusted stage 2 summary from lavaan: #selectMethod("summary", "lavaan")(fit_ts)
-```
-
-It shows TSML parameter estimates from Stage 2, "naive" standard errors, and TSML standard errors, which are generally larger, reflecting greater uncertainty due to missing data in Stage 1. The (normal theory) residual-based test statistic is also printed. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
+ 
+The resulting is a `lavaan` object from Stage 2, but with TS standard errors. These standard errors are generally larger than naive standard errors would have been, reflecting greater uncertainty due to missing data in Stage 1. In this example, these standard errors still assume normality. For normal data, the residual-based test statistic is recommended, as it is chi-square distributed. It is automatically included, as shown above. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
 
 To fit the composite model using PIM, first create the `lavaan` PIM syntax:
 
@@ -170,9 +165,9 @@ The TS and PIM estimates and standard errors are quite similar. Technically, the
 Approximate fit assessment of PIM models requires special setup, as discussed in [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). The gist of the issue is that we want to assess the fit of the composite model, not the fit of the entire model with items added in a saturated way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get corrected fit measures, use: 
 
 ```{r allfit}
-fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim, 
-                data = misdata_mcar20)
+fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim)
 ```
+
 We can compare the PIM and TS fit indices:
 
 ```{r allfitcomp}

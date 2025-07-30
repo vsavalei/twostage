@@ -22,10 +22,15 @@ Stage1 of TSML: fits a saturated model to the items with missing data
 }
 \examples{
 
+# default estimator is FIML:
 out_s1 <- stage1(misdata_mcar20)
 
-# as tpbdata has no missing data, running stage1 with expected information
-# will result in TSML matching regular ML
+# requesting robust (to nonnormality) estimator:
+out_s1 <- stage1(misdata_mcar20, runcommand = 'estimator="MLR"')
+
+# complete data example:
+# running stage1 with expected information
+# will result in TSML matching regular ML run on composites
 out_s1 <- stage1(tpbdata, runcommand = "information='expected'")
 
 }

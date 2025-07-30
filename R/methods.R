@@ -1,3 +1,6 @@
+## JULY 2025: The twostage class is no longer used (for now)
+## File could be deleted (eventually)
+
 # In this file:
 # S4 methods: show, summary (creates an object of class SummaryTwoStage),
 # #           fitMeasures (lavaan generic) for twostage objects
@@ -236,7 +239,6 @@ parameterestimates_ts <- parameterEstimates_ts
 
 
 #--------NOT USED ---------------#
-
 
 # an idea is to create subclass for PIM for fitMeasures and parameterestimates?
 # For now, stick with ordinary function

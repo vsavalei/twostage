@@ -25,7 +25,7 @@ are 1 for unit-weighted and 1/pj for average-weighted, where pj is the number of
 composite.
 }
 \description{
-This is the prep stage of TSML (can also be used for PIM). This function uses
+Prep stage for composite-based methods (TS and PIM). This function uses
 p column names of data and k composite variable names from the lavaan
 model to create a k x p matrix C, with nonzero elements representing the assignment
 of components to composites. Which elements are nonzero is determined by presenting

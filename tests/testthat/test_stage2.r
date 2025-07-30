@@ -1,5 +1,90 @@
 # tests for stage2
-# Test stage2 function comprehensively
+test_that("stage2 returns correct residual-based test statistic for mod1 example", {
+  # Setup from the example
+  library(lavaan)
+  misdata1 <- misdata_mcar20[, 1:18]
+
+  mod1 <- "
+  F1 =~ C1 + C2 + C3
+  F2 =~ C4 + C5 + C6
+  F2 ~ F1
+  F2 ~~ F2
+  F1 ~~ F1"
+
+  cnames <- lavNames(mod1)
+  C <- matrix(0, nrow = length(cnames), ncol = length(colnames(misdata1)))
+  colnames(C) <- colnames(misdata1)
+  rownames(C) <- cnames
+  C[1, 1:3] <- 1
+  C[2, 4:6] <- 1
+  C[3, 7:9] <- 1
+  C[4, 10:12] <- 1
+  C[5, 13:15] <- 1
+  C[6, 16:18] <- 1
+
+  out_s1 <- stage1(misdata1)
+  out_s1a <- stage1a(out_s1, C)
+  out_s2 <- stage2(out_s1a,
+    compmodel = mod1
+  )
+
+  # testing twostage function, should be equivalent to out_s2
+  out_ts <- twostage(misdata1, mod1, C)
+
+  # testing twostage function with robust stage1
+  out_ts_robust <- twostage(misdata1, mod1, C, runcommand = 'estimator="MLR"')
+
+
+  # Test standard, SB, and residual-based TSML statistics
+  # Test standard test statistic
+  expect_equal(out_s2@Fit@test$standard$stat, 1.380, tolerance = 0.001)
+  expect_equal(out_s2@Fit@test$standard$df, 8)
+  expect_equal(out_s2@Fit@test$standard$stat, out_ts@Fit@test$standard$stat, tolerance = 0.001)
+
+  # Test scaled (Satorra-Bentler) test statistic
+  expect_equal(out_s2@Fit@test$satorra.bentler$stat, 1.072, tolerance = 0.001)
+  expect_equal(out_s2@Fit@test$satorra.bentler$stat, out_ts@Fit@test$satorra.bentler$stat, tolerance = 0.001)
+
+  # Test residual-based (ADF) test statistic
+  expect_equal(out_s2@Fit@test$browne.residual.adf$stat, 1.047, tolerance = 0.001)
+  expect_equal(out_s2@Fit@test$browne.residual.adf$stat, out_ts@Fit@test$browne.residual.adf$stat, tolerance = 0.001)
+
+  # Test TS SEs and naive TS estimates
+  expected_est <- c(1.00000000, 1.23206722, 1.43365721, 1.00000000, 1.15715256, 1.48240400, 0.49919443, 0.43463813, 0.59570238, 3.09184995, 3.39591882, 2.85353353, 3.70487064, 3.53297160, 2.76047596, 0.25669279, -0.13344278, 0.10067814, 0.09150368, 0.05108941, -0.05121546, 0.00000000, 0.00000000)
+
+  expected_se_ts <- c(0.0000000, 0.4626183, 0.5516027, 0.0000000, 0.4988818, 0.6641133, 0.2658475, 0.3010257, 0.3274151, 0.4166768, 0.5113200, 0.5694187, 0.5116147, 0.5456375, 0.6383874, 0.1408314, 0.1505088, 0.1477008, 0.1559816, 0.1575152, 0.1529460, 0.0000000, 0.0000000)
+
+  expected_se_ts_robust <- c(0.0000000, 0.4262963, 0.5288779, 0.0000000, 0.4733794, 0.6098921, 0.2617311, 0.3156603, 0.2953644, 0.4036646, 0.4813129, 0.5950842, 0.4349656, 0.5937066, 0.5611496, 0.1408862, 0.1506837, 0.1479144, 0.1541025, 0.1543490, 0.1515935, 0.0000000, 0.0000000)
+
+
+  expect_equal(parameterestimates(out_s2)$se, expected_se_ts,
+    tolerance = 0.00001
+  )
+  expect_equal(parameterestimates(out_s2)$est, expected_est,
+    tolerance = 0.0001
+  )
+
+  expect_equal(parameterestimates(out_s2)$se,
+    parameterestimates(out_ts)$se,
+    tolerance = 0.00001
+  )
+
+  # robust should not influence estimates
+  expect_equal(parameterestimates(out_ts)$est,
+    parameterestimates(out_ts_robust)$est,
+    tolerance = 0.00001
+  )
+
+  # robust ses
+  expect_equal(expected_se_ts_robust,
+    parameterestimates(out_ts_robust)$se,
+    tolerance = 0.00001
+  )
+})
+
+
+
+# Claude written (superficial, but keep)
 test_that("stage2 validates runcommand2 argument correctly", {
   # Create test data for stage2 input
   test_data <- misdata_mcar20[1:30, 1:6]
@@ -97,6 +182,7 @@ test_that("stage2 errors on conflicting lavaan arguments", {
   )
 })
 
+# no longer as relevant
 test_that("stage2 returns correct output structure", {
   # Create test data
   test_data <- misdata_mcar20[1:50, 1:6]
@@ -113,8 +199,7 @@ test_that("stage2 returns correct output structure", {
 
   result <- stage2(s1a_result, model)
 
-  # Should return twostage object
-  expect_s4_class(result, "twostage")
+  # expect_s4_class(result, "twostage")
   expect_s4_class(result, "lavaan")
 
   # Should have converged
@@ -126,12 +211,12 @@ test_that("stage2 returns correct output structure", {
   expect_true("est" %in% names(params))
 
   # Should have TSML standard errors
-  expect_true("se_ts" %in% names(result@twostage))
+  # expect_true("se_ts" %in% names(result@twostage))
 
   # Should have TSML test statistic
-  expect_true(!is.null(result@twostage$test))
-  expect_true(!is.null(result@twostage$df))
-  expect_true(!is.null(result@twostage$pval))
+  # expect_true(!is.null(result@twostage$test))
+  # expect_true(!is.null(result@twostage$df))
+  # expect_true(!is.null(result@twostage$pval))
 })
 
 test_that("stage2 handles different model types", {
@@ -193,35 +278,4 @@ test_that("stage2 handles NULL stage1a input", {
     stage2(NULL, "C1 ~ C2"),
     "stage1a output is NULL"
   )
-})
-
-test_that("stage2 computes TSML statistics correctly", {
-  # Use complete data for comparison
-  test_data <- tpbdata[1:50, 1:6]
-  s1_result <- stage1(test_data, runcommand = "information='expected'")
-
-  C <- matrix(0, nrow = 2, ncol = 6)
-  C[1, 1:3] <- 1
-  C[2, 4:6] <- 1
-  rownames(C) <- c("C1", "C2")
-  colnames(C) <- colnames(test_data)
-
-  s1a_result <- stage1a(s1_result, C)
-  model <- "C1 ~ C2"
-
-  result <- stage2(s1a_result, model, runcommand2 = "sample.cov.rescale=FALSE")
-
-  # TSML chi-square should be non-negative
-  expect_true(result@twostage$test >= 0)
-
-  # p-value should be between 0 and 1
-  expect_true(result@twostage$pval >= 0)
-  expect_true(result@twostage$pval <= 1)
-
-  # Should have same df as regular lavaan fit
-  expect_true(result@twostage$df >= 0)
-
-  # TSML SEs should be positive
-  ts_ses <- result@ParTable$se_ts[result@ParTable$free != 0]
-  expect_true(all(ts_ses > 0))
 })

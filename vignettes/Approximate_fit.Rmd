@@ -18,14 +18,14 @@ knitr::opts_chunk$set(
 #devtools::build_rmd("vignettes/Approximate_fit.Rmd") 
 
 #Run build and not build_rmd(): Use devtools::build_vignettes() to build the vignettes. This command #ensures all vignettes are compiled correctly and links are processed within the package context.
-#Update: this moved files to doc, but there are not the files to modify. 
+#Update: this moved files to doc, but these are not the files to modify. 
 ```
 
 # Obtaining Correct Composite-Level Fit Indices for PIM
 
 There are two separate issues with default approximate fit indices printed for TSML and PIM. The more major issue, which is only applicable to PIM, is that incremental fit indices (those depending on the baseline or null model, such as CFI and TLI), as well as indices depending on model residuals, such as SRMR, are based on the model for the raw items, not for the composites. They will be based on different variables than those from TSML or from a model fit directly to composites (if they had been available, e.g., with complete data), and they are not comparable across these methods.
 
-We assume that the researcher's interest is in the assessment of the composite model fit. That is, if the data had been complete, the researcher would have just computed the composites from the data and fit the model directly. Therefore, fit indices based on the raw items are not what the researcher wants to know. For example, the default CFI printed when fitting the PIM is evaluating the fit of PIM against the default baseline model in `lavaan`, which will un-correlate all items. A better null model would un-correlate the variables in the composite model, while leaving the composite construction and item structure intact (which involves a lot of correlations). This will match what the baseline model is when the composite model is fit directly to the composites with complete data. Similarly, the default SRMR printed with PIM is comparing observed correlations among the items to model-implied correlations among the items. To match what would happen with complete data when the composite model is fit directly, we would want to compare the observed correlations among *composites* (and any other observed variables in the composite model) to the model-implied correlations among composites (and any other observed variables). The correct SRMR for PIM will therefore compare saturated and structured estimates of the relationships among variables in the composite, while keeping the PIM item structure intact in both models. These correction ideas were also proposed in the original article on PIM by Rose et al. (2019). Here we show how to obtain them. 
+We assume that the researcher's interest is in the assessment of the composite model fit. That is, if the data had been complete, the researcher would have just computed the composites from the data and fit the model directly. Therefore, fit indices based on the raw items are not what the researcher wants to know. For example, the default CFI printed when fitting the PIM is evaluating the fit of PIM against the default baseline model in `lavaan`, which will un-correlate all items. A better null model would un-correlate the variables in the composite model, while leaving the composite construction and item structure intact (which involves a lot of correlations). This will match what the baseline model is when the composite model is fit directly to the composites with complete data. Similarly, the default SRMR printed with PIM is comparing observed correlations among the items to model-implied correlations among the items. To match what would happen with complete data when the composite model is fit directly, we would want to compare the observed correlations among *composites* (and any other observed variables in the composite model) to the model-implied correlations among composites (and any other observed variables). The correct SRMR for PIM will therefore compare saturated and structured estimates of the relationships among variables in the composite, while keeping the PIM item structure intact in both models. These correction ideas were also proposed in the original article on PIM by Rose et al. (2019). Here we show how to obtain them.
 
 ## Example 1. Complete Data
 
@@ -167,35 +167,35 @@ round(fitm_comp[c("srmr_mplus","srmr_mplus_nomean")],3)
 
 Both SRMR without the means and one with the means match the corresponding values from complete data. Because PIM models were developed for missing data, `meanstructure=TRUE` is likely always on when these models are used; however, if a model has a saturated mean structure (as is the case here), it is better to use the no-mean version of SRMR that does not average over mean structure residuals (which will be zero or very close it, artificially improving the value).
 
-As shown in the complete data vignette, the TSML fit indices will already match the complete data fit indices because all output from Stage 2 is already based on just the variables in the composite model.
+As shown in the complete data vignette, the TSML fit indices will already match the complete data fit indices because all output from Stage 2 is already based on just the variables in the composite model. 
+<!-- July 24 2025: This should not be the case if missing="FIML", as is the default/forced with twostage, because robust missing data corrections will perturb these values. They probably will not exactly cancel out. So, we can move this example out (maybe make it a special test), or permit TSML to run without missing="FIML", in which case robustification should not happen. This complete data example is useful for PIM, but not for TSML. It's more of a sanity check for TSML... -->
 
-Finally, the following function will obtain all fit measures for PIM at once, only printing those that have been adjusted or that do not need an adjustment: 
+Finally, the following function will obtain all fit measures for PIM at once, only printing those that have been adjusted or that do not need an adjustment:
 
 ```{r allfit}
 fitMeasures_pim(C, compmodel=tpbmod, fit_pim=fit_pim, exog_cov_base = TRUE)
 ```
-Better function with fewer arguments will be written later. 
+
+Better function with fewer arguments will be written later.
 
 ## Example 2. Incomplete Data
 
-With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount of model misfit, relative to what it would have been had the data been complete [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). As PIM is a model that uses FIML in a clever way to treat item-level missing data, the PIM RMSEA and CFI/TLI (computed using the corrected baseline model, as shown above) will be biased downward. However, *lavaan* now automatically adjusts for this bias and prints robust versions of CFI/TLI/RMSEA with FIML.
+With missing data, FIML fit indices CFI/TLI and RMSEA underestimate the amount of model misfit, relative to what it would have been had the data been complete [Zhang and Savalei (2020)](https://www.tandfonline.com/doi/full/10.1080/10705511.2019.1642111). As PIM is a model that uses FIML in a clever way to treat item-level missing data, the PIM RMSEA and CFI/TLI (computed using the corrected baseline model, as shown above) will be biased downward. However, *lavaan* now automatically adjusts for this bias and prints robust versions of CFI/TLI/RMSEA with FIML, following [Zhang and Savalei (2023)](https://psycnet.apa.org/record/2022-18510-001).
 
-We will use the example from the README file. Here, the composite model is a 3-factor model with 9 composite indicators, and the data are 27 raw items in the `misdata_mcar20` file. Below we set up the composite model and the C matrix, and we fit the composite model using PIM:
+To illustrate the impact of these corrections, we will use the example from the README file, but misspecify the composite model. The composite model is a 3-factor model with 9 composite indicators, but we will force one of the factor correlations to be zero. The data are on 27 items. Below we set up the composite model and the C matrix, and fit the composite model using PIM:
 
 ```{r}
-mod1 <- '
+mod1a <- '
 F1 =~ 1*C1 + C2 + C3
 F2 =~ 1*C4 + C5 + C6
 F3 =~ 1*C7 + C8 + C9
-F1 ~~ F1 #lets make the model false 
+F1 ~~ F1  
 F2 ~~ F2
 F3 ~~ F3
-
-#added to make the model false, to test the robust CFI with a new baseline model:
-#F1 ~~ 0*F2
+#F1 ~~ 0*F2 #added to make the model false
 
 '
-cnames<-lavaan::lavNames(mod1) 
+cnames<-lavaan::lavNames(mod1a) 
 C <- matrix(0,nrow=length(cnames),ncol=length(colnames(misdata_mcar20)))
 colnames(C)<-colnames(misdata_mcar20)
 
@@ -210,48 +210,35 @@ C[7,19:21]<-1
 C[8,22:24]<-1
 C[9,25:27]<-1
 
-modpim <- PIM_syntax(compmodel = mod1, C = C)
+modpim <- PIM_syntax(compmodel = mod1a, C = C)
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 
 fitm_pim <- lavaan::fitMeasures(fit_pim)
 round(fitm_pim[c("cfi","cfi.robust","tli","tli.robust","rmsea","rmsea.robust","srmr_mplus","srmr_mplus_nomean")],3) 
 ```
 
-Let's see if changing the baseline model works and still produces a robust CFI (if it does, we will trust `lavaan` on this and won't verify it (for now)):
+To change the baseline model in the computation of the CFI/TLI:
 
 ```{r}
-mod_base <- PIM_syntax_base(C=C,compmodel=mod1)
+mod_base <- PIM_syntax_base(C=C,compmodel=mod1a)
 #cat(mod_base) #always check! 
 fit_pim_base <- lavaan::lavaan(mod_base, data=misdata_mcar20,missing="FIML")
-
-comp_names <- lavaan::lavNames(mod1) 
-Sigma <- lavaan::lavInspect(fit_pim_base,"cov.all")
-round(Sigma[comp_names,comp_names],3) #looks good, uncorrelated C1-C9
 
 pim.incremental <- lavaan::fitMeasures(fit_pim, baseline.model=fit_pim_base,   fit.measures=c("rmsea","rmsea.robust","cfi","tli","cfi.robust","tli.robust"))
 pim.incremental 
 ```
 
-These are different from the values obtained with the default baseline model, but the original and robust version are identical to three decimal places. We need to create a situation where they are different to ensure something is happening. If I modify `mod` to include `F1 ~ 0*F2`, I get:
-
-```         
-        rmsea rmsea.robust        cfi          tli   cfi.robust   tli.robust 
-       0.042        0.053        0.887        0.838        0.980        0.972 
-```
-
-This is a bit suspect since the missing data correction would typically be expected to worsen fit. However, there is also an improvement in the RMSEA robust version. But at least we have verified that something is happening, we just need to verify that what is happening is correct. For now, we will trust `lavaan`.
+For both baseline modes, the robust RMSEA, CFI, and TLI reflect poorer fit than the original version, due to the corrections for missing data, which tends to inflate model fit.\footnote{lavaan was not using the correct baseline model in missing data corrections; I created a pull request. Remove note when accepted. The baseline model is now taken into account correctly starting with lavaan's version (add).}
 
 For completeness, let's get the correct SRMR.
 
 ```{r}
-pim_sat <- PIM_syntax_sat(compmodel=mod1,C=C)
+pim_sat <- PIM_syntax_sat(compmodel=mod1a,C=C)
 fit_pim_sat <- lavaan::lavaan(pim_sat, data=misdata_mcar20)
 
-srmr <- srmr_mplus_pim(fit_pim,fit_pim_sat,mod1)
+srmr <- srmr_mplus_pim(fit_pim,fit_pim_sat,mod1a)
 srmr
 ```
-
-Conclusion: for PIM, the robustification of fit indices happens automatically (if lavaan is right).
 
 # Obtaining Better TSML Fit Indices
 
@@ -262,8 +249,26 @@ As illustrated in the [Complete_data vignette](../doc/Complete_data.html), with 
 ## Example 2. Incomplete Data
 
 ```{r}
-fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
+fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1a, C = C)
 fitMeasures(fit_ts)
 ```
-When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. <!--(Extending this logic is probably a paper).--> These small sample adjustments basically amount to subtracting more than just df to get the noncentrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. (This work is in progress).
 
+When it comes to TSML-based RMSEA and CFI/TLI, unlike their FIML counter-parts, their asymptotic values are already correct. This is because with incomplete data, the "naive" TSML estimates of RMSEA, CFI, etc will be based on the fit function value from Stage 2, which is already the complete data fit function. Despite the consistency of the naive TSML fit indices, small sample corrections to them would still be recommended to improve their small-sample performance, as discussed in [Zhang and Savalei (2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445), though this article did not consider item-level TSML. These small sample adjustments basically amount to subtracting more than just df to get the non-centrality parameters in RMSEA/CFI/TLI computations. The fit indices also do not use the $T_\text{res}$ chi-square with normal data, but instead rely on the original chi-square $T$ from Stage 2, with an appropriate $df$ generalization subtraction factor. See Appendix to get the full equations. [implement]
+
+# Appendix: Technical Details for Small Sample Corrections to TSML Fit Indices
+
+A note on notation: In Savalei & Rhemtulla (2017), we used the subscript $c$ to refer to composite variables. In Zhang & Savalei (2020; 2023), we used it to refer to complete data quantities. Here, I will use subscript $p$ to refer to quantities based on the items, and no subscript for quantities based on composites (that is, I'm dropping subscript $c$ we used in 2017). For fit functions, I'm keeping the notation of Zhang & Savalei (2023), where $c$ refers to complete-data fit function and various matrices computed from it. Because complete data tends to go with composites, hopefully this is not too confusing.
+
+Assume we have $p$ items and $k$ composites. In Stage 1 of TSML, we use FIML to obtain $\tilde\mu_p$ ($p \times 1$) and covariance matrix $\tilde\Sigma_p$ ($p \times p$), the saturated "EM" estimates of item means and covariances. We also obtain the asymptotic covariance matrix of these means and covariances, $\tilde\Gamma_p$ ($p^* \times p^*)$, where $p* = p(p+1)/2+p$. Under normality, we can estimate $\tilde\Gamma_{p,N}=\tilde A_p^{-1}$, where $\tilde A_p$ is observed Fisher information for the saturated model for the items. We can also obtain a more general estimate $\tilde\Gamma_p=\tilde W^{-1}_p \tilde V_p \tilde W^{-1}_p$, valid for nonnormal data, where $\tilde V_p$ is the first-order information matrix (see Yuan & Bentler, 2000; Savalei & Rosseel, 2021).
+
+In Stage 1a of TSML, these quantities are reduced to the $k$ dimensions using a selection matrix $C$. The saturated estimates of means and variances of the composites are: $\tilde\mu=C \tilde\mu_p$, $\tilde\Sigma=C \tilde\Sigma_p C'$, and their asymptotic covariance matrix is $ \tilde\Gamma= C\_{\text{big}} \tilde\Gamma\*p C'\*{\text{big}}$, respectively, where $C_{\text{big}}$ is constructed from $C$ (see Savalei & Rhemtulla, 2017, for details).
+
+In Stage 2, TS parameter estimates are obtained by minimizing $F_{\text{c}}(\Sigma,\mu|\tilde\Sigma,\tilde\mu)$, the complete-data ML fit function with saturated FIML estimates of means and covariances of composites from Stage 1a as input. Denote the resulting TSML estimates by $\breve\Sigma=\Sigma(\breve\theta)$ and $\breve\mu=\mu(\breve\theta)$, and the resulting fit function minimum by $\breve  F_{\text{c}}$. For the baseline model needed for the CFI, denote the resulting TS model-reproduced estimates by $\breve\Sigma_B$ and $\breve\mu_B$, and the resulting fit function minimum by $\breve  F_{\text{c,B}}$. Below $n$ refers to total sample size, rather than $n-1$, to be consistent with default behavior of `lavaan` (this represents a minor difference from prior published papers).
+
+The corrected TSML fit indices are computed as follows: 
+$$\text{RMSEA}_{\text{TS}} = \sqrt{\frac{ \breve  F_{\text{c}}}{df}-\frac{c}{df \times n}}$$
+$$\text{CFI}_{\text{TS}}=1-\frac{\breve  F_{\text{c}} -\frac{c}{n}}{\breve  F_{\text{c},B}-\frac{c_B}{n}},$$ where $c=tr[\tilde U_\text{c} \tilde\Gamma]$, $c_B=tr[\tilde U_\text{c,B}]$,  $\tilde\Gamma$ is the asymptotic covariance matrix that comes from Stage 1a (under normality, it is replaced with $\tilde\Gamma_N$), $\tilde U_c = \tilde  W_c - \tilde W_c \breve \Delta (\breve \Delta' \tilde W_c \breve \Delta)^{-1} \breve \Delta' \tilde W_c$, $\tilde U_{c, B} = \tilde W_{c} - \tilde W_{c} \breve \Delta_B (\breve \Delta_B' \tilde W_{c} \breve \Delta_B)^{-1} \breve \Delta_B' \tilde W_{c}$, $\tilde W_c$ is the "naive" complete-data information matrix for the saturated model obtained in Stage 2, evaluated at the saturated model estimates, and $\breve\Delta$ and $\breve \Delta_B$ are the matrices of model derivatives for hypothesized (H0) and baseline model, respectively, evaluated at the TSML estimates. 
+
+These equations are essentially the same as in Zhang & Savalei (2023), because the generalization to item-level TSML only requires that $\tilde \Gamma$ is based on composites and not the raw items. 
+
+Other computational versions of the corrections $c$ and $c_B$, such as those based on structured estimates (Savalei & Rosseel, 2022), are possible. Zhang & Savalei (2023), who studied nonnormal versions of TSML corrections, found that the version based on saturated estimates performed the best (TS2, in their study), and this is how the `twostage` package computes them (for now, there is no option to change this).  

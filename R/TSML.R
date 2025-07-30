@@ -9,16 +9,20 @@
 #' @importFrom utils capture.output
 
 # namesohd (helper function): names rows/columns of the asy cov matrix from stage1
+# update: changed order to match means, covs for NACOV argument
 namesohd <- function(cnames) {
   name_grid_cov <- t(outer(cnames, cnames, function(x, y) paste0(x, "~~", y)))
   names_cov <- name_grid_cov[lower.tri(name_grid_cov, diag = TRUE)]
   names_mean <- paste0(cnames, "~", 1)
-  namesohd <- c(names_cov, names_mean)
+  namesohd <- c(names_mean, names_cov)
   return(namesohd)
 }
 
+# move to utils
 # write_sat (helper function for both PIM and TS):
 # creates the saturated model syntax in lavaan
+# update: have means appear first, to create asy cov
+# in the right order for NACOV argument in updated stage2
 write_sat <- function(model = NULL, varnames = NULL) {
   # Get variable names from either source
   if (!is.null(model)) {
@@ -29,6 +33,11 @@ write_sat <- function(model = NULL, varnames = NULL) {
 
   p <- length(varnames)
   sat.mod <- ""
+
+  # Add means for all variables
+  for (i in 1:p) {
+    sat.mod <- paste(sat.mod, varnames[i], " ~ 1 \n ", sep = "")
+  }
 
   # Variance and covariance terms
   for (i in 1:p) {
@@ -44,17 +53,13 @@ write_sat <- function(model = NULL, varnames = NULL) {
     sat.mod <- paste(sat.mod, linestart, linemid, " \n ", sep = "")
   }
 
-  # Add means for all variables
-  for (i in 1:p) {
-    sat.mod <- paste(sat.mod, varnames[i], " ~ 1 \n ", sep = "")
-  }
 
   return(sat.mod)
 }
 
 #' stage0
 #'
-#' This is the prep stage of TSML (can also be used for PIM). This function uses
+#' Prep stage for composite-based methods (TS and PIM). This function uses
 #' p column names of data and k composite variable names from the lavaan
 #' model to create a k x p matrix C, with nonzero elements representing the assignment
 #' of components to composites. Which elements are nonzero is determined by presenting
@@ -172,10 +177,15 @@ stage0 <- function(data, compmodel, which_col = NA, type = NA) {
 #'
 #' @examples
 #'
+#' # default estimator is FIML:
 #' out_s1 <- stage1(misdata_mcar20)
 #'
-#' # as tpbdata has no missing data, running stage1 with expected information
-#' # will result in TSML matching regular ML
+#' # requesting robust (to nonnormality) estimator:
+#' out_s1 <- stage1(misdata_mcar20, runcommand = 'estimator="MLR"')
+#'
+#' # complete data example:
+#' # running stage1 with expected information
+#' # will result in TSML matching regular ML run on composites
 #' out_s1 <- stage1(tpbdata, runcommand = "information='expected'")
 #'
 stage1 <- function(data, runcommand = NULL) {
@@ -191,9 +201,9 @@ stage1 <- function(data, runcommand = NULL) {
       model = "model\\s*="
     )
 
-    # Check for non-allowed estimators (anything except MLR)
+    # Check for non-allowed estimators (anything except MLR and ML)
     if (grepl("estimator\\s*=", runcommand, ignore.case = TRUE)) {
-      if (!grepl("estimator\\s*=\\s*['\"]?MLR['\"]?", runcommand, ignore.case = TRUE)) {
+      if (!grepl("estimator\\s*=\\s*['\"]?(MLR|ML)['\"]?", runcommand, ignore.case = TRUE)) {
         invalid_patterns$estimator <- "estimator\\s*="
       }
     }
@@ -237,7 +247,7 @@ stage1 <- function(data, runcommand = NULL) {
     if (inspect(S1, "converged") == TRUE && is.null(vcov(S1)) == FALSE) {
       shb <- fitted.values(S1)$cov # sigma-hat-beta
       mhb <- fitted.values(S1)$mean # mu-hat-beta
-      ohb <- vcov(S1) # asy cov matrix
+      ohb <- vcov(S1) # asy cov matrix, could be robust to nonnormality
       N <- S1@Data@nobs[[1]]
 
       # Add convergence info to output
@@ -327,10 +337,14 @@ stage1a <- function(S1.output, C) {
     kst <- k * (k + 1) / 2
 
     # Cbig, covs in original order, the means
+    # update: first means, then covs, to match NACOV order
     Cb <- matrix(0, (kst + k), (pst + p))
-    Cb[(kst + 1):(kst + k), (pst + 1):(pst + p)] <- C
+    # Cb[(kst + 1):(kst + k), (pst + 1):(pst + p)] <- C
+    Cb[1:k, 1:p] <- C # means first
     Cbpart1 <- lav_matrix_duplication_ginv_pre(C %x% C) # new line 1
-    Cb[1:kst, 1:pst] <- lav_matrix_duplication_post(Cbpart1) # new line 2
+    # Cb[1:kst, 1:pst] <- lav_matrix_duplication_post(Cbpart1) # new line 2
+    Cb[(k + 1):(kst + k), (p + 1):(pst + p)] <- lav_matrix_duplication_post(Cbpart1) # new line 2
+
 
     # saturated model parameters for the model based on the k composites:
     mhd <- C %*% mhb # mu-hat-delta
@@ -357,7 +371,7 @@ stage1a <- function(S1.output, C) {
 #' @param compmodel The lavaan model for the composites
 #' @param runcommand2 Additional arguments to pass to lavaan
 #' @param lavaan_function Which lavaan function to use to fit the model
-#' @return An object of class `twostage`, inheriting class `lavaan`
+#' @return An object of class `lavaan`
 #' @export
 #'
 #' @examples
@@ -390,8 +404,7 @@ stage1a <- function(S1.output, C) {
 #' out_s1 <- stage1(misdata1)
 #' out_s1a <- stage1a(out_s1,C)
 #' out_s2 <- stage2(out_s1a, compmodel = mod1, runcommand2="mimic='EQS'")
-#'
-#'
+
 stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
                    lavaan_function = c("sem", "lavaan", "cfa", "growth", "sam")) {
   if (is.null(S1a.output)) {
@@ -407,7 +420,8 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
       stop("'runcommand2' must be a single character string or NULL", call. = FALSE)
     }
 
-    # Check for potentially problematic specifications: user cannot supply these
+    # Check for potentially problematic specifications:
+    # User cannot supply these
     # As they are automatically supplied from stage1
     invalid_patterns <- list(
       data = "data\\s*=",
@@ -446,13 +460,29 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
   mhd <- S1a.output[[2]]
   ohd <- S1a.output[[3]]
   N <- S1a.output[[4]]
+  my_nacov <- N * ohd
 
   lavaan_function <- match.arg(lavaan_function)
 
+  # JULY 2025:
+  # ADDED NACOV and estimator = "MLM"
+  # to robustify SEs and get Tres and fit indices automatically
+  # Does not save "naive" SEs
+  # "MLM" can refer to normal theory, depending on whether ohd
+  # was computed using FIML or MLR -- this is determined by stage1, not stage2
+
+  # to pass the old test
+  if (!is.null(runcommand2) && grepl("mimic\\s*=\\s*['\"]EQS['\"]", runcommand2, ignore.case = TRUE)) {
+    my_nacov <- my_nacov * (N) / (N - 1)
+  }
+
   lavaan_call_string <- paste0(
     lavaan_function,
-    "(model = compmodel, sample.cov = shd, sample.mean = mhd, sample.nobs = N,
-        fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")"
+    "(model = compmodel, sample.cov = shd,
+    sample.mean = mhd, sample.nobs = N,
+    NACOV=my_nacov, estimator='MLM',
+    test = c('browne.residual.adf','satorra.bentler'),
+    fixed.x=FALSE, meanstructure=TRUE, ", runcommand2, ")"
   )
 
   S2 <- tryCatch(eval(parse(text = lavaan_call_string)), error = function(e) {
@@ -461,46 +491,47 @@ stage2 <- function(S1a.output, compmodel, runcommand2 = NULL,
   })
 
   # may still need to catch cases where vcov has some diagonal NAs
-  if (lavInspect(S2, "converged")) {
-    vcov_result <- suppressWarnings(lavInspect(S2, "vcov"))
-    if (is.matrix(vcov_result)) {
-      ddh <- lavInspect(S2, "delta") # model derivatives
-      bread <- lavInspect(S2, "vcov") * N
-      Hh <- lavInspect(S2, "h1.information.expected")
-      meat <- Hh %*% ddh
+  # as the robust SEs are now automatic, this is just for Tres
+  # (or could save "naive" SEs, if later needed)
+  # if (lavInspect(S2, "converged")) {
+  #   vcov_result <- suppressWarnings(lavInspect(S2, "vcov"))
+  #   if (is.matrix(vcov_result)) {
+  #     ddh <- lavInspect(S2, "delta") # model derivatives
+  #     bread <- lavInspect(S2, "vcov") * N
+  #     Hh <- lavInspect(S2, "h1.information.expected")
+  #     meat <- Hh %*% ddh
+  #     Ohtt <- bread %*% t(meat) %*% ohd %*% meat %*% bread # ohm-hat-theta-tilde
+  #
+  #     # Residual-based test statistic
+  #     # Should only be used when estimator="FIML" in Stage1?
+  #     # Also, doesn't lavaan already have it?
+  #     et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
+  #     ahd <- solve(ohd.reordered) / N
+  #     # Using N instead of N-1 to be consistent with lavaan
+  #     Tres <- (N) * t(et) %*% (ahd - (ahd %*% ddh) %*% solve(t(ddh) %*% ahd %*% ddh) %*% (t(ddh) %*% ahd)) %*% et
+  #     pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
 
-      # reordering
-      new_order <- match(rownames(meat), rownames(ohd))
-      ohd.reordered <- ohd[new_order, new_order]
+  # WE DO NOT NEED CLASS TWOSTAGE ANYMORE (for now)
+  # S2 <- new("twostage", S2, twostage = list()) # change class to twostage
 
-      Ohtt <- bread %*% t(meat) %*% ohd.reordered %*% meat %*% bread # ohm-hat-theta-tilde
+  # update se_ts for free parameters
+  # set TS SEs to initially equal naive SEs, to match nonfree values and length
+  # S2@twostage$se_ts <- S2@ParTable$se
+  # set ses for free parameters to new TS SEs
+  # NACOV update: suppress robustification (now automatic)
+  # S2@twostage$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt))
 
-      S2 <- new("twostage", S2, twostage = list()) # change class to twostage
 
-      # update se_ts for free parameters
-      # set TS SEs to initially equal naive SEs, to match nonfree values and length
-      S2@twostage$se_ts <- S2@ParTable$se
-      # set ses for free parameters to new TS SEs (TODO: double-check order?)
-      S2@twostage$se_ts[S2@ParTable$free != 0] <- sqrt(diag(Ohtt))
+  # new test statistic code:
+  # S2@twostage$test <- Tres
+  # S2@twostage$df <- S2@Fit@test$standard$df
+  # S2@twostage$pval <- pval
 
-      # Normal-theory residual-based test statistic
-      et <- c(residuals(S2)$mean, lav_matrix_vech(residuals(S2)$cov)) # so swap
-      ahd <- solve(ohd.reordered) / N
-      # Using N instead of N-1 to be consistent with lavaan
-      Tres <- (N) * t(et) %*% (ahd - (ahd %*% ddh) %*% solve(t(ddh) %*% ahd %*% ddh) %*% (t(ddh) %*% ahd)) %*% et
-      pval <- 1 - stats::pchisq(Tres, df = inspect(S2, "fit")["df"])
-
-      # new test statistic code:
-      S2@twostage$test <- Tres
-      S2@twostage$df <- S2@Fit@test$standard$df
-      S2@twostage$pval <- pval
-
-      # conv and iter info from Stage 1, for show:
-      stage1_info <- S1a.output[[5]]
-      S2@twostage$stage1_info <- stage1_info
-    } # end if vcov
-  } # end if
-
+  # conv and iter info from Stage 1, for show:
+  # stage1_info <- S1a.output[[5]]
+  # S2@twostage$stage1_info <- stage1_info
+  # } # end if vcov
+  # } # end if
 
   return(S2)
 }

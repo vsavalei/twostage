@@ -1,3 +1,6 @@
+## JULY 2025: This class is no longer used (for now)
+## File could be deleted (eventually)
+
 ## check via: ?`twostage-class`
 #' Two-stage maximum likelihood estimation
 #'

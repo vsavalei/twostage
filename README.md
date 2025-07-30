@@ -141,73 +141,38 @@ To fit the composite model using TSML:
 ``` r
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
 fit_ts
-#> Stage 1: lavaan 0.6-20.2318 ended normally after 39 iterations
-#> Stage 2: lavaan 0.6-20.2318 ended normally after 63 iterations
+#> lavaan 0.6-20.2318 ended normally after 63 iterations
 #> 
-#>   Estimator                                         TS
+#>   Estimator                                         ML
 #>   Optimization method                           NLMINB
 #>   Number of model parameters                        30
 #> 
 #>   Number of observations                           200
 #> 
 #> Model Test User Model:
+#>                                               Standard      Scaled
+#>   Test Statistic                                33.295      25.287
+#>   Degrees of freedom                                24          24
+#>   P-value (Chi-square)                           0.098       0.390
+#>   Scaling correction factor                                  1.317
+#>     Satorra-Bentler correction                                    
 #>                                                       
-#>   Residual-based TS statistic                     24.952
+#>   Browne's residual-based (ADF) test                  
+#>   Test statistic                                24.952
 #>   Degrees of freedom                                24
 #>   P-value (Chi-square)                           0.408
+#summary(fit_ts)
 ```
 
-The summary (for now) is custom to `twostage` and does not look like
-`lavaan`:
-
-``` r
-summary(fit_ts)
-#> Summary of Two-Stage Analysis 
-#> ----------------------------
-#> Parameter estimates from Stage 2, naive standard errors from lavaan (with z-test and p-value),
-#>  and the corrected TSML standard errors (with z-test and p-value): 
-#>  lhs op rhs    est se_naive z_naive pvalue_naive    se      z pvalue
-#>   F1 =~  C2  1.022    0.358   2.855        0.004 0.379  2.696  0.007
-#>   F1 =~  C3  1.389    0.477   2.915        0.004 0.508  2.736  0.006
-#>   F2 =~  C5  1.198    0.371   3.227        0.001 0.420  2.849  0.004
-#>   F2 =~  C6  1.292    0.387   3.339        0.001 0.433  2.987  0.003
-#>   F3 =~  C8  0.503    0.225   2.236        0.025 0.241  2.082  0.037
-#>   F3 =~  C9  1.214    0.353   3.437        0.001 0.401  3.027  0.002
-#>   F1 ~~  F1  0.676    0.327   2.066        0.039 0.344  1.964  0.050
-#>   F2 ~~  F2  0.649    0.308   2.107        0.035 0.346  1.877  0.060
-#>   F3 ~~  F3  0.760    0.322   2.358        0.018 0.367  2.070  0.038
-#>   C1 ~~  C1  3.019    0.391   7.724        0.000 0.417  7.242  0.000
-#>   C2 ~~  C2  3.681    0.456   8.077        0.000 0.495  7.435  0.000
-#>   C3 ~~  C3  2.787    0.520   5.354        0.000 0.570  4.885  0.000
-#>   C4 ~~  C4  3.573    0.415   8.619        0.000 0.472  7.572  0.000
-#>   C5 ~~  C5  3.458    0.437   7.907        0.000 0.501  6.900  0.000
-#>   C6 ~~  C6  2.919    0.415   7.041        0.000 0.462  6.313  0.000
-#>   C7 ~~  C7  2.743    0.363   7.559        0.000 0.413  6.639  0.000
-#>   C8 ~~  C8  3.167    0.333   9.504        0.000 0.368  8.606  0.000
-#>   C9 ~~  C9  3.137    0.465   6.746        0.000 0.529  5.935  0.000
-#>   F1 ~~  F2  0.343    0.150   2.292        0.022 0.161  2.123  0.034
-#>   F1 ~~  F3  0.332    0.151   2.201        0.028 0.166  1.998  0.046
-#>   F2 ~~  F3  0.590    0.201   2.936        0.003 0.222  2.653  0.008
-#>   C1 ~1      0.260    0.136   1.913        0.056 0.141  1.843  0.065
-#>   C2 ~1     -0.116    0.148  -0.782        0.434 0.152 -0.761  0.447
-#>   C3 ~1      0.113    0.143   0.789        0.430 0.148  0.761  0.446
-#>   C4 ~1      0.084    0.145   0.577        0.564 0.155  0.541  0.589
-#>   C5 ~1      0.057    0.148   0.388        0.698 0.158  0.363  0.717
-#>   C6 ~1     -0.029    0.141  -0.204        0.838 0.152 -0.191  0.849
-#>   C7 ~1     -0.114    0.132  -0.862        0.389 0.143 -0.797  0.426
-#>   C8 ~1      0.112    0.130   0.862        0.388 0.140  0.798  0.425
-#>   C9 ~1      0.032    0.146   0.219        0.826 0.154  0.208  0.835
-#> ----------------------------
-#> The residual-based TSML chi-square is 24.952 against 24 degrees of freedom, with a p-value of 0.408
-#to see the unadjusted stage 2 summary from lavaan: #selectMethod("summary", "lavaan")(fit_ts)
-```
-
-It shows TSML parameter estimates from Stage 2, “naive” standard errors,
-and TSML standard errors, which are generally larger, reflecting greater
-uncertainty due to missing data in Stage 1. The (normal theory)
-residual-based test statistic is also printed. For technical details on
-the standard errors and the residual-based test statistic computation,
-see [Savalei and Bentler (
+The resulting is a `lavaan` object from Stage 2, but with TS standard
+errors. These standard errors are generally larger than naive standard
+errors would have been, reflecting greater uncertainty due to missing
+data in Stage 1. In this example, these standard errors still assume
+normality. For normal data, the residual-based test statistic is
+recommended, as it is chi-square distributed. It is automatically
+included, as shown above. For technical details on the standard errors
+and the residual-based test statistic computation, see [Savalei and
+Bentler (
 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
 and [Savalei and Rhemtulla
 (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
@@ -359,8 +324,7 @@ way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get
 corrected fit measures, use:
 
 ``` r
-fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim, 
-                data = misdata_mcar20)
+fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim)
 ```
 
 We can compare the PIM and TS fit indices:
@@ -374,10 +338,10 @@ fitm_pim[indices]
 #>        0.131
 
 fitMeasures(fit_ts,indices)
-#>         rmsea           cfi           tli          srmr  chisq_TS_res 
-#>         0.044         0.913         0.869         0.047        24.952 
-#> pvalue_TS_res 
-#>         0.408
+#>        rmsea rmsea.robust          cfi   cfi.robust          tli   tli.robust 
+#>        0.044        0.019        0.913        0.982        0.869        0.974 
+#>         srmr 
+#>        0.047
 ```
 
 When `estimator ="FIML"`, as in PIM, corrections are necessary to fit

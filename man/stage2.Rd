@@ -21,7 +21,7 @@ stage2(
 \item{lavaan_function}{Which lavaan function to use to fit the model}
 }
 \value{
-An object of class \code{twostage}, inheriting class \code{lavaan}
+An object of class \code{lavaan}
 }
 \description{
 Performs stage2 of TSML. Fits the model to the estimated vector of means and the estimated
@@ -58,6 +58,4 @@ C[6,16:18]<-1
 out_s1 <- stage1(misdata1)
 out_s1a <- stage1a(out_s1,C)
 out_s2 <- stage2(out_s1a, compmodel = mod1, runcommand2="mimic='EQS'")
-
-
 }
