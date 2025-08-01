@@ -315,19 +315,32 @@ estimates. When data are complete, both TS and PIM produce equivalent
 output to the complete data run on the manually-formed composites (see
 the Complete_data vignette).
 
-Approximate fit assessment of PIM models requires special setup, as
+Approximate fit assessment of PIM models requires special setup is more
+complicated, and depends on the goals of the analysis. If PIM is used
+primarily to deal with missing data – that is, if it hadn’t been for
+missing data, the analyst would have just computed the composites and
+fit the model directly to them – that special adjustments are required
+to some fit indices to remove the influence of the raw items on fit, as
 discussed in [Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores).
 The gist of the issue is that we want to assess the fit of the composite
-model, not the fit of the entire model with items added in a saturated
-way; this requires recomputing CFI and SRMR (but RMSEA is fine). To get
-corrected fit measures, use:
+model – i.e., estimate what the fit would have been had there been no
+missing data – and this requires recomputing CFI and SRMR (but RMSEA is
+fine). Specifically, CFI needs to be computed using a different null
+model – one in which the items are freely correlated, but the
+composites, which are still set up as latent variables, are not.
+Further, SRMR needs to be computed so that it captures the residuals in
+estimated *composite* relationships between the structure (H0) and the
+saturated (H1) model for *composites*. This requires a special H1 model
+setup.
+
+To get these adjusted fit measures in `twostage`, use:
 
 ``` r
 fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim)
 ```
 
-We can compare the PIM and TS fit indices:
+We can then compare the PIM and TS fit indices:
 
 ``` r
 indices<-c("rmsea","rmsea.robust","cfi","cfi.robust","tli","tli.robust","srmr")
@@ -344,20 +357,26 @@ fitMeasures(fit_ts,indices)
 #>        0.047
 ```
 
-When `estimator ="FIML"`, as in PIM, corrections are necessary to fit
-indices in order for them to mimic their would-be complete data values
-[Zhang and Savalei
-(2023)](https://psycnet.apa.org/doiLanding?doi=10.1037%2Fmet0000445).
-Thus, we compare the RMSEA from `fit_ts` to `rmsea.robust` from
-`fit_pim`. Similarly, we should compare the CFI from `fit_ts` to the
-`cfi_robust` in `fit_pim`, but this CFI is custom-computed using a
-different baseline model, so it is not clear if these corrections are
-right. No corrections are necessary to SRMR, so these can be compared
-directly. See the [Approximate_fit
-vignette](../doc/Approximate_fit.html) for more detail. Lastly, TSML
-indices require small-sample corrections (these are less consequential
-than PIM corrections, as they go away asymptotically), but these have
-not yet been implemented.
+However, these adjusted fit indices that only focus on the fit of the
+composite model and ignore the items may not always be what the
+researcher has in mind. While PIM was initially developed to deal with
+missing data, recently, Siegel, Savalei, & Rhemtulla
+(2025)\[<https://osf.io/preprints/psyarxiv/jgwe6_v1>\] argued that
+traditional confirmatory factor analysis (CFA) models, CCA models, and
+PIM models are nested, and moreover none can be saturated if a model
+involves several constructs, where some are reflective (as in CFA) and
+some are formative (as in CCA or PIM). When such a nested sequence of
+alternative measurement models is researcher’s main interest, no
+adjustments should be done to PIM fit indices, as they have to remain
+comparable to fit indices in traditional reflective CFA. To compare to
+CFA (or CCA), researchers would then use `lavaan`’s default computation:
+
+``` r
+fitm_pim <- fitMeasures(fit_pim)
+fitm_pim[c("cfi","srmr")]
+#>        cfi       srmr 
+#> 0.99869853 0.02406394
+```
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->
