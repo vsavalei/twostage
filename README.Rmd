@@ -2,8 +2,6 @@
 output: github_document
 ---
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 <!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
 
 ```{=html}
@@ -126,11 +124,10 @@ To fit the composite model using TSML:
 
 ```{r}
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
-fit_ts
-#summary(fit_ts)
+summary(fit_ts)
 ```
  
-The resulting is a `lavaan` object from Stage 2, but with TS standard errors. These standard errors are generally larger than naive standard errors would have been, reflecting greater uncertainty due to missing data in Stage 1. In this example, these standard errors still assume normality. For normal data, the residual-based test statistic is recommended, as it is chi-square distributed. It is automatically included, as shown above. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
+The result is a `lavaan` object from Stage 2, but with TS standard errors. These standard errors are generally larger than naive standard errors would have been, reflecting greater uncertainty due to missing data in Stage 1. In this example, these standard errors still assume normality. For normal data, the residual-based test statistic is recommended, as it is chi-square distributed. It is automatically included, as shown above. However, the scaled chi-square, which is approximately chi-square distributed, can also be reported. With nonnormal data, it will be the preferred option. For technical details on the standard errors and the residual-based test statistic computation, see [Savalei and Bentler ( 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238) and [Savalei and Rhemtulla (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
 
 To fit the composite model using PIM, first create the `lavaan` PIM syntax:
 
@@ -162,30 +159,28 @@ comp_table
 
 The TS and PIM estimates and standard errors are quite similar. Technically, the TS estimates are less efficient than FIML (PIM) estimates. When data are complete, both TS and PIM produce equivalent output to the complete data run on the manually-formed composites (see the Complete_data vignette).
 
-Approximate fit assessment of PIM models requires special setup is more complicated, and depends on the goals of the analysis. If PIM is used primarily to deal with missing data -- that is, if it hadn't been for missing data, the analyst would have just computed the composites and fit the model directly to them -- that special adjustments are required to some fit indices to remove the influence of the raw items on fit, as discussed in [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). The gist of the issue is that we want to assess the fit of the composite model -- i.e., estimate what the fit would have been had there been no missing data -- and this requires recomputing CFI and SRMR (but RMSEA is fine). Specifically, CFI needs to be computed using a different null model -- one in which the items are freely correlated, but the composites, which are still set up as latent variables, are not. Further, SRMR needs to be computed so that it captures the residuals in estimated *composite* relationships between the structure (H0) and the saturated (H1) model for *composites*. This requires a special H1 model setup. 
-
-To get these adjusted fit measures in `twostage`, use: 
+Approximate fit assessment of PIM models may require special setup, depending on the goals of the analysis. If PIM is used primarily to deal with missing data -- that is, if it hadn't been for missing data, the analyst would have just computed the composites and fit the model directly to them -- then special adjustments are required to some fit indices to remove the influence of the raw items on fit, as discussed in [Rose, Wagner, Mayer, and Nagengast (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores). The gist of the issue is that we want to assess the fit of the composite model -- i.e., estimate what the fit would have been had there been no missing data -- and this requires recomputing CFI and SRMR (but RMSEA is fine). Specifically, CFI needs to be computed using a different null model -- one in which the items are freely correlated, but the composites, which are still set up as latent variables, are not. Further, SRMR needs to be computed so that it captures the residuals in estimated *composite* relationships between the structured (H0) and the saturated (H1) model for *composites*. This requires a special H1 model setup. To get these adjusted fit measures in `twostage`, use: 
 
 ```{r allfit}
 fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim)
 ```
 
-We can then compare the PIM and TS fit indices:
+When adjusted in this way, PIM and TS fit indices are directly comparable, and we can compare them to see if their conclusions about fit are similar: 
 
 ```{r allfitcomp}
-indices<-c("rmsea","rmsea.robust","cfi","cfi.robust","tli","tli.robust","srmr")
+indices<-c("rmsea.robust","cfi.robust","tli.robust","srmr")
 fitm_pim[indices]
 
 fitMeasures(fit_ts,indices)
 ```
 
-However, these adjusted fit indices that only focus on the fit of the composite model and ignore the items may not always be what the researcher has in mind. While PIM was initially developed to deal with missing data, recently, Siegel, Savalei, & Rhemtulla (2025)[https://osf.io/preprints/psyarxiv/jgwe6_v1] argued that traditional confirmatory factor analysis (CFA) models, CCA models, and PIM models are nested, and moreover none can be saturated if a model involves several constructs, where some are reflective (as in CFA) and some are formative (as in CCA or PIM). When such a nested sequence of alternative measurement models is researcher's main interest, no adjustments should be done to PIM fit indices, as they have to remain comparable to fit indices in traditional reflective CFA. To compare to CFA (or CCA), researchers would then use `lavaan`'s default computation:
+However, in some cases, the goal of the PIM analysis may not be to handle missing data but to evaluate whether a formative versus a reflective model is more appropriate as a representation of a particular construct. This is a very recent and novel application of PIM, proposed by Siegel, Savalei, & Rhemtulla (2025)[https://osf.io/preprints/psyarxiv/jgwe6_v2], who argued that traditional confirmatory factor analysis (CFA) models, confirmatory composite analysis (CCA) models, and PIM models are nested, and this nestedness can be evaluated statistically in some cases. The PIM will no longer be saturated if it is a "partial" PIM -- that is, if a model involves several constructs, where some are reflective (as in CFA) and some are formative (as in CCA or PIM). When such a nested sequence of alternative measurement models is researcher's main interest, the covariance structure on the items becomes of primary interest, and is no longer just a nuisance. Then, no adjustments should be done to PIM fit indices, so that they remain comparable to fit indices in traditional reflective CFA. For this type of analysis, to compare PIM fit to CFA (or CCA), use `lavaan`'s default fit index computations:
 
 ```{r allfit1}
 fitm_pim <- fitMeasures(fit_pim)
-fitm_pim[c("cfi","srmr")]
+fitm_pim[indices]
 ```
-
+(In this example we still grab robust versions because they properly account for missing data.)
 
 
 ```{=html}

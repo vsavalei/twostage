@@ -167,10 +167,21 @@ fitMeasures_pim <- function(C, compmodel, fit_pim, exog_cov_base = TRUE) {
   )
 
   # step 2: Extract data from fitted object
-  data <- lavInspect(fit_pim, "data")
+  pim_data <- lavInspect(fit_pim, "data")
 
   # step 3: fit the baseline model
-  fit_pim_base <- lavaan(compmodel_base, data = data)
+  # Extract original call options from fit_pim
+  original_call <- fit_pim@call
+  original_options <- as.list(original_call)[-1] # Remove function name
+
+  # Fit baseline model with same options
+  # Replace model with baseline model
+  baseline_options <- original_options
+  baseline_options$model <- compmodel_base
+  baseline_options$data <- pim_data # Explicitly set the data (test fails otherwise due to referencing user may have used)
+
+  # Fit baseline model with same options
+  fit_pim_base <- do.call(lavaan, baseline_options)
 
   # step 4: get custom fit measures from lavaan (could take awhile)
   fits_pim <- fitMeasures(fit_pim, baseline.model = fit_pim_base)
@@ -179,7 +190,14 @@ fitMeasures_pim <- function(C, compmodel, fit_pim, exog_cov_base = TRUE) {
   compmodel_sat <- suppressMessages(PIM_syntax_sat(C = C, compmodel = compmodel))
 
   # step 6: fit the saturated (H1) model:
-  fit_pim_sat <- lavaan::lavaan(compmodel_sat, data = data)
+  # Replace model with saturated model
+  satmodel_options <- original_options
+  satmodel_options$model <- compmodel_sat
+  satmodel_options$data <- pim_data # Explicitly set the data
+
+  # Fit saturated model with same options
+  fit_pim_sat <- do.call(lavaan, satmodel_options)
+
   srmr <- srmr_mplus_pim(fit_pim, fit_pim_sat, compmodel)
   fits_pim["srmr_mplus"] <- srmr$srmr_mplus
   fits_pim["srmr"] <- srmr$srmr_mplus # assume a mean structure

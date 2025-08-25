@@ -1,6 +1,4 @@
 
-<!-- README.md is generated from README.Rmd. Please edit that file -->
-
 <!-- Render `README.Rmd` regularly to keep `README.md` up-to-date, via `devtools::build_readme()` -->
 
 <!-- To view better, run: 
@@ -71,10 +69,10 @@ library(twostage)
 ## Example
 
 This example uses a simulated dataset `misdata_mcar20`, which contains
-27 items, $`Y_1`$ to $`Y_{27}`$, where about half have 20% missing data.
-The model is for composites $`C_1`$ to $`C_9`$, which are parcels of
-three items each, in order; for example, $`C_1 = Y_1 + Y_2 + Y_3`$, and
-so on. These composites are never explicitly computed.
+27 items, $Y_1$ to $Y_{27}$, where about half have 20% missing data. The
+model is for composites $C_1$ to $C_9$, which are parcels of three items
+each, in order; for example, $C_1 = Y_1 + Y_2 + Y_3$, and so on. These
+composites are never explicitly computed.
 
 The composite model is a 3-factor model, with three indicators each,
 defined via `lavaan` syntax as follows:
@@ -125,23 +123,23 @@ model. The following message will confirm the assignment:
     C9 :  Y25 Y26 Y27 
     If this is not correct, start over! 
 
-The created matrix $`C`$ has columns labeled with component names:
-$`Y_1`$ to $`Y_{27}`$, and rows labeled with composite names: $`C_1`$ to
-$`C_9`$. The ijth element of $`C`$ is nonzero (for sums, it is 1) if
-component $`j`$ belongs to composite $`i`$, and zero otherwise.
+The created matrix $C$ has columns labeled with component names: $Y_1$
+to $Y_{27}$, and rows labeled with composite names: $C_1$ to $C_9$. The
+ijth element of $C$ is nonzero (for sums, it is 1) if component $j$
+belongs to composite $i$, and zero otherwise.
 
 In this file, we create this matrix manually as follows:
 
-Once the $`C`$ matrix is created with the help of the `stage0` function
-or manually, the composite model can be fit using the methods included
-in the package.
+Once the $C$ matrix is created with the help of the `stage0` function or
+manually, the composite model can be fit using the methods included in
+the package.
 
 To fit the composite model using TSML:
 
 ``` r
 fit_ts <- twostage(data = misdata_mcar20, compmodel = mod1, C = C)
-fit_ts
-#> lavaan 0.6-20.2318 ended normally after 63 iterations
+summary(fit_ts)
+#> lavaan 0.6-20.2339 ended normally after 63 iterations
 #> 
 #>   Estimator                                         ML
 #>   Optimization method                           NLMINB
@@ -161,18 +159,75 @@ fit_ts
 #>   Test statistic                                24.952
 #>   Degrees of freedom                                24
 #>   P-value (Chi-square)                           0.408
-#summary(fit_ts)
+#> 
+#> Parameter Estimates:
+#> 
+#>   Standard errors                           Robust.sem
+#>   Information                                 Expected
+#>   Information saturated (h1) model          Structured
+#> 
+#> Latent Variables:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>   F1 =~                                               
+#>     C1                1.000                           
+#>     C2                1.022    0.379    2.696    0.007
+#>     C3                1.389    0.508    2.736    0.006
+#>   F2 =~                                               
+#>     C4                1.000                           
+#>     C5                1.198    0.420    2.849    0.004
+#>     C6                1.292    0.433    2.987    0.003
+#>   F3 =~                                               
+#>     C7                1.000                           
+#>     C8                0.503    0.241    2.082    0.037
+#>     C9                1.214    0.401    3.027    0.002
+#> 
+#> Covariances:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>   F1 ~~                                               
+#>     F2                0.343    0.161    2.123    0.034
+#>     F3                0.332    0.166    1.998    0.046
+#>   F2 ~~                                               
+#>     F3                0.590    0.222    2.653    0.008
+#> 
+#> Intercepts:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>    .C1                0.260    0.141    1.843    0.065
+#>    .C2               -0.116    0.152   -0.761    0.447
+#>    .C3                0.113    0.148    0.761    0.446
+#>    .C4                0.084    0.155    0.541    0.589
+#>    .C5                0.057    0.158    0.363    0.717
+#>    .C6               -0.029    0.152   -0.191    0.849
+#>    .C7               -0.114    0.143   -0.797    0.426
+#>    .C8                0.112    0.140    0.798    0.425
+#>    .C9                0.032    0.154    0.208    0.835
+#> 
+#> Variances:
+#>                    Estimate  Std.Err  z-value  P(>|z|)
+#>     F1                0.676    0.344    1.964    0.050
+#>     F2                0.649    0.346    1.877    0.060
+#>     F3                0.760    0.367    2.070    0.038
+#>    .C1                3.019    0.417    7.242    0.000
+#>    .C2                3.681    0.495    7.435    0.000
+#>    .C3                2.787    0.570    4.885    0.000
+#>    .C4                3.573    0.472    7.572    0.000
+#>    .C5                3.458    0.501    6.900    0.000
+#>    .C6                2.919    0.462    6.313    0.000
+#>    .C7                2.743    0.413    6.639    0.000
+#>    .C8                3.167    0.368    8.606    0.000
+#>    .C9                3.137    0.529    5.935    0.000
 ```
 
-The resulting is a `lavaan` object from Stage 2, but with TS standard
+The result is a `lavaan` object from Stage 2, but with TS standard
 errors. These standard errors are generally larger than naive standard
 errors would have been, reflecting greater uncertainty due to missing
 data in Stage 1. In this example, these standard errors still assume
 normality. For normal data, the residual-based test statistic is
 recommended, as it is chi-square distributed. It is automatically
-included, as shown above. For technical details on the standard errors
-and the residual-based test statistic computation, see [Savalei and
-Bentler (
+included, as shown above. However, the scaled chi-square, which is
+approximately chi-square distributed, can also be reported. With
+nonnormal data, it will be the preferred option. For technical details
+on the standard errors and the residual-based test statistic
+computation, see [Savalei and Bentler (
 2009)](https://www.tandfonline.com/doi/full/10.1080/10705510903008238)
 and [Savalei and Rhemtulla
 (2017a)](https://journals.sagepub.com/doi/full/10.3102/1076998617694880).
@@ -187,8 +242,8 @@ modpim <- PIM_syntax(compmodel = mod1, C = C)
 ```
 
 The resulting syntax is long and can be viewed via `cat(modpim)`. It
-contains the definition of each composite $`C_i`$, $`i=1,\ldots,9`$, as
-a single-indicator latent variable, and a special structure on the
+contains the definition of each composite $C_i$, $i=1,\ldots,9$, as a
+single-indicator latent variable, and a special structure on the
 components. For details, see [Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores)
 It is recommend to always check the part of the generated syntax
@@ -203,7 +258,7 @@ the items, use FIML:
 ``` r
 fit_pim <- lavaan::lavaan(modpim, data=misdata_mcar20,missing="FIML")
 fit_pim
-#> lavaan 0.6-20.2318 ended normally after 260 iterations
+#> lavaan 0.6-20.2339 ended normally after 260 iterations
 #> 
 #>   Estimator                                         ML
 #>   Optimization method                           NLMINB
@@ -228,8 +283,8 @@ way, always confirm that the degrees of freedom are what you would
 expect for your composite model (i.e., if data had been complete and the
 composite model had been fit directly). In this example, the composite
 model is a 3-factor CFA with nine indicators, so it should have
-$`9(10)/2 - (9+9+3)=24`$ degrees of freedom, where the parameters are
-free factor loadings, residual variances, and factor variances and
+$9(10)/2 - (9+9+3)=24$ degrees of freedom, where the parameters are free
+factor loadings, residual variances, and factor variances and
 covariances. When fit correctly,`fit_pm` should also return the same df
 as `fit_ts`.
 
@@ -266,11 +321,11 @@ comp_table
 #> 18  C9 ~1           0.038      0.153     0.248          0.804      0.032
 #> 19  F1 ~~  F1       0.665      0.355     1.876          0.061      0.676
 #> 20  F1 ~~  F2       0.339      0.163     2.074          0.038      0.343
-#> 21  F1 ~~  F3       0.312      0.171     1.823          0.068      0.332
+#> 21  F1 ~~  F3       0.312      0.171     1.824          0.068      0.332
 #> 22  F1 =~  C2       1.089      0.415     2.626          0.009      1.022
 #> 23  F1 =~  C3       1.386      0.543     2.554          0.011      1.389
 #> 24  F2 ~~  F2       0.642      0.342     1.881          0.060      0.649
-#> 25  F2 ~~  F3       0.606      0.231     2.621          0.009      0.590
+#> 25  F2 ~~  F3       0.606      0.231     2.620          0.009      0.590
 #> 26  F2 =~  C5       1.248      0.440     2.838          0.005      1.198
 #> 27  F2 =~  C6       1.269      0.422     3.008          0.003      1.292
 #> 28  F3 ~~  F3       0.779      0.393     1.984          0.047      0.760
@@ -315,13 +370,13 @@ estimates. When data are complete, both TS and PIM produce equivalent
 output to the complete data run on the manually-formed composites (see
 the Complete_data vignette).
 
-Approximate fit assessment of PIM models requires special setup is more
-complicated, and depends on the goals of the analysis. If PIM is used
-primarily to deal with missing data – that is, if it hadn’t been for
-missing data, the analyst would have just computed the composites and
-fit the model directly to them – that special adjustments are required
-to some fit indices to remove the influence of the raw items on fit, as
-discussed in [Rose, Wagner, Mayer, and Nagengast
+Approximate fit assessment of PIM models may require special setup,
+depending on the goals of the analysis. If PIM is used primarily to deal
+with missing data – that is, if it hadn’t been for missing data, the
+analyst would have just computed the composites and fit the model
+directly to them – then special adjustments are required to some fit
+indices to remove the influence of the raw items on fit, as discussed in
+[Rose, Wagner, Mayer, and Nagengast
 (2019).](https://online.ucpress.edu/collabra/article/5/1/9/112958/Model-Based-Manifest-and-Latent-Composite-Scores).
 The gist of the issue is that we want to assess the fit of the composite
 model – i.e., estimate what the fit would have been had there been no
@@ -330,53 +385,57 @@ fine). Specifically, CFI needs to be computed using a different null
 model – one in which the items are freely correlated, but the
 composites, which are still set up as latent variables, are not.
 Further, SRMR needs to be computed so that it captures the residuals in
-estimated *composite* relationships between the structure (H0) and the
+estimated *composite* relationships between the structured (H0) and the
 saturated (H1) model for *composites*. This requires a special H1 model
-setup.
-
-To get these adjusted fit measures in `twostage`, use:
+setup. To get these adjusted fit measures in `twostage`, use:
 
 ``` r
 fitm_pim <- fitMeasures_pim(C, compmodel=mod1, fit_pim=fit_pim)
 ```
 
-We can then compare the PIM and TS fit indices:
+When adjusted in this way, PIM and TS fit indices are directly
+comparable, and we can compare them to see if their conclusions about
+fit are similar:
 
 ``` r
-indices<-c("rmsea","rmsea.robust","cfi","cfi.robust","tli","tli.robust","srmr")
+indices<-c("rmsea.robust","cfi.robust","tli.robust","srmr")
 fitm_pim[indices]
-#>        rmsea rmsea.robust          cfi   cfi.robust          tli   tli.robust 
-#>        0.008        0.024        0.978        0.996        0.967        0.994 
-#>         srmr 
-#>        0.131
+#> rmsea.robust   cfi.robust   tli.robust         srmr 
+#>        0.024        0.974        0.961        0.048
 
 fitMeasures(fit_ts,indices)
-#>        rmsea rmsea.robust          cfi   cfi.robust          tli   tli.robust 
-#>        0.044        0.019        0.913        0.982        0.869        0.974 
-#>         srmr 
-#>        0.047
+#> rmsea.robust   cfi.robust   tli.robust         srmr 
+#>        0.019        0.982        0.974        0.047
 ```
 
-However, these adjusted fit indices that only focus on the fit of the
-composite model and ignore the items may not always be what the
-researcher has in mind. While PIM was initially developed to deal with
-missing data, recently, Siegel, Savalei, & Rhemtulla
-(2025)\[<https://osf.io/preprints/psyarxiv/jgwe6_v1>\] argued that
-traditional confirmatory factor analysis (CFA) models, CCA models, and
-PIM models are nested, and moreover none can be saturated if a model
+However, in some cases, the goal of the PIM analysis may not be to
+handle missing data but to evaluate whether a formative versus a
+reflective model is more appropriate as a representation of a particular
+construct. This is a very recent and novel application of PIM, proposed
+by Siegel, Savalei, & Rhemtulla
+(2025)\[<https://osf.io/preprints/psyarxiv/jgwe6_v2>\], who argued that
+traditional confirmatory factor analysis (CFA) models, confirmatory
+composite analysis (CCA) models, and PIM models are nested, and this
+nestedness can be evaluated statistically in some cases. The PIM will no
+longer be saturated if it is a “partial” PIM – that is, if a model
 involves several constructs, where some are reflective (as in CFA) and
 some are formative (as in CCA or PIM). When such a nested sequence of
-alternative measurement models is researcher’s main interest, no
-adjustments should be done to PIM fit indices, as they have to remain
-comparable to fit indices in traditional reflective CFA. To compare to
-CFA (or CCA), researchers would then use `lavaan`’s default computation:
+alternative measurement models is researcher’s main interest, the
+covariance structure on the items becomes of primary interest, and is no
+longer just a nuisance. Then, no adjustments should be done to PIM fit
+indices, so that they remain comparable to fit indices in traditional
+reflective CFA. For this type of analysis, to compare PIM fit to CFA (or
+CCA), use `lavaan`’s default fit index computations:
 
 ``` r
 fitm_pim <- fitMeasures(fit_pim)
-fitm_pim[c("cfi","srmr")]
-#>        cfi       srmr 
-#> 0.99869853 0.02406394
+fitm_pim[indices]
+#> rmsea.robust   cfi.robust   tli.robust         srmr 
+#>   0.02366634   0.99048773   0.86088301   0.02406394
 ```
+
+(In this example we still grab robust versions because they properly
+account for missing data.)
 
 <!-- Links to (../doc/Complete_data.html) do not work until the package website is on Github. Links to  (../vignettes/Complete_data.html) do not work because this folder does not contain hmtl files. Ignore for now, see advice below.
 &#10;<!-- Note on GitHub: If the README is on GitHub and you want to link to the rendered vignette during development, you could manually provide a link to a rendered version stored externally (e.g., on GitHub Pages) until it is published on CRAN.-->

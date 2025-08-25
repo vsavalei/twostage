@@ -1,6 +1,7 @@
 # Comparison of output from different methods for fitting the same model
 # Only common parameters are extracted and compared
 # All input should be either lavaan or twostage objects
+# TODO: If twostage class is not used, simplify
 # Q: Remove nonconverged? (semTools does this)
 # Eventually add a check that the same comp model was fit to the same data
 # parts have been taken from net in semTools
